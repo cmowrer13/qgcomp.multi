@@ -1,9 +1,9 @@
 Package: qgcomp.multi
-Title: What the Package Does (One Line, Title Case)
+Title: Estimation the joint effect of multiple exposure mixtures and their interaction using marginal structural models
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Carson", "Mowrer", , "carson.mowrer@unc.edu", role = c("aut", "cre"))
+Description: qgcomp.multi is an extension of Quantile g-Computation, developed by Keil et al. to estimate the joint effect of multiple exposure mixtures and their interaction using marginal structural models.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
