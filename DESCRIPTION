@@ -1,5 +1,5 @@
 Package: qgcomp.multi
-Title: Estimation the joint effect of multiple exposure mixtures and their interaction using marginal structural models
+Title: Quantile G-Computation for Multiple Exposure Mixtures
 Version: 0.0.0.9000
 Authors@R: 
     person("Carson", "Mowrer", , "carson.mowrer@unc.edu", role = c("aut", "cre"))
