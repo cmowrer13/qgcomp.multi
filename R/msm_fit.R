@@ -94,9 +94,9 @@ msm_fit <- function(f,
   )
 
   if (interaction) {
-    msm_form <- Ya ~ -1 + psi1 * psi2
+    msm_form <- Ya ~ psi1 * psi2
   }  else {
-    msm_form <- Ya ~ -1 + psi1 + psi2
+    msm_form <- Ya ~ psi1 + psi2
   }
 
   msmfit <- glm(
