@@ -28,9 +28,9 @@ qgcomp.glm.multi.boot <- function(f,
   coefs <- msm_fit(f, data_q, mix1, mix2, interaction, q, id, MCsize)
 
   if (interaction){
-    psi_hat <- matrix(NA, B, 3)
+    psi_hat <- matrix(NA, B, 4)
   } else {
-    psi_hat <- matrix(NA, B, 2)
+    psi_hat <- matrix(NA, B, 3)
   }
 
   for (b in 1:B){
@@ -58,21 +58,22 @@ qgcomp.glm.multi.boot <- function(f,
     psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, q, id, MCsize)
   }
 
-  var1 <- var(psi_hat[,1])
-  var2 <- var(psi_hat[,2])
+  int <- var(psi_hat[,1])
+  var1 <- var(psi_hat[,2])
+  var2 <- var(psi_hat[,3])
 
   if (interaction){
-    var12 <- var(psi_hat[,3])
+    var12 <- var(psi_hat[,4])
   }
 
-  cov12 <- cov(psi_hat[,1], psi_hat[,2])
+  cov12 <- cov(psi_hat[,2], psi_hat[,3])
 
   if (interaction) {
-    std.err <- c(sqrt(var1), sqrt(var2), sqrt(var12))
-    names(std.err) <- c("psi1", "psi2", "psi1:psi2")
+    std.err <- c(sqrt(int), sqrt(var1), sqrt(var2), sqrt(var12))
+    names(std.err) <- c("intercept", "psi1", "psi2", "psi1:psi2")
   } else {
-    std.err <- c(sqrt(var1), sqrt(var2))
-    names(std.err) <- c("psi1", "psi2")
+    std.err <- c(sqrt(int), sqrt(var1), sqrt(var2))
+    names(std.err) <- c("intercept", "psi1", "psi2")
   }
 
   varcov <- matrix(c(var1, cov12, cov12, var2), nrow = 2, byrow = T)
