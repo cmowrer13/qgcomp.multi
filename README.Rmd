@@ -18,25 +18,102 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-qgcomp.multi is an extension of Quantile g-Computation, developed by Keil et al. to estimate the joint effect of multiple exposure mixtures and their interaction using marginal structural models.
+## Overview
+
+`qgcomp.multi` is an extension of quantile g-computation (Keil et al., 2020) to settings with multiple exposure mixtures and their interaction.
+
+In many environmental and epidemiologic studies, exposures arise in distinct groups (e.g., metals, phthalates, phenols) that may jointly influence health outcomes. While standard quantile g-computation estimates the effect of a single mixture, `qgcomp.multi` allows users to:
+
+* Estimate the effect of two exposure mixtures simultaneously
+* Evaluate interactions between mixtures
+* Obtain interpretable effect estimates via marginal structural models (MSMs)
+
 
 ## Installation
 
-You can install the development version of qgcomp.multi like so:
+You can install the development version from GitHub:
 
 ``` r
 devtools::install_github("cmowrer13/qgcomp.multi")
 ```
 
-## Example
+## Basic Usage
 
-This is a basic example to fit a Quantile g-Computation model with two exposure mixtures:
+Fit a two-mixture quantile g-computation model:
 
 ```{r example, eval = FALSE}
 library(qgcomp.multi)
 
-fit <- qgcomp.glm.multi.boot(f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C, 
-        data = dataset, 
-        mix1 = c("X1", "X2", "X3"),
-        mix2 = c("W1", "W2", "W3"))
+fit <- qgcomp.glm.multi.boot(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dataset,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 100
+)
+
+fit$coef_table
 ```
+
+## Simulated Example
+
+Generate a dataset with known mixture effects:
+
+```{r}
+library(qgcomp.multi)
+
+dat <- sim_mixture_data(
+  n = 1000,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  seed = 123
+)
+
+fit <- qgcomp.glm.multi.boot(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  B = 100
+)
+
+fit$coef_table
+```
+
+## Computational Considerations
+
+The g-computation step requires prediction over a grid of intervention levels for both mixtures, which can become computationally intensive.
+
+To address this, `qgcomp.multi` includes a Monte Carlo approximation:
+
+* `MCsize` = nrow(data) → full computation
+* `MCsize` < nrow(data) → approximate marginalization
+
+This can substantially reduce runtime in large datasets while preserving model structure.
+
+## Package Structure
+
+Core functions include:
+
+* `qgcomp.glm.multi.boot()` — main estimation function
+* `msm_fit()` — internal MSM estimation routine
+* `quantize_mixtures()` — exposure quantization
+* `sim_mixture_data()` — simulation data generator
+
+## References
+
+Keil AP, Buckley JP, O’Brien KM, Ferguson KK, Zhao S, White AJ. A Quantile-Based g-Computation Approach to Addressing the Effects of Exposure Mixtures. Environmental Health Perspectives. 2020;128(4):047004.
+
+## Development
+
+This package is under active development. Contributions, issues, and suggestions are welcome:
+
+https://github.com/cmowrer13/qgcomp.multi
