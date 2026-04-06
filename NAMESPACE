@@ -3,3 +3,6 @@
 export(msm_fit)
 export(qgcomp.glm.multi.boot)
 export(quantize_mixtures)
+export(sim_mixture_data)
+importFrom(MASS,mvrnorm)
+importFrom(dplyr,ntile)

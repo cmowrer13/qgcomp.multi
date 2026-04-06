@@ -1,16 +1,105 @@
-#' Fit quantile g-computation model for two mixtures
+#' Fit a quantile g-computation model for two exposure mixtures
 #'
-#' @param f Model formula
-#' @param data Data frame
-#' @param mix1 Names of mixture 1 variables
-#' @param mix2 Names of mixture 2 variables
-#' @param interaction Include interaction term
-#' @param q Number of quantiles
-#' @param B Number of bootstrap iterations
-#' @param id Cluster id
-#' @param MCsize Monte Carlo sample size
+#' Fits an extension of quantile g-computation for settings with two exposure
+#' mixtures and an optional interaction term. The function first quantizes the
+#' specified exposure variables, fits an outcome regression model, computes
+#' predicted potential outcomes under joint interventions on the two mixtures,
+#' and then fits a marginal structural model (MSM) to summarize the resulting
+#' dose-response surface. Uncertainty is estimated using a nonparametric
+#' bootstrap.
 #'
-#' @return Fitted qgcomp model
+#' The fitted MSM has the form
+#'
+#' \deqn{
+#' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
+#' }
+#'
+#' when `interaction = TRUE`, where `psi1` and `psi2` represent the main
+#' effects of one-quantile increases in mixtures 1 and 2, respectively, and
+#' `psi12` represents their interaction on the MSM scale.
+#'
+#' @param f A model formula for the outcome regression. The formula should
+#' include the outcome and any baseline covariates. Mixture variables listed
+#' in `mix1` and `mix2` should also appear in the formula if they are to be
+#' included in the outcome model.
+#' @param data A data frame containing the outcome, exposure variables, and
+#' any covariates in the model.
+#' @param mix1 A character vector giving the names of the variables in the
+#' first exposure mixture.
+#' @param mix2 A character vector giving the names of the variables in the
+#' second exposure mixture.
+#' @param interaction Logical; if `TRUE`, includes an interaction term between
+#' the two mixture indices in the marginal structural model. If `FALSE`, only
+#' main effects are estimated.
+#' @param q Integer giving the number of quantiles used to discretize the
+#' exposure variables.
+#' @param B Integer giving the number of bootstrap replications used for
+#' standard error estimation.
+#' @param id Optional character string giving the name of a cluster identifier
+#' variable. If supplied, bootstrap resampling is performed at the cluster
+#' level rather than the observation level.
+#' @param MCsize Optional integer controlling the Monte Carlo sample size used
+#' in the g-computation step. If equal to `nrow(data)`, the empirical
+#' covariate distribution is fully enumerated. Smaller values approximate the
+#' marginalization step using a random subsample, which can reduce computation
+#' time in large datasets.
+#'
+#' @return A list with components:
+#' \describe{
+#'   \item{coefs}{Estimated coefficients from the marginal structural model.}
+#'   \item{std.err}{Bootstrap standard errors for the estimated coefficients.}
+#'   \item{varcov}{Estimated covariance matrix for `psi1` and `psi2`.}
+#'   \item{coef_table}{A coefficient table containing estimates, standard
+#'   errors, z-statistics, and p-values.}
+#' }
+#'
+#' @details
+#' This function extends quantile g-computation to two exposure mixtures by
+#' evaluating predicted outcomes over a two-dimensional intervention grid.
+#' For each bootstrap replication, the observed data are resampled, exposures
+#' are quantized, the outcome model is fit, and predicted potential outcomes
+#' are computed under uniform quantile interventions on each mixture. A
+#' marginal structural model is then fit to these predicted outcomes to obtain
+#' the mixture effect estimates.
+#'
+#' The `MCsize` argument provides a Monte Carlo approximation to the
+#' marginalization step in g-computation. Rather than averaging predictions
+#' over all observations, the MSM can be fit using predictions from a random
+#' subsample of size `MCsize`. This can substantially reduce computation time
+#' when the sample size is large or when the intervention grid is large.
+#'
+#' The outcome model is fit using `glm()`, so this function can be used with
+#' Gaussian, binomial, Poisson, and other generalized linear models supported
+#' by the supplied formula and family specification.
+#'
+#' @examples
+#' dat <- sim_mixture_data(
+#'   n = 500,
+#'   pA = 4,
+#'   pB = 4,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   return_quantized = FALSE,
+#'   seed = 123
+#' )
+#'
+#' fit <- qgcomp.glm.multi.boot(
+#'   f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3", "X4"),
+#'   mix2 = c("W1", "W2", "W3", "W4"),
+#'   interaction = TRUE,
+#'   q = 4,
+#'   B = 100,
+#'   MCsize = nrow(dat)
+#' )
+#'
+#' fit$coef_table
+#'
 #' @export
 
 qgcomp.glm.multi.boot <- function(f,

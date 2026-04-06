@@ -77,7 +77,7 @@ correspond directly to the estimands in two-mixture quantile
 g-computation models.
 }
 \examples{
-dat <- generate_mixture_dataset(
+dat <- sim_mixture_data(
   n = 1000,
   pA = 4,
   pB = 4,

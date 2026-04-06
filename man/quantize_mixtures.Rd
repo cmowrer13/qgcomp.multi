@@ -2,22 +2,72 @@
 % Please edit documentation in R/quantize_mixtures.R
 \name{quantize_mixtures}
 \alias{quantize_mixtures}
-\title{Quantize mixture variables}
+\title{Quantize exposure variables for two-mixture quantile g-computation}
 \usage{
 quantize_mixtures(data, mix1, mix2, q = 4)
 }
 \arguments{
-\item{data}{Data frame}
+\item{data}{A data frame containing the exposure variables and any
+additional variables (e.g., outcome or covariates).}
 
-\item{mix1}{Names of mixture 1 variables}
+\item{mix1}{A character vector giving the names of the variables in the
+first exposure mixture.}
 
-\item{mix2}{Names of mixture 2 variables}
+\item{mix2}{A character vector giving the names of the variables in the
+second exposure mixture.}
 
-\item{q}{Number of quantiles}
+\item{q}{Integer giving the number of quantiles used to discretize each
+exposure variable.}
 }
 \value{
-Data frame with quantized variables
+A data frame of the same dimensions as \code{data}, where the variables
+listed in \code{mix1} and \code{mix2} have been replaced by their quantized versions.
+Quantized variables take integer values in \verb{\{0, 1, ..., q - 1\}}.
 }
 \description{
-Converts dataset with continuous mixture components into quantized version.
+Converts continuous exposure variables belonging to two mixtures into
+discrete quantile categories. Each exposure is partitioned into \code{q}
+approximately equal-sized groups using empirical quantiles, and replaced
+with integer values ranging from 0 to \code{q - 1}. This transformation places
+mixture components on a common scale, enabling interpretation of model
+parameters as effects of simultaneous one-quantile increases in each
+component.
+}
+\details{
+Quantization is a key step in quantile g-computation, as it ensures that
+exposure variables measured on different scales are made comparable. By
+transforming each exposure into quantile categories, a one-unit increase
+corresponds to a shift of one quantile, allowing mixture effects to be
+interpreted as the joint effect of increasing all components by one
+quantile.
+
+Quantiles assign observations
+to groups of approximately equal size. The resulting categories are then
+shifted to start at 0 (rather than 1) to align with the intervention levels
+used in the marginal structural model.
+}
+\examples{
+dat <- sim_mixture_data(
+  n = 100,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  return_quantized = FALSE,
+  seed = 123
+)
+
+dat_q <- quantize_mixtures(
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  q = 4
+)
+
+head(dat_q)
+
 }
