@@ -10,6 +10,7 @@ qgcomp.glm.multi.boot(
   mix1,
   mix2,
   interaction = TRUE,
+  family = gaussian(),
   q = 4,
   B = 200,
   id = NULL,
@@ -34,6 +35,9 @@ second exposure mixture.}
 \item{interaction}{Logical; if \code{TRUE}, includes an interaction term between
 the two mixture indices in the marginal structural model. If \code{FALSE}, only
 main effects are estimated.}
+
+\item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
+\code{poisson()}) specifying the outcome model.}
 
 \item{q}{Integer giving the number of quantiles used to discretize the
 exposure variables.}
@@ -97,7 +101,18 @@ when the sample size is large or when the intervention grid is large.
 
 The outcome model is fit using \code{glm()}, so this function can be used with
 Gaussian, binomial, Poisson, and other generalized linear models supported
-by the supplied formula and family specification.
+by the supplied formula and family specification. Note that predicted
+potential outcomes are computed on the response scale and the marginal
+structural model is fit using an identity link, regardless of the outcome
+model.
+
+Interpretation of parameters therefore depends on the outcome type:
+\itemize{
+\item For continuous outcomes, parameters represent mean differences.
+\item For binary outcomes, parameters represent differences in predicted
+probabilities (risk differences).
+\item For count outcomes, parameters represent differences in expected counts.
+}
 }
 \examples{
 dat <- sim_mixture_data(

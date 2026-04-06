@@ -33,6 +33,8 @@
 #' @param interaction Logical; if `TRUE`, includes an interaction term between
 #' the two mixture indices in the marginal structural model. If `FALSE`, only
 #' main effects are estimated.
+#' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
+#' `poisson()`) specifying the outcome model.
 #' @param q Integer giving the number of quantiles used to discretize the
 #' exposure variables and define the intervention grid.
 #' @param id Optional character string giving the name of a cluster identifier
@@ -56,7 +58,10 @@
 #' and computes predicted outcomes for each observation (or for a Monte Carlo
 #' subsample if `MCsize < nrow(data)`). These predicted outcomes are stacked
 #' into a pseudo-dataset and used to fit a marginal structural model that
-#' summarizes the dose-response surface.
+#' summarizes the dose-response surface. Note that predicted  potential
+#' outcomes are computed on the response scale and the marginal
+#' structural model is fit using an identity link, regardless of the outcome
+#' model.
 #'
 #' Because the number of intervention combinations grows as `q^2`, this step
 #' can become computationally expensive for large datasets. The `MCsize`
@@ -96,6 +101,7 @@ msm_fit <- function(f,
                     mix1,
                     mix2,
                     interaction = TRUE,
+                    family = gaussian(),
                     q = 4,
                     id = NULL,
                     MCsize = nrow(data)){
@@ -116,7 +122,7 @@ msm_fit <- function(f,
 
   newf <- as.formula(paste(response, "~", rhs))
 
-  fit <- glm(newf, data = data)
+  fit <- glm(newf, data = data, family = family)
 
   intgrid <- expand.grid(
     psi1 = 0:(q-1),

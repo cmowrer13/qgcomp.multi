@@ -10,6 +10,7 @@ msm_fit(
   mix1,
   mix2,
   interaction = TRUE,
+  family = gaussian(),
   q = 4,
   id = NULL,
   MCsize = nrow(data)
@@ -33,6 +34,9 @@ second exposure mixture.}
 \item{interaction}{Logical; if \code{TRUE}, includes an interaction term between
 the two mixture indices in the marginal structural model. If \code{FALSE}, only
 main effects are estimated.}
+
+\item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
+\code{poisson()}) specifying the outcome model.}
 
 \item{q}{Integer giving the number of quantiles used to discretize the
 exposure variables and define the intervention grid.}
@@ -81,7 +85,10 @@ mixtures, replaces the observed mixture values with the intervention values,
 and computes predicted outcomes for each observation (or for a Monte Carlo
 subsample if \code{MCsize < nrow(data)}). These predicted outcomes are stacked
 into a pseudo-dataset and used to fit a marginal structural model that
-summarizes the dose-response surface.
+summarizes the dose-response surface. Note that predicted  potential
+outcomes are computed on the response scale and the marginal
+structural model is fit using an identity link, regardless of the outcome
+model.
 
 Because the number of intervention combinations grows as \code{q^2}, this step
 can become computationally expensive for large datasets. The \code{MCsize}

@@ -31,6 +31,8 @@
 #' @param interaction Logical; if `TRUE`, includes an interaction term between
 #' the two mixture indices in the marginal structural model. If `FALSE`, only
 #' main effects are estimated.
+#' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
+#' `poisson()`) specifying the outcome model.
 #' @param q Integer giving the number of quantiles used to discretize the
 #' exposure variables.
 #' @param B Integer giving the number of bootstrap replications used for
@@ -70,7 +72,18 @@
 #'
 #' The outcome model is fit using `glm()`, so this function can be used with
 #' Gaussian, binomial, Poisson, and other generalized linear models supported
-#' by the supplied formula and family specification.
+#' by the supplied formula and family specification. Note that predicted
+#' potential outcomes are computed on the response scale and the marginal
+#' structural model is fit using an identity link, regardless of the outcome
+#' model.
+#'
+#' Interpretation of parameters therefore depends on the outcome type:
+#' \itemize{
+#'   \item For continuous outcomes, parameters represent mean differences.
+#'   \item For binary outcomes, parameters represent differences in predicted
+#'   probabilities (risk differences).
+#'   \item For count outcomes, parameters represent differences in expected counts.
+#' }
 #'
 #' @examples
 #' dat <- sim_mixture_data(
@@ -107,6 +120,7 @@ qgcomp.glm.multi.boot <- function(f,
                                   mix1,
                                   mix2,
                                   interaction = TRUE,
+                                  family = gaussian(),
                                   q = 4,
                                   B = 200,
                                   id = NULL,
@@ -114,7 +128,7 @@ qgcomp.glm.multi.boot <- function(f,
 
   data_q <- quantize_mixtures(data, mix1, mix2, q)
 
-  coefs <- msm_fit(f, data_q, mix1, mix2, interaction, q, id, MCsize)
+  coefs <- msm_fit(f, data_q, mix1, mix2, interaction, family, q, id, MCsize)
 
   if (interaction){
     psi_hat <- matrix(NA, B, 4)
@@ -144,7 +158,7 @@ qgcomp.glm.multi.boot <- function(f,
       )
     }
 
-    psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, q, id, MCsize)
+    psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, family, q, id, MCsize)
   }
 
   int <- var(psi_hat[,1])
