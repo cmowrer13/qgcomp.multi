@@ -34,7 +34,14 @@
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
 #' @param q Integer giving the number of quantiles used to discretize the
-#' exposure variables.
+#' exposure variables, or `NULL` to skip quantization and fit the outcome
+#' model on the original exposure scale.
+#' @param centering Character string controlling how the marginal structural
+#' model intervention variables are coded when `q = NULL`. Must be one of
+#' `"none"` or `"median"`. With `"none"`, the MSM uses the raw intervention
+#' values. With `"median"`, the MSM uses intervention values centered at the
+#' pooled median within each mixure. Centering affects only the MSM fit, not
+#' the outcome regression.
 #' @param B Integer giving the number of bootstrap replications used for
 #' standard error estimation.
 #' @param id Optional character string giving the name of a cluster identifier
@@ -59,10 +66,11 @@
 #' This function extends quantile g-computation to two exposure mixtures by
 #' evaluating predicted outcomes over a two-dimensional intervention grid.
 #' For each bootstrap replication, the observed data are resampled, exposures
-#' are quantized, the outcome model is fit, and predicted potential outcomes
-#' are computed under uniform quantile interventions on each mixture. A
-#' marginal structural model is then fit to these predicted outcomes to obtain
-#' the mixture effect estimates.
+#' are either quantized or left on their original scale depending on `q`, the
+#' outcome model is fit, and predicted potential outcomesare computed under
+#' either uniform quantile interventions or a 3 x 3 grid of pooled 25th/50th/75th
+#' percentile interventions for the two mixtures. A marginal structural model is
+#' then fit to these predicted outcomes to obtain the mixture effect estimates.
 #'
 #' The `MCsize` argument provides a Monte Carlo approximation to the
 #' marginalization step in g-computation. Rather than averaging predictions
@@ -122,13 +130,14 @@ qgcomp.glm.multi.boot <- function(f,
                                   interaction = TRUE,
                                   family = gaussian(),
                                   q = 4,
+                                  centering = "none",
                                   B = 200,
                                   id = NULL,
                                   MCsize = nrow(data)){
 
   data_q <- quantize_mixtures(data, mix1, mix2, q)
 
-  coefs <- msm_fit(f, data_q, mix1, mix2, interaction, family, q, id, MCsize)
+  coefs <- msm_fit(f, data_q, mix1, mix2, interaction, family, q, centering, id, MCsize)
 
   if (interaction){
     psi_hat <- matrix(NA, B, 4)
@@ -158,7 +167,7 @@ qgcomp.glm.multi.boot <- function(f,
       )
     }
 
-    psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, family, q, id, MCsize)
+    psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, family, q, centering, id, MCsize)
   }
 
   int <- var(psi_hat[,1])
@@ -201,3 +210,4 @@ qgcomp.glm.multi.boot <- function(f,
 
   fit
 }
+

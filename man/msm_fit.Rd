@@ -12,6 +12,7 @@ msm_fit(
   interaction = TRUE,
   family = gaussian(),
   q = 4,
+  centering = "none",
   id = NULL,
   MCsize = nrow(data)
 )
@@ -39,7 +40,14 @@ main effects are estimated.}
 \code{poisson()}) specifying the outcome model.}
 
 \item{q}{Integer giving the number of quantiles used to discretize the
-exposure variables and define the intervention grid.}
+exposure variables and define the intervention grid, or \code{NULL} to skip
+quantization and define a 3 x 3 intervention grid using pooled 25th, 50th,
+and 75th percentiles for each mixture.}
+
+\item{centering}{Character string controlling how the marginal structural
+model intervention variables are coded when \code{q = NULL}. Must be one of \code{"none"}
+or \code{"median"}. Centering affects only the MSM predictors and does not change
+the outcome regression fit.}
 
 \item{id}{Optional character string giving the name of a cluster identifier
 variable. If supplied, Monte Carlo subsampling is performed at the cluster
@@ -66,9 +74,10 @@ need to be called directly by users.
 }
 \details{
 Given a fitted outcome model, the function evaluates predicted outcomes over
-a grid of uniform mixture quantiles and regresses these predictions on the
-mixture intervention levels to obtain MSM parameters. When
-\code{interaction = TRUE}, the fitted MSM has the form
+either a grid of uniform mixture quantiles or, when \code{q = NULL}, a 3 x 3 grid
+formed from the pooled 25th, 50th, and 75th percentiles of each mixture, and
+regresses these predictions on the mixture intervention levels to obtain MSM
+parameters. When \code{interaction = TRUE}, the fitted MSM has the form
 
 \deqn{
 E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
@@ -77,6 +86,9 @@ E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 where \code{psi1} and \code{psi2} represent the main effects of one-quantile
 increases in mixtures 1 and 2, respectively, and \code{psi12} represents their
 interaction on the MSM scale.
+
+When \code{q = NULL} and \code{centering = "median"}, the MSM is fit using intervention
+values centered at the pooled median of each mixture.
 
 This function carries out the core g-computation step for the two-mixture
 extension. It first fits a generalized linear model for the outcome using

@@ -15,11 +15,13 @@
 #' @param mix2 A character vector giving the names of the variables in the
 #' second exposure mixture.
 #' @param q Integer giving the number of quantiles used to discretize each
-#' exposure variable.
+#' exposure variable, or `NULL` to skip quantization and return the mixture
+#' variables unchanged.
 #'
-#' @return A data frame of the same dimensions as `data`, where the variables
-#' listed in `mix1` and `mix2` have been replaced by their quantized versions.
-#' Quantized variables take integer values in `{0, 1, ..., q - 1}`.
+#' @return A data frame of the same dimensions as `data`, When `q` is numeric,
+#' the variables listed in `mix1` and `mix2` have been replaced by their
+#' quantized versions. Quantized variables take integer values in
+#' `{0, 1, ..., q - 1}`. When `q = NULL`, the returned data are unchanged.
 #'
 #' @details
 #' Quantization is a key step in quantile g-computation, as it ensures that
@@ -61,6 +63,10 @@
 #' @export
 
 quantize_mixtures <- function(data, mix1, mix2, q = 4){
+
+  if (is.null(q)) {
+    return(data)
+  }
 
   vars <- c(mix1, mix2)
 

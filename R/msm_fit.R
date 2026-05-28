@@ -1,3 +1,32 @@
+#' Compute pooled mixture percentiles
+#'
+#' Pools all observed values from a set of mixture variables into a single
+#' vector and returns the requested empirical quantiles. This is used when
+#' `q = NULL` to define continuous intervention levels for one mixture.
+#'
+#' @param data A data frame containing the mixture variables.
+#' @param vars A character vector naming the variables to pool within the
+#' mixture.
+#' @param probs Numeric vector of probabilities passed to [stats::quantile()].
+#' Defaults to `c(0.25, 0.50, 0.75)`.
+#'
+#' @return A numeric vector of pooled empirical quantiles for the selected
+#' mixture variables.
+#'
+#' @details
+#' The function stacks the values from `vars` into one long vector, removes
+#' missing values via `na.rm = TRUE`, and computes quantiles on that pooled
+#' distribution.
+
+pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
+
+  as.numeric(quantile(
+    unlist(data[, vars, drop = FALSE], use.names = FALSE),
+    probs = probs,
+    na.rm = TRUE
+  ))
+}
+
 #' Fit the marginal structural model for two-mixture quantile g-computation
 #'
 #' Fits the outcome regression, computes predicted potential outcomes under
@@ -8,9 +37,10 @@
 #' need to be called directly by users.
 #'
 #' Given a fitted outcome model, the function evaluates predicted outcomes over
-#' a grid of uniform mixture quantiles and regresses these predictions on the
-#' mixture intervention levels to obtain MSM parameters. When
-#' `interaction = TRUE`, the fitted MSM has the form
+#' either a grid of uniform mixture quantiles or, when `q = NULL`, a 3 x 3 grid
+#' formed from the pooled 25th, 50th, and 75th percentiles of each mixture, and
+#' regresses these predictions on the mixture intervention levels to obtain MSM
+#' parameters. When `interaction = TRUE`, the fitted MSM has the form
 #'
 #' \deqn{
 #' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
@@ -19,6 +49,9 @@
 #' where `psi1` and `psi2` represent the main effects of one-quantile
 #' increases in mixtures 1 and 2, respectively, and `psi12` represents their
 #' interaction on the MSM scale.
+#'
+#' When `q = NULL` and `centering = "median"`, the MSM is fit using intervention
+#' values centered at the pooled median of each mixture.
 #'
 #' @param f A model formula for the outcome regression. The formula should
 #' include the outcome and any baseline covariates. Mixture variables listed
@@ -36,7 +69,13 @@
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
 #' @param q Integer giving the number of quantiles used to discretize the
-#' exposure variables and define the intervention grid.
+#' exposure variables and define the intervention grid, or `NULL` to skip
+#' quantization and define a 3 x 3 intervention grid using pooled 25th, 50th,
+#' and 75th percentiles for each mixture.
+#' @param centering Character string controlling how the marginal structural
+#' model intervention variables are coded when `q = NULL`. Must be one of `"none"`
+#' or `"median"`. Centering affects only the MSM predictors and does not change
+#' the outcome regression fit.
 #' @param id Optional character string giving the name of a cluster identifier
 #' variable. If supplied, Monte Carlo subsampling is performed at the cluster
 #' level rather than the observation level.
@@ -96,6 +135,7 @@
 #'
 #' @export
 
+
 msm_fit <- function(f,
                     data,
                     mix1,
@@ -103,6 +143,7 @@ msm_fit <- function(f,
                     interaction = TRUE,
                     family = gaussian(),
                     q = 4,
+                    centering = "none",
                     id = NULL,
                     MCsize = nrow(data)){
 
@@ -124,10 +165,30 @@ msm_fit <- function(f,
 
   fit <- glm(newf, data = data, family = family)
 
-  intgrid <- expand.grid(
-    psi1 = 0:(q-1),
-    psi2 = 0:(q-1)
-  )
+  if (is.null(q)){
+    mix1_q <- pooled_mix_quantiles(data, mix1)
+    mix2_q <- pooled_mix_quantiles(data, mix2)
+
+    intgrid_pred <- expand.grid(
+      psi1 = mix1_q,
+      psi2 = mix2_q
+    )
+
+    intgrid_msm <- intgrid_pred
+
+    if (centering == "median"){
+      intgrid_msm$psi1 <- intgrid_msm$psi1 - mix1_q[2]
+      intgrid_msm$psi2 <- intgrid_msm$psi2 - mix2_q[2]
+    }
+
+  } else {
+    intgrid_pred <- expand.grid(
+      psi1 = 0:(q-1),
+      psi2 = 0:(q-1)
+    )
+
+    intgrid_msm <- intgrid_pred
+  }
 
   if (MCsize == nrow(data)) {
 
@@ -167,15 +228,15 @@ msm_fit <- function(f,
 
   predmat <- Map(
     pred_fun,
-    intgrid$psi1,
-    intgrid$psi2,
+    intgrid_pred$psi1,
+    intgrid_pred$psi2,
     MoreArgs = list(nd = nd)
   )
 
   msmdat <- data.frame(
     Ya   = unlist(predmat),
-    psi1 = rep(intgrid$psi1, each = nobs),
-    psi2 = rep(intgrid$psi2, each = nobs)
+    psi1 = rep(intgrid_msm$psi1, each = nobs),
+    psi2 = rep(intgrid_msm$psi2, each = nobs)
   )
 
   if (interaction) {

@@ -17,12 +17,14 @@ first exposure mixture.}
 second exposure mixture.}
 
 \item{q}{Integer giving the number of quantiles used to discretize each
-exposure variable.}
+exposure variable, or \code{NULL} to skip quantization and return the mixture
+variables unchanged.}
 }
 \value{
-A data frame of the same dimensions as \code{data}, where the variables
-listed in \code{mix1} and \code{mix2} have been replaced by their quantized versions.
-Quantized variables take integer values in \verb{\{0, 1, ..., q - 1\}}.
+A data frame of the same dimensions as \code{data}, When \code{q} is numeric,
+the variables listed in \code{mix1} and \code{mix2} have been replaced by their
+quantized versions. Quantized variables take integer values in
+\verb{\{0, 1, ..., q - 1\}}. When \code{q = NULL}, the returned data are unchanged.
 }
 \description{
 Converts continuous exposure variables belonging to two mixtures into
