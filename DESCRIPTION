@@ -1,6 +1,6 @@
 Package: qgcomp.multi
 Title: Quantile G-Computation for Multiple Exposure Mixtures
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Carson", "Mowrer", , "carson.mowrer@unc.edu", role = c("aut", "cre"))
 Description: qgcomp.multi is an extension of Quantile g-Computation, developed by Keil et al. to estimate the joint effect of multiple exposure mixtures and their interaction using marginal structural models.
