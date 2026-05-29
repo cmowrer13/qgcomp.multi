@@ -16,12 +16,12 @@ first exposure mixture.}
 \item{mix2}{A character vector giving the names of the variables in the
 second exposure mixture.}
 
-\item{q}{Integer giving the number of quantiles used to discretize each
-exposure variable, or \code{NULL} to skip quantization and return the mixture
-variables unchanged.}
+\item{q}{Integer greater than or equal to 2 giving the number of quantiles
+used to discretize each exposure variable, or \code{NULL} to skip quantization
+and return the mixture variables unchanged after validation.}
 }
 \value{
-A data frame of the same dimensions as \code{data}, When \code{q} is numeric,
+A data frame of the same dimensions as \code{data}. When \code{q} is numeric,
 the variables listed in \code{mix1} and \code{mix2} have been replaced by their
 quantized versions. Quantized variables take integer values in
 \verb{\{0, 1, ..., q - 1\}}. When \code{q = NULL}, the returned data are unchanged.
@@ -43,10 +43,12 @@ corresponds to a shift of one quantile, allowing mixture effects to be
 interpreted as the joint effect of increasing all components by one
 quantile.
 
-Quantiles assign observations
-to groups of approximately equal size. The resulting categories are then
-shifted to start at 0 (rather than 1) to align with the intervention levels
-used in the marginal structural model.
+Quantiles assign observations to groups of approximately equal size. The
+resulting categories are then shifted to start at 0 (rather than 1) to
+align with the intervention levels used in the marginal structural model.
+
+When \code{q = NULL}, this function performs no discretization and simply returns
+\code{data} unchanged after checking that the mixture definitions are valid.
 }
 \examples{
 dat <- sim_mixture_data(
@@ -71,5 +73,11 @@ dat_q <- quantize_mixtures(
 )
 
 head(dat_q)
+
+dat_cont <- quantize_mixtures(
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  q = NULL)
 
 }

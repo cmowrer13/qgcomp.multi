@@ -19,6 +19,8 @@ to:
 
 - Estimate the effect of two exposure mixtures simultaneously
 - Evaluate interactions between mixtures
+- Fit the model using either quantized exposures or the original
+  exposures scales via `q = NULL`
 - Obtain interpretable effect estimates via marginal structural models
   (MSMs)
 

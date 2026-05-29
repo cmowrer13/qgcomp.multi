@@ -46,9 +46,11 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 #' }
 #'
-#' where `psi1` and `psi2` represent the main effects of one-quantile
-#' increases in mixtures 1 and 2, respectively, and `psi12` represents their
-#' interaction on the MSM scale.
+#' where `psi1` and `psi2` represent the main effects of increasing the
+#' intervention level for mixtures 1 and 2 by one unit on the MSM scale, and
+#' `psi12` represents their interaction on that same scale. For quantized
+#' analyses this is a one-quantile increase; for `q = NULL` it is a one-unit
+#' increase in the original-scale intervention coding.
 #'
 #' When `q = NULL` and `centering = "median"`, the MSM is fit using intervention
 #' values centered at the pooled median of each mixture.
@@ -68,21 +70,23 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' main effects are estimated.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
-#' @param q Integer giving the number of quantiles used to discretize the
-#' exposure variables and define the intervention grid, or `NULL` to skip
-#' quantization and define a 3 x 3 intervention grid using pooled 25th, 50th,
-#' and 75th percentiles for each mixture.
+#' @param q Integer greater than or equal to 2 giving the number of quantiles
+#' used to discretize the exposure variables and define the intervention grid,
+#' or `NULL` to skip quantization and define a 3 x 3 intervention grid using
+#' pooled 25th, 50th, and 75th percentiles for each mixture.
 #' @param centering Character string controlling how the marginal structural
 #' model intervention variables are coded when `q = NULL`. Must be one of `"none"`
 #' or `"median"`. Centering affects only the MSM predictors and does not change
-#' the outcome regression fit.
+#' the outcome regression fit. This argument is ignored when `q` is numeric.
 #' @param id Optional character string giving the name of a cluster identifier
 #' variable. If supplied, Monte Carlo subsampling is performed at the cluster
 #' level rather than the observation level.
 #' @param MCsize Optional integer controlling the Monte Carlo sample size used
 #' to approximate the marginalization step in g-computation. If equal to
 #' `nrow(data)`, all observations are used. Smaller values compute predicted
-#' outcomes over a random subsample drawn from the empirical distribution.
+#' outcomes over a random subsample drawn from the empirical distribution. When
+#' `id` is supplied and `MCsize < nrow(data)`, the approximation is implemented
+#' by sampling `MCsize` clusters with replacement.
 #'
 #' @return A numeric vector of estimated marginal structural model coefficients.
 #' When `interaction = TRUE`, the returned coefficients are `(Intercept)`,
@@ -97,10 +101,20 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' and computes predicted outcomes for each observation (or for a Monte Carlo
 #' subsample if `MCsize < nrow(data)`). These predicted outcomes are stacked
 #' into a pseudo-dataset and used to fit a marginal structural model that
-#' summarizes the dose-response surface. Note that predicted  potential
+#' summarizes the dose-response surface. Note that predicted potential
 #' outcomes are computed on the response scale and the marginal
 #' structural model is fit using an identity link, regardless of the outcome
 #' model.
+#'
+#' When `q` is an integer, the intervention grid is `0, 1, ..., q - 1` for each
+#' mixture, corresponding to simultaneous quantile increases in all components
+#' of that mixture.
+#'
+#' When `q = NULL`, each mixture is instead set to common pooled percentile
+#' values on the original exposure scale. The resulting MSM coefficients are
+#' therefore scale-dependent and should be interpreted in the units of the
+#' underlying exposures. If `centering = "median"`, the intercept corresponds
+#' to the pooled-median intervention for both mixtures.
 #'
 #' Because the number of intervention combinations grows as `q^2`, this step
 #' can become computationally expensive for large datasets. The `MCsize`
@@ -146,6 +160,19 @@ msm_fit <- function(f,
                     centering = "none",
                     id = NULL,
                     MCsize = nrow(data)){
+
+  validate_qgcomp_multi_inputs(
+    f = f,
+    data = data,
+    mix1 = mix1,
+    mix2 = mix2,
+    interaction = interaction,
+    family = family,
+    q = q,
+    centering = centering,
+    id = id,
+    MCsize = MCsize
+  )
 
   response <- deparse(f[[2]])
 

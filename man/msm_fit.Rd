@@ -39,15 +39,15 @@ main effects are estimated.}
 \item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
 \code{poisson()}) specifying the outcome model.}
 
-\item{q}{Integer giving the number of quantiles used to discretize the
-exposure variables and define the intervention grid, or \code{NULL} to skip
-quantization and define a 3 x 3 intervention grid using pooled 25th, 50th,
-and 75th percentiles for each mixture.}
+\item{q}{Integer greater than or equal to 2 giving the number of quantiles
+used to discretize the exposure variables and define the intervention grid,
+or \code{NULL} to skip quantization and define a 3 x 3 intervention grid using
+pooled 25th, 50th, and 75th percentiles for each mixture.}
 
 \item{centering}{Character string controlling how the marginal structural
 model intervention variables are coded when \code{q = NULL}. Must be one of \code{"none"}
 or \code{"median"}. Centering affects only the MSM predictors and does not change
-the outcome regression fit.}
+the outcome regression fit. This argument is ignored when \code{q} is numeric.}
 
 \item{id}{Optional character string giving the name of a cluster identifier
 variable. If supplied, Monte Carlo subsampling is performed at the cluster
@@ -56,7 +56,9 @@ level rather than the observation level.}
 \item{MCsize}{Optional integer controlling the Monte Carlo sample size used
 to approximate the marginalization step in g-computation. If equal to
 \code{nrow(data)}, all observations are used. Smaller values compute predicted
-outcomes over a random subsample drawn from the empirical distribution.}
+outcomes over a random subsample drawn from the empirical distribution. When
+\code{id} is supplied and \code{MCsize < nrow(data)}, the approximation is implemented
+by sampling \code{MCsize} clusters with replacement.}
 }
 \value{
 A numeric vector of estimated marginal structural model coefficients.
@@ -83,9 +85,11 @@ parameters. When \code{interaction = TRUE}, the fitted MSM has the form
 E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 }
 
-where \code{psi1} and \code{psi2} represent the main effects of one-quantile
-increases in mixtures 1 and 2, respectively, and \code{psi12} represents their
-interaction on the MSM scale.
+where \code{psi1} and \code{psi2} represent the main effects of increasing the
+intervention level for mixtures 1 and 2 by one unit on the MSM scale, and
+\code{psi12} represents their interaction on that same scale. For quantized
+analyses this is a one-quantile increase; for \code{q = NULL} it is a one-unit
+increase in the original-scale intervention coding.
 
 When \code{q = NULL} and \code{centering = "median"}, the MSM is fit using intervention
 values centered at the pooled median of each mixture.
@@ -97,10 +101,20 @@ mixtures, replaces the observed mixture values with the intervention values,
 and computes predicted outcomes for each observation (or for a Monte Carlo
 subsample if \code{MCsize < nrow(data)}). These predicted outcomes are stacked
 into a pseudo-dataset and used to fit a marginal structural model that
-summarizes the dose-response surface. Note that predicted  potential
+summarizes the dose-response surface. Note that predicted potential
 outcomes are computed on the response scale and the marginal
 structural model is fit using an identity link, regardless of the outcome
 model.
+
+When \code{q} is an integer, the intervention grid is \verb{0, 1, ..., q - 1} for each
+mixture, corresponding to simultaneous quantile increases in all components
+of that mixture.
+
+When \code{q = NULL}, each mixture is instead set to common pooled percentile
+values on the original exposure scale. The resulting MSM coefficients are
+therefore scale-dependent and should be interpreted in the units of the
+underlying exposures. If \code{centering = "median"}, the intercept corresponds
+to the pooled-median intervention for both mixtures.
 
 Because the number of intervention combinations grows as \code{q^2}, this step
 can become computationally expensive for large datasets. The \code{MCsize}

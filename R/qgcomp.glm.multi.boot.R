@@ -14,9 +14,13 @@
 #' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 #' }
 #'
-#' when `interaction = TRUE`, where `psi1` and `psi2` represent the main
-#' effects of one-quantile increases in mixtures 1 and 2, respectively, and
-#' `psi12` represents their interaction on the MSM scale.
+#' when `interaction = TRUE`. When `q` is an integer, `q1` and `q2` index joint
+#' quantile-based interventions on mixtures 1 and 2. When `q = NULL`, the same
+#' linear MSM is fit over common intervention values on the original exposure
+#' scale, using a 3 x 3 grid formed from the pooled 25th, 50th, and 75th
+#' percentiles within each mixture. In both cases, `psi1` and `psi2` represent
+#' the main effects of increasing the corresponding mixture intervention level
+#' by one unit on the MSM scale, and `psi12` represents their interaction.
 #'
 #' @param f A model formula for the outcome regression. The formula should
 #' include the outcome and any baseline covariates. Mixture variables listed
@@ -33,17 +37,19 @@
 #' main effects are estimated.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
-#' @param q Integer giving the number of quantiles used to discretize the
-#' exposure variables, or `NULL` to skip quantization and fit the outcome
-#' model on the original exposure scale.
+#' @param q Integer greater than or equal to 2 giving the number of quantiles
+#' used to discretize the exposure variables, or `NULL` to skip quantization
+#' and fit the outcome model on the original exposure scale. When `q = NULL`,
+#' the intervention grid is defined by the pooled 25th, 50th, and 75th
+#' percentiles within each mixture.
 #' @param centering Character string controlling how the marginal structural
 #' model intervention variables are coded when `q = NULL`. Must be one of
 #' `"none"` or `"median"`. With `"none"`, the MSM uses the raw intervention
 #' values. With `"median"`, the MSM uses intervention values centered at the
-#' pooled median within each mixure. Centering affects only the MSM fit, not
-#' the outcome regression.
-#' @param B Integer giving the number of bootstrap replications used for
-#' standard error estimation.
+#' pooled median within each mixture. Centering affects only the MSM fit, not
+#' the outcome regression. This argument is ignored when `q` is numeric.
+#' @param B Integer greater than or equal to 2 giving the number of bootstrap
+#' replications used for standard error estimation.
 #' @param id Optional character string giving the name of a cluster identifier
 #' variable. If supplied, bootstrap resampling is performed at the cluster
 #' level rather than the observation level.
@@ -51,7 +57,9 @@
 #' in the g-computation step. If equal to `nrow(data)`, the empirical
 #' covariate distribution is fully enumerated. Smaller values approximate the
 #' marginalization step using a random subsample, which can reduce computation
-#' time in large datasets.
+#' time in large datasets. When `id` is supplied and `MCsize < nrow(data)`,
+#' the approximation is implemented by sampling `MCsize` clusters with
+#' replacement.
 #'
 #' @return A list with components:
 #' \describe{
@@ -67,16 +75,30 @@
 #' evaluating predicted outcomes over a two-dimensional intervention grid.
 #' For each bootstrap replication, the observed data are resampled, exposures
 #' are either quantized or left on their original scale depending on `q`, the
-#' outcome model is fit, and predicted potential outcomesare computed under
-#' either uniform quantile interventions or a 3 x 3 grid of pooled 25th/50th/75th
-#' percentile interventions for the two mixtures. A marginal structural model is
-#' then fit to these predicted outcomes to obtain the mixture effect estimates.
+#' outcome model is fit, and predicted potential outcomes are computed under
+#' either uniform quantile interventions or a 3 x 3 grid of pooled
+#' 25th/50th/75th percentile interventions for the two mixtures. A marginal
+#' structural model is then fit to these predicted outcomes to obtain the
+#' mixture effect estimates.
 #'
 #' The `MCsize` argument provides a Monte Carlo approximation to the
 #' marginalization step in g-computation. Rather than averaging predictions
 #' over all observations, the MSM can be fit using predictions from a random
 #' subsample of size `MCsize`. This can substantially reduce computation time
 #' when the sample size is large or when the intervention grid is large.
+#'
+#' When `q` is an integer, `psi1` and `psi2` are interpreted as the change in
+#' the marginal mean outcome associated with simultaneously increasing every
+#' component in mixtures 1 or 2 by one quantile, holding the other mixture
+#' intervention level fixed.
+#'
+#' When `q = NULL`, the exposure variables are left on their original scales.
+#' The intervention grid is then defined by assigning every component in a
+#' mixture to a common pooled percentile value from that mixture. In this case,
+#' `psi1` and `psi2` are slopes with respect to that original-scale intervention
+#' coding, so their units depend on the measurement scales of the mixture
+#' components. If `centering = "median"`, the intercept corresponds to the
+#' predicted outcome when both mixtures are set to their pooled medians.
 #'
 #' The outcome model is fit using `glm()`, so this function can be used with
 #' Gaussian, binomial, Poisson, and other generalized linear models supported
@@ -121,6 +143,34 @@
 #'
 #' fit$coef_table
 #'
+#' dat_cont <- sim_mixture_data(
+#'   n = 500,
+#'   pA = 4,
+#'   pB = 4,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   return_quantized = FALSE,
+#'   seed = 321
+#' )
+#'
+#' fit_cont <- qgcomp.glm.multi.boot(
+#'   f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
+#'   data = dat_cont,
+#'   mix1 = c("X1", "X2", "X3", "X4"),
+#'   mix2 = c("W1", "W2", "W3", "W4"),
+#'   interaction = TRUE,
+#'   q = NULL,
+#'   centering = "median",
+#'   B = 100,
+#'   MCsize = nrow(dat_cont)
+#' )
+#'
+#' fit_cont$coef_table
+#'
 #' @export
 
 qgcomp.glm.multi.boot <- function(f,
@@ -134,6 +184,20 @@ qgcomp.glm.multi.boot <- function(f,
                                   B = 200,
                                   id = NULL,
                                   MCsize = nrow(data)){
+
+  validate_qgcomp_multi_inputs(
+    f = f,
+    data = data,
+    mix1 = mix1,
+    mix2 = mix2,
+    interaction = interaction,
+    family = family,
+    q = q,
+    centering = centering,
+    id = id,
+    MCsize = MCsize,
+    B = B
+  )
 
   data_q <- quantize_mixtures(data, mix1, mix2, q)
 
