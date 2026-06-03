@@ -7,6 +7,7 @@ new_qgcompmulti <- function(call = NULL,
                             mixtures = qgcompmulti_init_component("mixtures"),
                             analysis = qgcompmulti_init_component("analysis"),
                             fits = qgcompmulti_init_component("fits"),
+                            prediction = qgcompmulti_init_component("prediction"),
                             bootstrap = qgcompmulti_init_component("bootstrap"),
                             results = qgcompmulti_init_component("results"),
                             labels = qgcompmulti_init_component("labels")) {
@@ -18,6 +19,7 @@ new_qgcompmulti <- function(call = NULL,
     mixtures = mixtures,
     analysis = analysis,
     fits = fits,
+    prediction = prediction,
     bootstrap = bootstrap,
     results = results,
     labels = labels
@@ -69,6 +71,7 @@ validate_qgcompmulti <- function(object) {
 
   qgcompmulti_validate_labels(object$labels)
   qgcompmulti_validate_results(object$results, object$labels)
+  qgcompmulti_validate_prediction(object$prediction)
   qgcompmulti_validate_bootstrap(object$bootstrap, object$labels)
   qgcompmulti_validate_fits(object$fits)
 

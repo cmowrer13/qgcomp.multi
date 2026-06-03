@@ -6,6 +6,7 @@ EXPECTED_TOP_COMPONENTS <- c(
   "mixtures",
   "analysis",
   "fits",
+  "prediction",
   "bootstrap",
   "results",
   "labels"
@@ -40,10 +41,19 @@ EXPECTED_COMPONENT_FIELDS <- list(
     "outcome_fit",
     "msm_fit"
   ),
+  prediction = c(
+    "intervention_grid",
+    "msm_grid",
+    "counterfactual_surface",
+    "msm_surface",
+    "surface_comparison"
+  ),
   bootstrap = c(
     "coef_draws",
     "B_requested",
-    "B_success"
+    "B_success",
+    "B_failed",
+    "failure_log"
   ),
   results = c(
     "coefficients",

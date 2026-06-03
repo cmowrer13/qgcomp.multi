@@ -90,8 +90,11 @@ status, bootstrap count, cluster identifier, Monte Carlo size, and any
 supplied random seed.}
 \item{\code{fits}}{The fitted outcome regression and marginal structural model
 (MSM) objects.}
-\item{\code{bootstrap}}{Retained bootstrap coefficient draws and bootstrap
-replication counts.}
+\item{\code{prediction}}{Stored fit-time prediction objects for later
+prediction, plotting, and diagnostic methods. In \verb{0.3.0} this component is
+part of the object contract even if some fields remain placeholders.}
+\item{\code{bootstrap}}{Retained bootstrap coefficient draws, bootstrap
+replication counts and lightweight failure data.}
 \item{\code{results}}{The MSM coefficient vector, standard errors, covariance
 matrix, and coefficient table.}
 \item{\code{labels}}{Internal coefficient names and human-readable labels used by

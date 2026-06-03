@@ -81,8 +81,11 @@
 #'   supplied random seed.}
 #'   \item{`fits`}{The fitted outcome regression and marginal structural model
 #'   (MSM) objects.}
-#'   \item{`bootstrap`}{Retained bootstrap coefficient draws and bootstrap
-#'   replication counts.}
+#'   \item{`prediction`}{Stored fit-time prediction objects for later
+#'   prediction, plotting, and diagnostic methods. In `0.3.0` this component is
+#'   part of the object contract even if some fields remain placeholders.}
+#'   \item{`bootstrap`}{Retained bootstrap coefficient draws, bootstrap
+#'   replication counts and lightweight failure data.}
 #'   \item{`results`}{The MSM coefficient vector, standard errors, covariance
 #'   matrix, and coefficient table.}
 #'   \item{`labels`}{Internal coefficient names and human-readable labels used by
@@ -307,6 +310,7 @@ qgcomp.glm.multi <- function(f,
         seed = seed
       )
       fits <- build_qgcompmulti_fits(full_fit)
+      prediction <- build_qgcompmulti_prediction()
       bootstrap <- build_qgcompmulti_bootstrap(psi_hat, B)
       results <- build_qgcompmulti_results(coefs, std.err, varcov)
       fit <- new_qgcompmulti(
@@ -316,6 +320,7 @@ qgcomp.glm.multi <- function(f,
         mixtures = mixtures,
         analysis = analysis,
         fits = fits,
+        prediction = prediction,
         bootstrap = bootstrap,
         results = results,
         labels = labels
