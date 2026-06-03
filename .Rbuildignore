@@ -1,3 +1,7 @@
 ^qgcomp\.multi\.Rproj$
 ^\.Rproj\.user$
+^\\.Rhistory$
+^\\.git$
+^\\.Rhistory$
 ^README\.Rmd$
+^LICENSE\.md$
