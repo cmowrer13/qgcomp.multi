@@ -1,4 +1,3 @@
-
 is_scalar_whole_number <- function(x) {
   is.numeric(x) &&
     length(x) == 1L &&
@@ -38,7 +37,8 @@ validate_qgcomp_multi_inputs <- function(
     centering,
     id,
     MCsize,
-    B = NULL) {
+    B = NULL,
+    seed = NULL) {
 
   if (!inherits(f, "formula")) {
     stop("`f` must be a formula.", call. = FALSE)
@@ -110,6 +110,12 @@ validate_qgcomp_multi_inputs <- function(
   if (!is.null(B)) {
     if (!is_scalar_whole_number(B) || B < 2L) {
       stop("`B` must be a single integer greater than or equal to 2.", call. = FALSE)
+    }
+  }
+
+  if (!is.null(seed)) {
+    if (!is_scalar_whole_number(seed)) {
+      stop("`seed` must be `NULL` or a single integer.", call. = FALSE)
     }
   }
 
