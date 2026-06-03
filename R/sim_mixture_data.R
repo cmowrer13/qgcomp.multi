@@ -61,25 +61,26 @@
 #' @importFrom dplyr ntile
 
 sim_mixture_data <- function(
-    n,
-    pA,
-    pB,
-    rho_within_A,
-    rho_within_B,
-    rho_between,
-    psi1,
-    psi2,
-    psi12,
-    sigma_eps = 1,
-    q = 4,
-    return_quantized = FALSE,
-    seed = NULL){
+  n,
+  pA,
+  pB,
+  rho_within_A,
+  rho_within_B,
+  rho_between,
+  psi1,
+  psi2,
+  psi12,
+  sigma_eps = 1,
+  q = 4,
+  return_quantized = FALSE,
+  seed = NULL
+) {
 
   if (!is.null(seed)) set.seed(seed)
 
   p_total <- pA + pB
 
-  Sigma = matrix(rho_between, nrow = p_total, ncol = p_total)
+  Sigma <- matrix(rho_between, nrow = p_total, ncol = p_total)
 
   Sigma[1:pA, 1:pA] <- rho_within_A
   Sigma[(pA + 1):(p_total), (pA + 1):(p_total)] <- rho_within_B
@@ -94,7 +95,7 @@ sim_mixture_data <- function(
   colnames(X) <- paste0("X", 1:pA)
   colnames(W) <- paste0("W", 1:pB)
 
-  quantize <- function(mat, q){
+  quantize <- function(mat, q) {
     apply(mat, 2, function(v) {
       dplyr::ntile(v, q) - 1
     })
@@ -122,7 +123,7 @@ sim_mixture_data <- function(
 
   if (return_quantized) {
     return(data_quant)
-  } else{
+  } else {
     return(data_cont)
   }
 }

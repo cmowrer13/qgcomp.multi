@@ -66,12 +66,12 @@
 #'   data = dat,
 #'   mix1 = c("X1", "X2", "X3"),
 #'   mix2 = c("W1", "W2", "W3"),
-#'   q = NULL)
+#'   q = NULL
+#'   )
 #'
 #' @export
 
-quantize_mixtures <- function(data, mix1, mix2, q = 4){
-
+quantize_mixtures <- function(data, mix1, mix2, q = 4) {
   validate_quantize_mixtures_inputs(
     data = data,
     mix1 = mix1,
@@ -85,8 +85,7 @@ quantize_mixtures <- function(data, mix1, mix2, q = 4){
 
   vars <- c(mix1, mix2)
 
-  for (v in vars){
-
+  for (v in vars) {
     breaks <- quantile(
       data[[v]],
       probs = seq(0, 1, length.out = q + 1),
