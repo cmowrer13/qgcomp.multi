@@ -26,9 +26,11 @@ In many environmental and epidemiologic studies, exposures arise in distinct gro
 
 * Estimate the effect of two exposure mixtures simultaneously
 * Evaluate interactions between mixtures
-* Fit the model using either quantized exposures or the original exposures scales via `q = NULL`
+* Fit the model using either quantized exposures or the original exposure scales via `q = NULL`
 * Obtain interpretable effect estimates via marginal structural models (MSMs)
 
+The current package interface is designed for analyses with exactly two
+mixtures, supplied through `mix1` and `mix2`.
 
 ## Installation
 
@@ -45,22 +47,76 @@ Fit a two-mixture quantile g-computation model:
 ```{r example, eval = FALSE}
 library(qgcomp.multi)
 
-fit <- qgcomp.glm.multi.boot(
+fit <- qgcomp.glm.multi(
   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
   data = dataset,
   mix1 = c("X1", "X2", "X3"),
   mix2 = c("W1", "W2", "W3"),
   interaction = TRUE,
   q = 4,
-  B = 100
+  B = 100,
+  seed = 13
 )
 
-fit$coef_table
+fit
+summary(fit)
+coef(fit)
+vcov(fit)
+confint(fit)
+formula(fit)
+nobs(fit)
 ```
+
+The returned object is a fitted `qgcompmulti` model object. In routine use,
+the recommended workflow is:
+
+* fit the model with `qgcomp.glm.multi()`
+* inspect the fitted object with `print()` or by typing `fit`
+* call `summary(fit)` for a fuller report
+* use standard generics such as `coef()`, `vcov()`, `confint()`, `formula()`,
+  and `nobs()` to extract specific fitted-model components
+* optionally supply `seed` when you want bootstrap and Monte Carlo draws to be
+  reproducible across repeated fits
+  
+## Specifying the Outcome Model
+
+The `f` argument is the outcome regression formula. In most applications it
+should include:
+
+* the outcome variable
+* all exposure variables named in `mix1` and `mix2`
+* covariates you want included in the outcome model
+
+The `mix1` and `mix2` arguments define which exposure variables belong to each
+mixture. They do not automatically add variables to the formula, so the
+exposures should still appear in `f`.
+  
+## Interpreting the MSM coefficients
+
+The main estimands are the coefficients of the marginal structural model
+(MSM):
+ 
+* `psi1` is the Mixture 1 main effect
+* `psi2` is the Mixture 2 main effect
+* `psi1:psi2` is the mixture interaction when `interaction = TRUE`
+
+When `q` is an integer, these coefficients describe the change in the expected
+outcome associated with a one-quantile simultaneous increase in all components
+of the corresponding mixture. When `q = NULL`, the coefficients are defined on
+the original-scale intervention structure used to build the MSM, so their units
+depend on the exposure scales. In both cases, the MSM is fit to predicted
+potential outcomes on the response scale.
+
+Interpretation also depends on the outcome type used in the outcome model:
+ 
+* for continuous outcomes, the MSM coefficients are mean differences
+* for binary outcomes fit with `family = binomial()`, they are risk differences
+* for count outcomes fit with `family = poisson()`, they are differences in expected counts
 
 ## Simulated Example
 
-Generate a dataset with known mixture effects:
+Generate a dataset with known mixture effects and inspect the fitted model
+through the model-object workflow:
 
 ```{r}
 library(qgcomp.multi)
@@ -78,16 +134,55 @@ dat <- sim_mixture_data(
   seed = 123
 )
 
-fit <- qgcomp.glm.multi.boot(
+fit <- qgcomp.glm.multi(
   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
   data = dat,
   mix1 = c("X1", "X2", "X3"),
   mix2 = c("W1", "W2", "W3"),
-  B = 100
+  B = 100,
+  seed = 13
 )
 
-fit$coef_table
+fit
+
+coef(fit)
+
+confint(fit)
 ```
+
+For a fuller report that still keeps the MSM as the primary focus, call:
+```{r}
+summary(fit)
+```
+
+## Original-Scale Fitting with `q = NULL`
+
+If you do not want to quantize exposures, set `q = NULL`. In that case, the
+outcome model is fit on the original exposure scales and the MSM is built over
+a common pooled intervention grid within each mixture.
+
+```{r example-original-scale, eval = FALSE}
+fit_cont <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dataset,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = NULL,
+  centering = "median",
+  B = 100,
+  seed = 13
+)
+ 
+summary(fit_cont)
+coef(fit_cont)
+confint(fit_cont)
+```
+
+With `q = NULL`, the MSM coefficients are interpreted with respect to the
+original-scale exposure coding rather than a one-quantile increase.
+Choosing `centering = "median"` makes the intercept correspond to the predicted
+outcome when both mixtures are set to their pooled medians.
 
 ## Computational Considerations
 
@@ -100,14 +195,33 @@ To address this, `qgcomp.multi` includes a Monte Carlo approximation:
 
 This can substantially reduce runtime in large datasets while preserving model structure.
 
-## Package Structure
+In practice:
+ 
+* use a smaller `B` while developing code and checking model specification
+* increase `B` for your final analysis once the model is stable
+* keep `MCsize = nrow(data)` when full g-computation is feasible
+* consider a smaller `MCsize` when runtime is prohibitive, especially in large samples
+* use `seed` when you need the bootstrap-based inferential results to be
+  exactly reproducible across reruns
+
+## Core Functions and Methods
 
 Core functions include:
 
-* `qgcomp.glm.multi.boot()` — main estimation function
-* `msm_fit()` — internal MSM estimation routine
+* `qgcomp.glm.multi()` — main estimation function
+* `qgcompmulti_msm_fit()` — MSM estimation routine
 * `quantize_mixtures()` — exposure quantization
 * `sim_mixture_data()` — simulation data generator
+
+The standard fitted-model methods include:
+ 
+* `print()` — compact interactive display of the fitted object
+* `summary()` — fuller model summary with MSM results in the foreground
+* `coef()` — MSM coefficients
+* `vcov()` — covariance matrix for the MSM coefficients
+* `confint()` — Wald confidence intervals for the MSM coefficients
+* `formula()` — original fitted formula
+* `nobs()` — number of observations actually used
 
 ## References
 
