@@ -78,6 +78,7 @@ dat_cont <- quantize_mixtures(
   data = dat,
   mix1 = c("X1", "X2", "X3"),
   mix2 = c("W1", "W2", "W3"),
-  q = NULL)
+  q = NULL
+  )
 
 }
