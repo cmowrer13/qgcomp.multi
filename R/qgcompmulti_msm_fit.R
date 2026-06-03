@@ -1,23 +1,5 @@
-#' Compute pooled mixture percentiles
-#'
-#' Pools all observed values from a set of mixture variables into a single
-#' vector and returns the requested empirical quantiles. This is used when
-#' `q = NULL` to define continuous intervention levels for one mixture.
-#'
-#' @param data A data frame containing the mixture variables.
-#' @param vars A character vector naming the variables to pool within the
-#' mixture.
-#' @param probs Numeric vector of probabilities passed to [stats::quantile()].
-#' Defaults to `c(0.25, 0.50, 0.75)`.
-#'
-#' @return A numeric vector of pooled empirical quantiles for the selected
-#' mixture variables.
-#'
-#' @details
-#' The function stacks the values from `vars` into one long vector, removes
-#' missing values via `na.rm = TRUE`, and computes quantiles on that pooled
-#' distribution.
-
+#' @keywords internal
+#' @noRd
 pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 
   as.numeric(quantile(
@@ -33,7 +15,7 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' joint interventions on two exposure mixtures, and estimates the marginal
 #' structural model (MSM) coefficients that summarize the resulting
 #' two-dimensional dose-response surface. This function is primarily an
-#' internal helper used by [qgcomp.glm.multi.boot()] and will not typically
+#' internal helper used by [qgcomp.glm.multi()] and will not typically
 #' need to be called directly by users.
 #'
 #' Given a fitted outcome model, the function evaluates predicted outcomes over
@@ -87,11 +69,18 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' outcomes over a random subsample drawn from the empirical distribution. When
 #' `id` is supplied and `MCsize < nrow(data)`, the approximation is implemented
 #' by sampling `MCsize` clusters with replacement.
+#' @param seed Optional integer random seed used to make Monte Carlo
+#' subsampling reproducible when `MCsize < nrow(data)`. If `NULL`, the current
+#' RNG state is used and not modified by `qgcompmulti_msm_fit()`.
 #'
-#' @return A numeric vector of estimated marginal structural model coefficients.
-#' When `interaction = TRUE`, the returned coefficients are `(Intercept)`,
-#' `psi1`, `psi2`, and `psi1:psi2`. When `interaction = FALSE`, only the
-#' intercept and main-effect coefficients are returned.
+#' @return A list with components:
+#' \describe{
+#' \item{outcome_fit}{The fitted outcome regression model object.}
+#' \item{msm_fit}{The fitted marginal structural model object.}
+#' \item{coefficients}{A names vector of MSM coefficients}
+#' \item{n_used}{The number of observations used in the MSM pseudo-dataset
+#' prediction step.}
+#' }
 #'
 #' @details
 #' This function carries out the core g-computation step for the two-mixture
@@ -137,29 +126,30 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #'   seed = 123
 #' )
 #'
-#' msm_fit(
+#' qgcompmulti_msm_fit(
 #'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
 #'   data = dat,
 #'   mix1 = c("X1", "X2", "X3"),
 #'   mix2 = c("W1", "W2", "W3"),
 #'   interaction = TRUE,
 #'   q = 4,
-#'   MCsize = nrow(dat)
+#'   MCsize = nrow(dat),
+#'   seed = 13
 #' )
 #'
 #' @export
 
-
-msm_fit <- function(f,
-                    data,
-                    mix1,
-                    mix2,
-                    interaction = TRUE,
-                    family = gaussian(),
-                    q = 4,
-                    centering = "none",
-                    id = NULL,
-                    MCsize = nrow(data)){
+qgcompmulti_msm_fit <- function(f,
+                                data,
+                                mix1,
+                                mix2,
+                                interaction = TRUE,
+                                family = gaussian(),
+                                q = 4,
+                                centering = "none",
+                                id = NULL,
+                                MCsize = nrow(data),
+                                seed = NULL) {
 
   validate_qgcomp_multi_inputs(
     f = f,
@@ -171,112 +161,95 @@ msm_fit <- function(f,
     q = q,
     centering = centering,
     id = id,
-    MCsize = MCsize
+    MCsize = MCsize,
+    seed = seed
   )
 
-  response <- deparse(f[[2]])
-
-  rhs_terms <- attr(terms(f), "term.labels")
-
-  rhs <- paste(rhs_terms, collapse = " + ")
-
-  if (interaction) {
-    m1 <- paste(mix1, collapse = " + ")
-    m2 <- paste(mix2, collapse = " + ")
-
-    interaction_term <- paste0("I((", m1, ") * (", m2, "))")
-    rhs <- paste(rhs, interaction_term, sep = " + ")
-  }
-
-  newf <- as.formula(paste(response, "~", rhs))
-
-  fit <- glm(newf, data = data, family = family)
-
-  if (is.null(q)){
-    mix1_q <- pooled_mix_quantiles(data, mix1)
-    mix2_q <- pooled_mix_quantiles(data, mix2)
-
-    intgrid_pred <- expand.grid(
-      psi1 = mix1_q,
-      psi2 = mix2_q
-    )
-
-    intgrid_msm <- intgrid_pred
-
-    if (centering == "median"){
-      intgrid_msm$psi1 <- intgrid_msm$psi1 - mix1_q[2]
-      intgrid_msm$psi2 <- intgrid_msm$psi2 - mix2_q[2]
-    }
-
-  } else {
-    intgrid_pred <- expand.grid(
-      psi1 = 0:(q-1),
-      psi2 = 0:(q-1)
-    )
-
-    intgrid_msm <- intgrid_pred
-  }
-
-  if (MCsize == nrow(data)) {
-
-    nd <- data
-
-  } else {
-
-    if (is.null(id)) {
-
-      samp_idx <- sample(seq_len(nrow(data)), MCsize, replace = TRUE)
-      nd <- data[samp_idx, , drop = FALSE]
-
-    } else {
-
-      ids <- data[[id]]
-      unique_ids <- unique(ids)
-      samp_ids <- sample(unique_ids, MCsize, replace = TRUE)
-
-      split_data <- split(data, ids)
-
-      nd <- do.call(
-        rbind,
-        split_data[as.character(samp_ids)]
+  qgcompmulti_with_seed(
+    seed,
+    {
+      response <- deparse(f[[2]])
+      rhs_terms <- attr(terms(f), "term.labels")
+      rhs <- paste(rhs_terms, collapse = " + ")
+      if (interaction) {
+        m1 <- paste(mix1, collapse = " + ")
+        m2 <- paste(mix2, collapse = " + ")
+        interaction_term <- paste0("I((", m1, ") * (", m2, "))")
+        rhs <- paste(rhs, interaction_term, sep = " + ")
+      }
+      outcome_formula <- as.formula(paste(response, "~", rhs))
+      outcome_fit <- glm(outcome_formula, data = data, family = family)
+      if (is.null(q)) {
+        mix1_q <- pooled_mix_quantiles(data, mix1)
+        mix2_q <- pooled_mix_quantiles(data, mix2)
+        intgrid_pred <- expand.grid(
+          psi1 = mix1_q,
+          psi2 = mix2_q
+        )
+        intgrid_msm <- intgrid_pred
+        if (centering == "median") {
+          intgrid_msm$psi1 <- intgrid_msm$psi1 - mix1_q[2]
+          intgrid_msm$psi2 <- intgrid_msm$psi2 - mix2_q[2]
+        }
+      } else {
+        intgrid_pred <- expand.grid(
+          psi1 = 0:(q - 1),
+          psi2 = 0:(q - 1)
+        )
+        intgrid_msm <- intgrid_pred
+      }
+      if (MCsize == nrow(data)) {
+        nd <- data
+      } else if (is.null(id)) {
+        samp_idx <- sample(seq_len(nrow(data)), MCsize, replace = TRUE)
+        nd <- data[samp_idx, , drop = FALSE]
+      } else {
+        ids <- data[[id]]
+        unique_ids <- unique(ids)
+        samp_ids <- sample(unique_ids, MCsize, replace = TRUE)
+        split_data <- split(data, ids)
+        nd <- do.call(
+          rbind,
+          split_data[as.character(samp_ids)]
+        )
+      }
+      n_used <- nrow(nd)
+      pred_fun <- function(psi1, psi2, nd) {
+        nd2 <- nd
+        nd2[, mix1] <- psi1
+        nd2[, mix2] <- psi2
+        predict(outcome_fit, newdata = nd2, type = "response")
+      }
+      predmat <- Map(
+        pred_fun,
+        intgrid_pred$psi1,
+        intgrid_pred$psi2,
+        MoreArgs = list(nd = nd)
+      )
+      msmdat <- data.frame(
+        Ya   = unlist(predmat),
+        psi1 = rep(intgrid_msm$psi1, each = n_used),
+        psi2 = rep(intgrid_msm$psi2, each = n_used)
+      )
+      if (interaction) {
+        msm_formula <- Ya ~ psi1 * psi2
+      } else {
+        msm_formula <- Ya ~ psi1 + psi2
+      }
+      msmfit <- glm(
+        msm_formula,
+        data = msmdat
+      )
+      coefficients <- qgcompmulti_extract_msm_coefficients(
+        msm_fit = msmfit,
+        interaction = interaction
+      )
+      list(
+        outcome_fit = outcome_fit,
+        msm_fit = msmfit,
+        coefficients = coefficients,
+        n_used = n_used
       )
     }
-  }
-
-  nobs <- nrow(nd)
-
-  pred_fun <- function(psi1, psi2, nd) {
-    nd2 <- nd
-    nd2[, mix1] <- psi1
-    nd2[, mix2] <- psi2
-
-    predict(fit, newdata = nd2, type = "response")
-  }
-
-  predmat <- Map(
-    pred_fun,
-    intgrid_pred$psi1,
-    intgrid_pred$psi2,
-    MoreArgs = list(nd = nd)
   )
-
-  msmdat <- data.frame(
-    Ya   = unlist(predmat),
-    psi1 = rep(intgrid_msm$psi1, each = nobs),
-    psi2 = rep(intgrid_msm$psi2, each = nobs)
-  )
-
-  if (interaction) {
-    msm_form <- Ya ~ psi1 * psi2
-  }  else {
-    msm_form <- Ya ~ psi1 + psi2
-  }
-
-  msmfit <- glm(
-    msm_form,
-    data = msmdat
-  )
-
-  return(msmfit$coef)
-
 }

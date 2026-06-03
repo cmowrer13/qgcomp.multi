@@ -5,8 +5,9 @@
 #' specified exposure variables, fits an outcome regression model, computes
 #' predicted potential outcomes under joint interventions on the two mixtures,
 #' and then fits a marginal structural model (MSM) to summarize the resulting
-#' dose-response surface. Uncertainty is estimated using a nonparametric
-#' bootstrap.
+#' dose-response surface. The current interface is designed for analyses with
+#' exactly two mixtures, supplied through `mix1` and `mix2`. Uncertainty is
+#' estimated using a nonparametric bootstrap.
 #'
 #' The fitted MSM has the form
 #'
@@ -25,7 +26,9 @@
 #' @param f A model formula for the outcome regression. The formula should
 #' include the outcome and any baseline covariates. Mixture variables listed
 #' in `mix1` and `mix2` should also appear in the formula if they are to be
-#' included in the outcome model.
+#' included in the outcome model. The `mix1` and `mix2` arguments define how
+#' exposures are grouped into mixtures, but they do not add variables to the
+#' formula automatically.
 #' @param data A data frame containing the outcome, exposure variables, and
 #' any covariates in the model.
 #' @param mix1 A character vector giving the names of the variables in the
@@ -60,14 +63,30 @@
 #' time in large datasets. When `id` is supplied and `MCsize < nrow(data)`,
 #' the approximation is implemented by sampling `MCsize` clusters with
 #' replacement.
+#' @param seed Optional integer random seed used to make bootstrap resampling
+#' and any Monte Carlo subsampling reproducible. If `NULL`, the current RNG
+#' state is used and not modified by `qgcomp.glm.multi()`. When supplied, the
+#' same inputs and the same seed reproduce the same fitted object and
+#' inferential results.
 #'
-#' @return A list with components:
+#' @return An object of class `"qgcompmulti"` representing the fitted
+#' two-mixture quantile g-computation model. Major components include:
 #' \describe{
-#'   \item{coefs}{Estimated coefficients from the marginal structural model.}
-#'   \item{std.err}{Bootstrap standard errors for the estimated coefficients.}
-#'   \item{varcov}{Estimated covariance matrix for `psi1` and `psi2`.}
-#'   \item{coef_table}{A coefficient table containing estimates, standard
-#'   errors, z-statistics, and p-values.}
+#'   \item{`data_info`}{Outcome name, sample-size metadata, and indicators for
+#'   quantization and clustered fitting.}
+#'   \item{`mixtures`}{The mixture definitions, quantization setting `q`, and
+#'   original-scale centering choice when `q = NULL`.}
+#'   \item{`analysis`}{Model settings such as the GLM family, interaction
+#'   status, bootstrap count, cluster identifier, Monte Carlo size, and any
+#'   supplied random seed.}
+#'   \item{`fits`}{The fitted outcome regression and marginal structural model
+#'   (MSM) objects.}
+#'   \item{`bootstrap`}{Retained bootstrap coefficient draws and bootstrap
+#'   replication counts.}
+#'   \item{`results`}{The MSM coefficient vector, standard errors, covariance
+#'   matrix, and coefficient table.}
+#'   \item{`labels`}{Internal coefficient names and human-readable labels used by
+#'   the print and summary methods.}
 #' }
 #'
 #' @details
@@ -85,7 +104,14 @@
 #' marginalization step in g-computation. Rather than averaging predictions
 #' over all observations, the MSM can be fit using predictions from a random
 #' subsample of size `MCsize`. This can substantially reduce computation time
-#' when the sample size is large or when the intervention grid is large.
+#' when the sample size is large or when the intervention grid is large. In
+#' practice, it is often reasonable to use a smaller `B` while developing an
+#' analysis and then increase `B` for the final analysis once the model
+#' specification is stable.
+#'
+#' If `seed` is supplied, the bootstrap resampling and any Monte Carlo
+#' subsampling are made reproducible without requiring the user to set the
+#' global RNG state outside the function.
 #'
 #' When `q` is an integer, `psi1` and `psi2` are interpreted as the change in
 #' the marginal mean outcome associated with simultaneously increasing every
@@ -130,7 +156,7 @@
 #'   seed = 123
 #' )
 #'
-#' fit <- qgcomp.glm.multi.boot(
+#' fit <- qgcomp.glm.multi(
 #'   f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
 #'   data = dat,
 #'   mix1 = c("X1", "X2", "X3", "X4"),
@@ -138,10 +164,14 @@
 #'   interaction = TRUE,
 #'   q = 4,
 #'   B = 100,
-#'   MCsize = nrow(dat)
+#'   MCsize = nrow(dat),
+#'   seed = 13
 #' )
 #'
-#' fit$coef_table
+#' fit
+#' summary(fit)
+#' coef(fit)
+#' confint(fit)
 #'
 #' dat_cont <- sim_mixture_data(
 #'   n = 500,
@@ -157,7 +187,7 @@
 #'   seed = 321
 #' )
 #'
-#' fit_cont <- qgcomp.glm.multi.boot(
+#' fit_cont <- qgcomp.glm.multi(
 #'   f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
 #'   data = dat_cont,
 #'   mix1 = c("X1", "X2", "X3", "X4"),
@@ -166,24 +196,30 @@
 #'   q = NULL,
 #'   centering = "median",
 #'   B = 100,
-#'   MCsize = nrow(dat_cont)
+#'   MCsize = nrow(dat_cont),
+#'   seed = 13
 #' )
 #'
-#' fit_cont$coef_table
+#' fit_cont
+#' summary(fit_cont)
+#' coef(fit_cont)
+#' confint(fit_cont)
 #'
 #' @export
 
-qgcomp.glm.multi.boot <- function(f,
-                                  data,
-                                  mix1,
-                                  mix2,
-                                  interaction = TRUE,
-                                  family = gaussian(),
-                                  q = 4,
-                                  centering = "none",
-                                  B = 200,
-                                  id = NULL,
-                                  MCsize = nrow(data)){
+qgcomp.glm.multi <- function(f,
+                             data,
+                             mix1,
+                             mix2,
+                             interaction = TRUE,
+                             family = gaussian(),
+                             q = 4,
+                             centering = "none",
+                             B = 200,
+                             id = NULL,
+                             MCsize = nrow(data),
+                             seed = NULL) {
+  call <- match.call()
 
   validate_qgcomp_multi_inputs(
     f = f,
@@ -196,82 +232,95 @@ qgcomp.glm.multi.boot <- function(f,
     centering = centering,
     id = id,
     MCsize = MCsize,
-    B = B
+    B = B,
+    seed = seed
   )
 
-  data_q <- quantize_mixtures(data, mix1, mix2, q)
-
-  coefs <- msm_fit(f, data_q, mix1, mix2, interaction, family, q, centering, id, MCsize)
-
-  if (interaction){
-    psi_hat <- matrix(NA, B, 4)
-  } else {
-    psi_hat <- matrix(NA, B, 3)
-  }
-
-  for (b in 1:B){
-
-    if (is.null(id)) {
-
-      idx <- sample(1:nrow(data_q), replace = T)
-      data_b <- data_q[idx, ]
-
-    } else {
-
-      ids <- data_q[[id]]
-      unique_ids <- unique(ids)
-
-      samp_ids <- sample(unique_ids, length(unique_ids), replace = TRUE)
-
-      split_data <- split(data_q, ids)
-
-      data_b <- do.call(
-        rbind,
-        split_data[as.character(samp_ids)]
+  qgcompmulti_with_seed(
+    seed,
+    {
+      data_q <- quantize_mixtures(data, mix1, mix2, q)
+      full_fit <- qgcompmulti_msm_fit(
+        f = f,
+        data = data_q,
+        mix1 = mix1,
+        mix2 = mix2,
+        interaction = interaction,
+        family = family,
+        q = q,
+        centering = centering,
+        id = id,
+        MCsize = MCsize
       )
+      labels <- build_qgcompmulti_labels(interaction = interaction)
+      coefs <- full_fit$coefficients
+      psi_hat <- qgcompmulti_initialize_boot_draws(
+        B = B,
+        interaction = interaction
+      )
+      for (b in seq_len(B)) {
+        data_b <- qgcompmulti_resample_data(
+          data = data_q,
+          id = id
+        )
+        boot_fit <- qgcompmulti_msm_fit(
+          f = f,
+          data = data_b,
+          mix1 = mix1,
+          mix2 = mix2,
+          interaction = interaction,
+          family = family,
+          q = q,
+          centering = centering,
+          id = id,
+          MCsize = MCsize
+        )
+        psi_hat[b, ] <- boot_fit$coefficients
+      }
+      std.err <- build_qgcompmulti_std_error(
+        coef_draws = psi_hat,
+        coef_names = names(coefs)
+      )
+      varcov <- build_qgcompmulti_vcov(
+        coef_draws = psi_hat,
+        coef_names = names(coefs)
+      )
+      data_info <- build_qgcompmulti_data_info(
+        data = data,
+        formula = f,
+        q = q,
+        id = id,
+        n_used = full_fit$n_used
+      )
+      mixtures <- build_qgcompmulti_mixtures(
+        mix1 = mix1,
+        mix2 = mix2,
+        q = q,
+        centering = centering
+      )
+      analysis <- build_qgcompmulti_analysis(
+        interaction = interaction,
+        family = family,
+        B = B,
+        id = id,
+        MCsize = MCsize,
+        seed = seed
+      )
+      fits <- build_qgcompmulti_fits(full_fit)
+      bootstrap <- build_qgcompmulti_bootstrap(psi_hat, B)
+      results <- build_qgcompmulti_results(coefs, std.err, varcov)
+      fit <- new_qgcompmulti(
+        call = call,
+        formula = f,
+        data_info = data_info,
+        mixtures = mixtures,
+        analysis = analysis,
+        fits = fits,
+        bootstrap = bootstrap,
+        results = results,
+        labels = labels
+      )
+      fit
     }
-
-    psi_hat[b, ] <- msm_fit(f, data_b, mix1, mix2, interaction, family, q, centering, id, MCsize)
-  }
-
-  int <- var(psi_hat[,1])
-  var1 <- var(psi_hat[,2])
-  var2 <- var(psi_hat[,3])
-
-  if (interaction){
-    var12 <- var(psi_hat[,4])
-  }
-
-  cov12 <- cov(psi_hat[,2], psi_hat[,3])
-
-  if (interaction) {
-    std.err <- c(sqrt(int), sqrt(var1), sqrt(var2), sqrt(var12))
-    names(std.err) <- c("intercept", "psi1", "psi2", "psi1:psi2")
-  } else {
-    std.err <- c(sqrt(int), sqrt(var1), sqrt(var2))
-    names(std.err) <- c("intercept", "psi1", "psi2")
-  }
-
-  varcov <- matrix(c(var1, cov12, cov12, var2), nrow = 2, byrow = T)
-
-  fit <- (list(coefs = coefs,
-               std.err = std.err,
-               varcov = varcov))
-
-  make_coef_table <- function(coefs, se) {
-    z_val <- coefs / se
-    pval <- 2 * pnorm(abs(z_val), lower.tail = FALSE)
-
-    cbind(
-      Estimate = coefs,
-      `Std. Error` = se,
-      `z value` = z_val,
-      `Pr(>|z|)` = pval
-    )
-  }
-
-  fit$coef_table <- make_coef_table(coefs, std.err)
-
-  fit
+  )
 }
-
