@@ -1,14 +1,18 @@
 Package: qgcomp.multi
 Title: Quantile G-Computation for Multiple Exposure Mixtures
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: 
     person("Carson", "Mowrer", , "carson.mowrer@unc.edu", role = c("aut", "cre"))
+Author: Carson Mowrer [aut, cre]
+Maintainer: Carson Mowrer <carson.mowrer@unc.edu>
 Description: qgcomp.multi is an extension of Quantile g-Computation, developed by Keil et al. to estimate the joint effect of multiple exposure mixtures and their interaction using marginal structural models.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: 
     dplyr,
     MASS
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
