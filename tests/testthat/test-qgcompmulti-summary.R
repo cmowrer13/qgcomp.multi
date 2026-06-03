@@ -1,0 +1,31 @@
+test_that("summary returns the expected structured summary object", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  s <- summary(fit)
+  expect_s3_class(s, "summary.qgcompmulti")
+  expect_identical(names(s), EXPECTED_SUMMARY_COMPONENTS)
+  expect_true(is.list(s$fit_overview))
+  expect_true(is.list(s$mixtures))
+  expect_true(is.data.frame(s$msm_table))
+  expect_true(is.list(s$outcome_model_info))
+})
+
+test_that("print.qgcompmulti returns invisibly and shows key sections", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  printed <- withVisible(print(fit))
+  expect_false(printed$visible)
+  expect_identical(printed$value, fit)
+  expect_output(print(fit), "qgcompmulti fit")
+  expect_output(print(fit), "MSM coefficients")
+  expect_output(print(fit), "Mixtures")
+})
+
+test_that("print.summary.qgcompmulti returns invisibly and shows key sections", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  s <- summary(fit)
+  printed <- withVisible(print(s))
+  expect_false(printed$visible)
+  expect_identical(printed$value, s)
+  expect_output(print(s), "Summary of qgcompmulti fit")
+  expect_output(print(s), "Model overview")
+  expect_output(print(s), "Outcome model context")
+})
