@@ -20,7 +20,11 @@ test_that("fitted object stores expected result, fit, and label components", {
   expect_true(is.data.frame(fit$results$coef_table))
   expect_s3_class(fit$fits$outcome_fit, "glm")
   expect_s3_class(fit$fits$msm_fit, "glm")
-  expect_true(all(vapply(fit$prediction, is.null, logical(1))))
+  expect_true(is.data.frame(fit$prediction$intervention_grid))
+  expect_true(is.data.frame(fit$prediction$msm_grid))
+  expect_true(is.data.frame(fit$prediction$counterfactual_surface))
+  expect_true(is.data.frame(fit$prediction$msm_surface))
+  expect_true(is.data.frame(fit$prediction$surface_comparison))
   expect_true(is.matrix(fit$bootstrap$coef_draws))
   expect_equal(fit$bootstrap$B_requested, 10)
   expect_equal(fit$bootstrap$B_success, 10)
@@ -30,4 +34,34 @@ test_that("fitted object stores expected result, fit, and label components", {
   expect_true(is.character(fit$labels$coefficient_labels))
   expect_true(is.character(fit$labels$mixture_labels))
   expect_identical(names(fit$labels$mixture_labels), c("mix1", "mix2"))
+})
+
+test_that("stored fit-time grids and surfaces align on a common grid", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  expect_identical(names(fit$prediction$intervention_grid), EXPECTED_GRID_COLUMNS)
+  expect_identical(names(fit$prediction$msm_grid), EXPECTED_GRID_COLUMNS)
+  expect_identical(
+    names(fit$prediction$counterfactual_surface),
+    EXPECTED_COUNTERFACTUAL_SURFACE_COLUMNS
+  )
+  expect_identical(
+    names(fit$prediction$msm_surface),
+    EXPECTED_MSM_SURFACE_COLUMNS
+  )
+  expect_identical(
+    names(fit$prediction$surface_comparison),
+    EXPECTED_SURFACE_COMPARISON_COLUMNS
+  )
+  expect_identical(
+    fit$prediction$intervention_grid$grid_id,
+    fit$prediction$msm_grid$grid_id
+  )
+  expect_identical(
+    fit$prediction$counterfactual_surface$grid_id,
+    fit$prediction$msm_surface$grid_id
+  )
+  expect_identical(
+    fit$prediction$counterfactual_surface$grid_id,
+    fit$prediction$surface_comparison$grid_id
+  )
 })

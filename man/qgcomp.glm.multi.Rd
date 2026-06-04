@@ -91,8 +91,9 @@ supplied random seed.}
 \item{\code{fits}}{The fitted outcome regression and marginal structural model
 (MSM) objects.}
 \item{\code{prediction}}{Stored fit-time prediction objects for later
-prediction, plotting, and diagnostic methods. In \verb{0.3.0} this component is
-part of the object contract even if some fields remain placeholders.}
+prediction, plotting, and diagnostic methods. , including the intervention
+grid, the exact counterfactual surface, the corresponding MSM fitted surface,
+and a direct comparison object on the common grid.}
 \item{\code{bootstrap}}{Retained bootstrap coefficient draws, bootstrap
 replication counts and lightweight failure data.}
 \item{\code{results}}{The MSM coefficient vector, standard errors, covariance

@@ -77,7 +77,7 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' \describe{
 #' \item{outcome_fit}{The fitted outcome regression model object.}
 #' \item{msm_fit}{The fitted marginal structural model object.}
-#' \item{coefficients}{A names vector of MSM coefficients}
+#' \item{coefficients}{A named vector of MSM coefficients.}
 #' \item{n_used}{The number of observations used in the MSM pseudo-dataset
 #' prediction step.}
 #' }
@@ -179,25 +179,15 @@ qgcompmulti_msm_fit <- function(f,
       }
       outcome_formula <- as.formula(paste(response, "~", rhs))
       outcome_fit <- glm(outcome_formula, data = data, family = family)
-      if (is.null(q)) {
-        mix1_q <- pooled_mix_quantiles(data, mix1)
-        mix2_q <- pooled_mix_quantiles(data, mix2)
-        intgrid_pred <- expand.grid(
-          psi1 = mix1_q,
-          psi2 = mix2_q
-        )
-        intgrid_msm <- intgrid_pred
-        if (centering == "median") {
-          intgrid_msm$psi1 <- intgrid_msm$psi1 - mix1_q[2]
-          intgrid_msm$psi2 <- intgrid_msm$psi2 - mix2_q[2]
-        }
-      } else {
-        intgrid_pred <- expand.grid(
-          psi1 = 0:(q - 1),
-          psi2 = 0:(q - 1)
-        )
-        intgrid_msm <- intgrid_pred
-      }
+      grids <- build_qgcompmulti_fit_time_grids(
+        data = data,
+        mix1 = mix1,
+        mix2 = mix2,
+        q = q,
+        centering = centering
+      )
+      intervention_grid <- grids$intervention_grid
+      msm_grid <- grids$msm_grid
       if (MCsize == nrow(data)) {
         nd <- data
       } else if (is.null(id)) {
@@ -214,22 +204,18 @@ qgcompmulti_msm_fit <- function(f,
         )
       }
       n_used <- nrow(nd)
-      pred_fun <- function(psi1, psi2, nd) {
-        nd2 <- nd
-        nd2[, mix1] <- psi1
-        nd2[, mix2] <- psi2
-        predict(outcome_fit, newdata = nd2, type = "response")
-      }
-      predmat <- Map(
-        pred_fun,
-        intgrid_pred$psi1,
-        intgrid_pred$psi2,
-        MoreArgs = list(nd = nd)
+      counterfactual_surface <- qgcompmulti_counterfactual_surface(
+        outcome_fit = outcome_fit,
+        nd = nd,
+        mix1 = mix1,
+        mix2 = mix2,
+        intervention_grid = intervention_grid,
+        msm_grid = msm_grid
       )
       msmdat <- data.frame(
-        Ya   = unlist(predmat),
-        psi1 = rep(intgrid_msm$psi1, each = n_used),
-        psi2 = rep(intgrid_msm$psi2, each = n_used)
+        Ya   = rep(counterfactual_surface$exact_mean, each = n_used),
+        psi1 = rep(msm_grid$psi1, each = n_used),
+        psi2 = rep(msm_grid$psi2, each = n_used)
       )
       if (interaction) {
         msm_formula <- Ya ~ psi1 * psi2
@@ -244,11 +230,25 @@ qgcompmulti_msm_fit <- function(f,
         msm_fit = msmfit,
         interaction = interaction
       )
+      msm_surface <- qgcompmulti_msm_surface(
+        msm_fit = msmfit,
+        intervention_grid = intervention_grid,
+        msm_grid = msm_grid
+      )
+      surface_comparison <- qgcompmulti_surface_comparison(
+        counterfactual_surface = counterfactual_surface,
+        msm_surface = msm_surface
+      )
       list(
         outcome_fit = outcome_fit,
         msm_fit = msmfit,
         coefficients = coefficients,
-        n_used = n_used
+        n_used = n_used,
+        intervention_grid = intervention_grid,
+        msm_grid = msm_grid,
+        counterfactual_surface = counterfactual_surface,
+        msm_surface = msm_surface,
+        surface_comparison = surface_comparison
       )
     }
   )

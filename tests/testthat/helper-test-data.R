@@ -87,6 +87,33 @@ EXPECTED_COEF_NAMES_NO_INTERACTION <- c(
   "psi1",
   "psi2"
 )
+EXPECTED_GRID_COLUMNS <- c("grid_id", "psi1", "psi2")
+EXPECTED_COUNTERFACTUAL_SURFACE_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "exact_mean"
+)
+EXPECTED_MSM_SURFACE_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "msm_mean"
+)
+EXPECTED_SURFACE_COMPARISON_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "exact_mean",
+  "msm_mean",
+  "residual"
+)
 
 make_test_data <- function(seed = 123, n = 120) {
   key <- sprintf("data_%s_%s", seed, n)

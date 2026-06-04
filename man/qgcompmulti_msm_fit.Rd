@@ -70,7 +70,7 @@ A list with components:
 \describe{
 \item{outcome_fit}{The fitted outcome regression model object.}
 \item{msm_fit}{The fitted marginal structural model object.}
-\item{coefficients}{A names vector of MSM coefficients}
+\item{coefficients}{A named vector of MSM coefficients.}
 \item{n_used}{The number of observations used in the MSM pseudo-dataset
 prediction step.}
 }

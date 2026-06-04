@@ -3,7 +3,17 @@ test_that("qgcompmulti_msm_fit returns the expected component structure", {
   expect_true(is.list(engine))
   expect_identical(
     names(engine),
-    c("outcome_fit", "msm_fit", "coefficients", "n_used")
+    c(
+      "outcome_fit",
+      "msm_fit",
+      "coefficients",
+      "n_used",
+      "intervention_grid",
+      "msm_grid",
+      "counterfactual_surface",
+      "msm_surface",
+      "surface_comparison"
+    )
   )
   expect_s3_class(engine$outcome_fit, "glm")
   expect_s3_class(engine$msm_fit, "glm")
@@ -30,4 +40,29 @@ test_that("qgcompmulti_msm_fit works for original-scale q = NULL fits", {
   expect_true(is.list(engine))
   expect_identical(names(engine$coefficients), EXPECTED_COEF_NAMES_WITH_INTERACTION)
   expect_equal(engine$n_used, nrow(make_test_data()))
+})
+
+test_that("qgcompmulti_msm_fit retains aligned fit-time grids and surfaces", {
+  engine <- fit_engine_result(interaction = TRUE, q = 4)
+  expect_identical(names(engine$intervention_grid), EXPECTED_GRID_COLUMNS)
+  expect_identical(names(engine$msm_grid), EXPECTED_GRID_COLUMNS)
+  expect_identical(
+    names(engine$counterfactual_surface),
+    EXPECTED_COUNTERFACTUAL_SURFACE_COLUMNS
+  )
+  expect_identical(
+    names(engine$msm_surface),
+    EXPECTED_MSM_SURFACE_COLUMNS
+  )
+  expect_identical(
+    names(engine$surface_comparison),
+    EXPECTED_SURFACE_COMPARISON_COLUMNS
+  )
+  expect_equal(nrow(engine$intervention_grid), nrow(engine$msm_grid))
+  expect_equal(nrow(engine$counterfactual_surface), nrow(engine$msm_surface))
+  expect_equal(nrow(engine$counterfactual_surface), nrow(engine$surface_comparison))
+  expect_identical(
+    engine$counterfactual_surface$grid_id,
+    engine$surface_comparison$grid_id
+  )
 })

@@ -82,8 +82,9 @@
 #'   \item{`fits`}{The fitted outcome regression and marginal structural model
 #'   (MSM) objects.}
 #'   \item{`prediction`}{Stored fit-time prediction objects for later
-#'   prediction, plotting, and diagnostic methods. In `0.3.0` this component is
-#'   part of the object contract even if some fields remain placeholders.}
+#'   prediction, plotting, and diagnostic methods. , including the intervention
+#'   grid, the exact counterfactual surface, the corresponding MSM fitted surface,
+#'   and a direct comparison object on the common grid.}
 #'   \item{`bootstrap`}{Retained bootstrap coefficient draws, bootstrap
 #'   replication counts and lightweight failure data.}
 #'   \item{`results`}{The MSM coefficient vector, standard errors, covariance
@@ -257,29 +258,50 @@ qgcomp.glm.multi <- function(f,
       )
       labels <- build_qgcompmulti_labels(interaction = interaction)
       coefs <- full_fit$coefficients
-      psi_hat <- qgcompmulti_initialize_boot_draws(
-        B = B,
-        interaction = interaction
-      )
+      psi_hat <- vector("list", B)
+      failure_log <- vector("list", 0L)
       for (b in seq_len(B)) {
         data_b <- qgcompmulti_resample_data(
           data = data_q,
           id = id
         )
-        boot_fit <- qgcompmulti_msm_fit(
-          f = f,
-          data = data_b,
-          mix1 = mix1,
-          mix2 = mix2,
-          interaction = interaction,
-          family = family,
-          q = q,
-          centering = centering,
-          id = id,
-          MCsize = MCsize
+        boot_fit <- tryCatch(
+          qgcompmulti_msm_fit(
+            f = f,
+            data = data_b,
+            mix1 = mix1,
+            mix2 = mix2,
+            interaction = interaction,
+            family = family,
+            q = q,
+            centering = centering,
+            id = id,
+            MCsize = MCsize
+          ),
+          error = function(e) e
         )
-        psi_hat[b, ] <- boot_fit$coefficients
+        if (inherits(boot_fit, "error")) {
+          failure_log[[length(failure_log) + 1L]] <- data.frame(
+            replicate = b,
+            message = conditionMessage(boot_fit),
+            row.names = NULL,
+            check.names = FALSE
+          )
+          next
+        }
+        psi_hat[[b]] <- boot_fit$coefficients
       }
+      success_idx <- which(!vapply(psi_hat, is.null, logical(1)))
+      if (length(success_idx) == 0L) {
+        stop("All bootstrap replications failed.", call. = FALSE)
+      }
+      psi_hat <- do.call(
+        rbind,
+        lapply(
+          psi_hat[success_idx],
+          function(x) matrix(x, nrow = 1L, dimnames = list(NULL, names(x)))
+        )
+      )
       std.err <- build_qgcompmulti_std_error(
         coef_draws = psi_hat,
         coef_names = names(coefs)
@@ -310,8 +332,23 @@ qgcomp.glm.multi <- function(f,
         seed = seed
       )
       fits <- build_qgcompmulti_fits(full_fit)
-      prediction <- build_qgcompmulti_prediction()
-      bootstrap <- build_qgcompmulti_bootstrap(psi_hat, B)
+      prediction <- build_qgcompmulti_prediction(
+        intervention_grid = full_fit$intervention_grid,
+        msm_grid = full_fit$msm_grid,
+        counterfactual_surface = full_fit$counterfactual_surface,
+        msm_surface = full_fit$msm_surface,
+        surface_comparison = full_fit$surface_comparison
+      )
+      failure_log_df <- if (length(failure_log) == 0L) {
+        NULL
+      } else {
+        do.call(rbind, failure_log)
+      }
+      bootstrap <- build_qgcompmulti_bootstrap(
+        coef_draws = psi_hat,
+        B_requested = B,
+        failure_log = failure_log_df
+      )
       results <- build_qgcompmulti_results(coefs, std.err, varcov)
       fit <- new_qgcompmulti(
         call = call,

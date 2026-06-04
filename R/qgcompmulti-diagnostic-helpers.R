@@ -6,7 +6,11 @@
 build_qgcompmulti_bootstrap <- function(coef_draws,
                                         B_requested,
                                         failure_log = NULL) {
-  B_success <- nrow(coef_draws)
+  if (is.null(coef_draws)) {
+    B_success <- 0L
+  } else {
+    B_success <- nrow(as.matrix(coef_draws))
+  }
   B_failed <- max(0L, as.integer(B_requested) - B_success)
   list(
     coef_draws = coef_draws,
