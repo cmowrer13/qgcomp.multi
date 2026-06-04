@@ -105,6 +105,48 @@ qgcompmulti_validate_intervention_grid <- function(grid) {
 }
 #' @keywords internal
 #' @noRd
+qgcompmulti_validate_grid_support <- function(object,
+                                              grid,
+                                              scale = c("msm", "intervention")) {
+  validate_qgcompmulti(object)
+  scale <- match.arg(scale)
+  grid <- qgcompmulti_standardize_grid(grid)
+  support_grid <- switch(
+    scale,
+    msm = object$prediction$msm_grid,
+    intervention = object$prediction$intervention_grid
+  )
+  if (is.null(support_grid)) {
+    return(invisible(grid))
+  }
+  psi1_range <- range(support_grid$psi1, na.rm = TRUE)
+  psi2_range <- range(support_grid$psi2, na.rm = TRUE)
+  if (any(grid$psi1 < psi1_range[1] | grid$psi1 > psi1_range[2])) {
+    stop(
+      sprintf(
+        "Requested `psi1` values are outside the supported %s-scale range [%s, %s].",
+        scale,
+        format(psi1_range[1], trim = TRUE),
+        format(psi1_range[2], trim = TRUE)
+      ),
+      call. = FALSE
+    )
+  }
+  if (any(grid$psi2 < psi2_range[1] | grid$psi2 > psi2_range[2])) {
+    stop(
+      sprintf(
+        "Requested `psi2` values are outside the supported %s-scale range [%s, %s].",
+        scale,
+        format(psi2_range[1], trim = TRUE),
+        format(psi2_range[2], trim = TRUE)
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(grid)
+}
+#' @keywords internal
+#' @noRd
 qgcompmulti_build_msm_grid <- function(object, grid = NULL, at = NULL) {
   validate_qgcompmulti(object)
   if (!is.null(grid) && !is.null(at)) {
@@ -118,6 +160,7 @@ qgcompmulti_build_msm_grid <- function(object, grid = NULL, at = NULL) {
       psi2 = unname(at[["psi2"]]),
       row.names = NULL
     )
+    qgcompmulti_validate_grid_support(object, point_grid, scale = "msm")
     return(list(grid = point_grid, grid_type = "point_regime"))
   }
   if (is.null(grid)) {
@@ -126,6 +169,7 @@ qgcompmulti_build_msm_grid <- function(object, grid = NULL, at = NULL) {
       grid_type = "stored_fit_grid"
     ))
   }
+  qgcompmulti_validate_grid_support(object, grid, scale = "msm")
   list(
     grid = qgcompmulti_validate_msm_grid(grid),
     grid_type = "user_grid"
@@ -146,6 +190,7 @@ qgcompmulti_build_intervention_grid <- function(object, grid = NULL, at = NULL) 
       psi2 = unname(at[["psi2"]]),
       row.names = NULL
     )
+    qgcompmulti_validate_grid_support(object, point_grid, scale = "intervention")
     return(list(grid = point_grid, grid_type = "point_regime"))
   }
   if (is.null(grid)) {
@@ -154,6 +199,7 @@ qgcompmulti_build_intervention_grid <- function(object, grid = NULL, at = NULL) 
       grid_type = "stored_fit_grid"
     ))
   }
+  qgcompmulti_validate_grid_support(object, grid, scale = "intervention")
   list(
     grid = qgcompmulti_validate_intervention_grid(grid),
     grid_type = "user_grid"
@@ -221,5 +267,39 @@ build_qgcompmulti_prediction_result <- function(prediction_type,
     uncertainty_source = uncertainty_source,
     data_supplied = data_supplied,
     contrast = contrast
+  )
+}
+
+#' Extract stored intervention grids from a qgcompmulti fit
+#'
+#' Returns the fit-time intervention grid and the corresponding MSM-coded grid
+#' retained in a fitted [qgcomp.glm.multi()] object.
+#'
+#' @param object A fitted `"qgcompmulti"` object.
+#' @param type Character string indicating which stored grid to return.
+#' Supported values are `"all"`, `"intervention"`, and `"msm"`.
+#' @param ... Unused.
+#'
+#' @return Either a list containing both stored grids or a single data frame,
+#' depending on `type`.
+#'
+#' @export
+intervention_grid <- function(object, type = c("all", "intervention", "msm"), ...) {
+  UseMethod("intervention_grid")
+}
+#' @export
+intervention_grid.qgcompmulti <- function(object,
+                                          type = c("all", "intervention", "msm"),
+                                          ...) {
+  validate_qgcompmulti(object)
+  type <- match.arg(type)
+  switch(
+    type,
+    all = list(
+      intervention_grid = object$prediction$intervention_grid,
+      msm_grid = object$prediction$msm_grid
+    ),
+    intervention = object$prediction$intervention_grid,
+    msm = object$prediction$msm_grid
   )
 }

@@ -1,0 +1,25 @@
+test_that("intervention_grid exposes stored fit-time grids", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  both_grids <- intervention_grid(fit)
+  int_grid <- intervention_grid(fit, type = "intervention")
+  msm_grid <- intervention_grid(fit, type = "msm")
+  expect_true(is.list(both_grids))
+  expect_identical(names(both_grids), c("intervention_grid", "msm_grid"))
+  expect_equal(int_grid, fit$prediction$intervention_grid)
+  expect_equal(msm_grid, fit$prediction$msm_grid)
+})
+test_that("fitted_surface exposes stored fit-time surface objects", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  surfaces <- fitted_surface(fit)
+  exact_surface <- fitted_surface(fit, type = "exact")
+  msm_surface <- fitted_surface(fit, type = "msm")
+  comparison_surface <- fitted_surface(fit, type = "comparison")
+  expect_true(is.list(surfaces))
+  expect_identical(
+    names(surfaces),
+    c("counterfactual_surface", "msm_surface", "surface_comparison")
+  )
+  expect_equal(exact_surface, fit$prediction$counterfactual_surface)
+  expect_equal(msm_surface, fit$prediction$msm_surface)
+  expect_equal(comparison_surface, fit$prediction$surface_comparison)
+})

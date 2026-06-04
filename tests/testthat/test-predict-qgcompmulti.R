@@ -1,0 +1,116 @@
+test_that("predict defaults to MSM surface predictions", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  result <- predict(fit)
+  expect_identical(names(result), EXPECTED_INTERNAL_PREDICTION_FIELDS)
+  expect_identical(result$prediction_type, "msm_surface")
+  expect_identical(result$grid_type, "stored_fit_grid")
+  expect_equal(nrow(result$estimates), nrow(fit$prediction$msm_grid))
+})
+test_that("predict supports user-grid MSM surface predictions", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  result <- predict(
+    fit,
+    type = "msm",
+    grid = data.frame(psi1 = c(0, 1), psi2 = c(2, 3), row.names = NULL)
+  )
+  expect_identical(result$prediction_type, "msm_surface")
+  expect_identical(result$grid_type, "user_grid")
+  expect_equal(nrow(result$estimates), 2)
+})
+test_that("predict allows interpolation within support but rejects extrapolation", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  interpolated <- predict(
+    fit,
+    type = "msm",
+    grid = data.frame(psi1 = c(1.5, 2.5), psi2 = c(0.25, 2.75), row.names = NULL)
+  )
+  expect_identical(interpolated$grid_type, "user_grid")
+  expect_equal(nrow(interpolated$estimates), 2)
+  expect_error(
+    predict(
+      fit,
+      type = "msm",
+      grid = data.frame(psi1 = c(-1, 1), psi2 = c(0, 2), row.names = NULL)
+    )
+  )
+  expect_error(
+    predict(
+      fit,
+      type = "msm_point",
+      at = c(psi1 = 5, psi2 = 1)
+    )
+  )
+})
+test_that("predict supports MSM point predictions and intervals", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  result <- predict(
+    fit,
+    type = "msm_point",
+    at = c(psi1 = 1, psi2 = 2),
+    interval = TRUE
+  )
+  expect_identical(result$prediction_type, "msm_point")
+  expect_identical(result$grid_type, "point_regime")
+  expect_true(is.data.frame(result$intervals))
+  expect_equal(nrow(result$estimates), 1)
+})
+test_that("predict supports MSM contrasts and intervals", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  result <- predict(
+    fit,
+    type = "msm_contrast",
+    from = c(psi1 = 0, psi2 = 0),
+    to = c(psi1 = 2, psi2 = 1),
+    interval = TRUE
+  )
+  expect_identical(result$prediction_type, "msm_contrast")
+  expect_true(result$contrast)
+  expect_true(is.data.frame(result$intervals))
+  expect_equal(nrow(result$estimates), 1)
+})
+test_that("predict exposes exact fit-time surface through the public API", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  result <- predict(fit, type = "exact")
+  expect_identical(result$prediction_type, "exact_fit_surface")
+  expect_equal(result$estimates, fit$prediction$counterfactual_surface)
+})
+test_that("predict supports exact arbitrary prediction and exact arbitrary contrasts", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  dat <- make_test_data()
+  exact_pred <- predict(
+    fit,
+    type = "exact",
+    data = dat,
+    at = c(psi1 = 1, psi2 = 2)
+  )
+  exact_contrast <- predict(
+    fit,
+    type = "exact_contrast",
+    data = dat,
+    from = c(psi1 = 0, psi2 = 0),
+    to = c(psi1 = 1, psi2 = 2)
+  )
+  expect_identical(exact_pred$prediction_type, "exact_arbitrary")
+  expect_true(exact_pred$data_supplied)
+  expect_identical(exact_contrast$prediction_type, "exact_contrast")
+  expect_true(exact_contrast$data_supplied)
+  expect_true(exact_contrast$contrast)
+})
+test_that("predict fails clearly on invalid public combinations", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  dat <- make_test_data()
+  expect_error(predict(fit, type = "msm_point"))
+  expect_error(predict(fit, type = "msm_contrast", from = c(psi1 = 0, psi2 = 0)))
+  expect_error(predict(fit, type = "exact", at = c(psi1 = 1, psi2 = 2)))
+  expect_error(predict(fit, type = "exact", data = dat, interval = TRUE))
+  expect_error(predict(fit, type = "exact_contrast", from = c(psi1 = 0, psi2 = 0), to = c(psi1 = 1, psi2 = 2)))
+  expect_error(predict(fit, type = "msm", at = c(psi1 = 1, psi2 = 2)))
+  expect_error(
+    predict(
+      fit,
+      type = "exact",
+      data = dat,
+      at = c(psi1 = 99, psi2 = 99)
+    )
+  )
+})

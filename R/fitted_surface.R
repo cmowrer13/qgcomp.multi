@@ -186,3 +186,41 @@ qgcompmulti_exact_contrast_data <- function(object,
     contrast = TRUE
   )
 }
+
+#' Extract stored fit-time surfaces from a qgcompmulti fit
+#'
+#' Returns the fit-time exact counterfactual surface, the fit-time MSM fitted
+#' surface, or the stored exact-versus-MSM comparison object retained in a
+#' fitted [qgcomp.glm.multi()] object.
+#'
+#' @param object A fitted `"qgcompmulti"` object.
+#' @param type Character string indicating which stored surface object to
+#' return. Supported values are `"all"`, `"exact"`, `"msm"`, and
+#' `"comparison"`.
+#' @param ... Unused.
+#'
+#' @return Either a list of stored surfaces or one stored surface data frame,
+#' depending on `type`.
+#'
+#' @export
+fitted_surface <- function(object, type = c("all", "exact", "msm", "comparison"), ...) {
+  UseMethod("fitted_surface")
+}
+#' @export
+fitted_surface.qgcompmulti <- function(object,
+                                       type = c("all", "exact", "msm", "comparison"),
+                                       ...) {
+  validate_qgcompmulti(object)
+  type <- match.arg(type)
+  switch(
+    type,
+    all = list(
+      counterfactual_surface = object$prediction$counterfactual_surface,
+      msm_surface = object$prediction$msm_surface,
+      surface_comparison = object$prediction$surface_comparison
+    ),
+    exact = object$prediction$counterfactual_surface,
+    msm = object$prediction$msm_surface,
+    comparison = object$prediction$surface_comparison
+  )
+}

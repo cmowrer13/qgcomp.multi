@@ -176,3 +176,73 @@ validate_quantize_mixtures_inputs <- function(data, mix1, mix2, q) {
 
   invisible(NULL)
 }
+
+validate_predict_qgcompmulti_inputs <- function(type,
+                                                grid = NULL,
+                                                at = NULL,
+                                                from = NULL,
+                                                to = NULL,
+                                                data = NULL,
+                                                interval = FALSE,
+                                                level = 0.95) {
+  allowed_types <- c("msm", "msm_point", "msm_contrast", "exact", "exact_contrast")
+  if (!is.character(type) || length(type) != 1L || is.na(type) || !type %in% allowed_types) {
+    stop(
+      sprintf("`type` must be one of: %s.", paste(allowed_types, collapse = ", ")),
+      call. = FALSE
+    )
+  }
+  if (!is.logical(interval) || length(interval) != 1L || is.na(interval)) {
+    stop("`interval` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+  if (isTRUE(interval)) {
+    qgcompmulti_validate_conf_level(level)
+  }
+  if (type == "msm") {
+    if (!is.null(at) || !is.null(from) || !is.null(to) || !is.null(data)) {
+      stop("`type = \"msm\"` only supports `grid` and interval-related arguments.", call. = FALSE)
+    }
+  }
+  if (type == "msm_point") {
+    if (is.null(at)) {
+      stop("`type = \"msm_point\"` requires `at`.", call. = FALSE)
+    }
+    if (!is.null(grid) || !is.null(from) || !is.null(to) || !is.null(data)) {
+      stop("`type = \"msm_point\"` supports `at` but not `grid`, `from`, `to`, or `data`.", call. = FALSE)
+    }
+  }
+  if (type == "msm_contrast") {
+    if (is.null(from) || is.null(to)) {
+      stop("`type = \"msm_contrast\"` requires both `from` and `to`.", call. = FALSE)
+    }
+    if (!is.null(grid) || !is.null(at) || !is.null(data)) {
+      stop("`type = \"msm_contrast\"` does not support `grid`, `at`, or `data`.", call. = FALSE)
+    }
+  }
+  if (type == "exact") {
+    if (!is.null(from) || !is.null(to)) {
+      stop("`type = \"exact\"` does not support `from` or `to`.", call. = FALSE)
+    }
+    if (isTRUE(interval)) {
+      stop("Intervals are not supported for public exact predictions in Version 0.3.0.", call. = FALSE)
+    }
+    if (is.null(data) && (!is.null(grid) || !is.null(at))) {
+      stop("Exact arbitrary prediction requires explicit `data` when `grid` or `at` is supplied.", call. = FALSE)
+    }
+  }
+  if (type == "exact_contrast") {
+    if (is.null(data)) {
+      stop("`type = \"exact_contrast\"` requires explicit `data`.", call. = FALSE)
+    }
+    if (is.null(from) || is.null(to)) {
+      stop("`type = \"exact_contrast\"` requires both `from` and `to`.", call. = FALSE)
+    }
+    if (!is.null(grid) || !is.null(at)) {
+      stop("`type = \"exact_contrast\"` does not support `grid` or `at`.", call. = FALSE)
+    }
+    if (isTRUE(interval)) {
+      stop("Intervals are not supported for public exact contrasts in Version 0.3.0.", call. = FALSE)
+    }
+  }
+  invisible(NULL)
+}
