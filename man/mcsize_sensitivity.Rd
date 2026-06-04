@@ -35,3 +35,46 @@ An object of class \code{"qgcompmulti_mcsize_sensitivity"}.
 Re-fits \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} across multiple \code{MCsize} values while
 preserving the rest of the analysis specification.
 }
+\details{
+This helper is intended to answer a practical computational question: are
+the fitted results reasonably stable as the Monte Carlo approximation size
+changes?
+
+\code{MCsize} sensitivity is implemented as a repeated-fit workflow rather than a
+diagnostic of one existing fit. The helper keeps the model formula, outcome
+family, mixture definitions, interaction setting, quantization choice,
+bootstrap count, clustering, and seed fixed while varying only \code{MCsize}.
+
+The resulting object is designed for stability assessment rather than
+automatic tuning. Users should look for whether the fitted coefficients,
+adequacy summaries, and bootstrap behavior are reasonably consistent across
+the requested \code{MCsize} values.
+}
+\examples{
+\dontrun{
+dat <- sim_mixture_data(
+  n = 400,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  seed = 123
+)
+
+mcsize_sensitivity(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  MCsize_values = c(100, 200, 400),
+  q = 4,
+  B = 100,
+  seed = 13
+)
+}
+
+}

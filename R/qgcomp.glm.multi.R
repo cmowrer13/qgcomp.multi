@@ -177,6 +177,38 @@
 #' coef(fit)
 #' confint(fit)
 #'
+#' # Public prediction and plotting workflow
+#' \dontrun{
+#' predict(fit)
+#' predict(
+#'   fit,
+#'   type = "msm_contrast",
+#'   from = c(psi1 = 0, psi2 = 0),
+#'   to = c(psi1 = 3, psi2 = 3),
+#'   interval = TRUE
+#' )
+#' plot(fit)
+#' plot(fit, style = "contour")
+#'
+#' # Diagnostics
+#' support(fit)
+#' diagnostics(fit, type = "bootstrap")
+#' adequacy(fit)
+#'
+#' # Sensitivity helpers
+#' mcsize_sensitivity(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   MCsize_values = c(250, 500),
+#'   q = 4,
+#'   B = 100,
+#'   seed = 13
+#' )
+#' }
+#'
+#'
 #' dat_cont <- sim_mixture_data(
 #'   n = 500,
 #'   pA = 4,

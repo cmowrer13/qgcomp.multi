@@ -34,3 +34,48 @@ An object of class \code{"qgcompmulti_q_sensitivity"}.
 Re-fits \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} across multiple integer \code{q} values while
 preserving the rest of the analysis specification.
 }
+\details{
+This helper is intended for robustness assessment, not for coefficient
+ranking across different quantization choices.
+
+\code{q} sensitivity is implemented as a repeated-fit workflow in which all
+settings other than \code{q} are held fixed.
+
+Users should be cautious when comparing raw coefficient magnitudes across
+different values of \code{q}. A larger \code{q} implies a smaller one-quantile
+intervention step, so smaller coefficients may be expected mechanically even
+when the broader qualitative pattern of the fitted surface is stable. For
+that reason, the printed sensitivity object includes an explicit
+comparability note.
+
+The helper therefore supports sensitivity assessment, not a claim that one
+choice of \code{q} produces “stronger” or “weaker” effects based only on raw
+one-step coefficient magnitudes.
+}
+\examples{
+\dontrun{
+dat <- sim_mixture_data(
+  n = 400,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  seed = 123
+)
+
+q_sensitivity(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  q_values = c(3, 4, 5),
+  B = 100,
+  seed = 13
+)
+}
+
+}

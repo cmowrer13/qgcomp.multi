@@ -6,6 +6,27 @@ test_that("predict defaults to MSM surface predictions", {
   expect_identical(result$grid_type, "stored_fit_grid")
   expect_equal(nrow(result$estimates), nrow(fit$prediction$msm_grid))
 })
+test_that("predict supports public MSM and exact workflows for q = NULL fits", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = NULL,
+    centering = "median",
+    B = 10
+  )
+  dat <- make_test_data()
+  msm_result <- predict(fit)
+  exact_result <- predict(fit, type = "exact")
+  exact_arbitrary <- predict(
+    fit,
+    type = "exact",
+    data = dat,
+    at = c(psi1 = fit$prediction$intervention_grid$psi1[1],
+           psi2 = fit$prediction$intervention_grid$psi2[1])
+  )
+  expect_identical(msm_result$prediction_type, "msm_surface")
+  expect_identical(exact_result$prediction_type, "exact_fit_surface")
+  expect_identical(exact_arbitrary$prediction_type, "exact_arbitrary")
+})
 test_that("predict supports user-grid MSM surface predictions", {
   fit <- fit_test_model(interaction = TRUE, q = 4)
   result <- predict(
@@ -67,6 +88,14 @@ test_that("predict supports MSM contrasts and intervals", {
   expect_true(result$contrast)
   expect_true(is.data.frame(result$intervals))
   expect_equal(nrow(result$estimates), 1)
+})
+test_that("predict supports no-interaction fits through the public API", {
+  fit <- fit_test_model(interaction = FALSE, q = 4, B = 10)
+  result <- predict(fit)
+  point <- predict(fit, type = "msm_point", at = c(psi1 = 1, psi2 = 2))
+  expect_identical(result$prediction_type, "msm_surface")
+  expect_equal(nrow(result$estimates), nrow(fit$prediction$msm_grid))
+  expect_identical(point$prediction_type, "msm_point")
 })
 test_that("predict exposes exact fit-time surface through the public API", {
   fit <- fit_test_model(interaction = TRUE, q = 4)

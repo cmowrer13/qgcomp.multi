@@ -3,12 +3,55 @@
 #' Re-fits [qgcomp.glm.multi()] across multiple `MCsize` values while
 #' preserving the rest of the analysis specification.
 #'
+#' This helper is intended to answer a practical computational question: are
+#' the fitted results reasonably stable as the Monte Carlo approximation size
+#' changes?
+#'
 #' @param f,data,mix1,mix2,interaction,family,q,centering,B,id,seed Arguments
 #' passed through to [qgcomp.glm.multi()].
 #' @param MCsize_values Integer vector of Monte Carlo sizes to compare.
 #' @param keep_fits Logical; if `TRUE`, retain the full fitted objects.
 #'
 #' @return An object of class `"qgcompmulti_mcsize_sensitivity"`.
+#'
+#' @details
+#' `MCsize` sensitivity is implemented as a repeated-fit workflow rather than a
+#' diagnostic of one existing fit. The helper keeps the model formula, outcome
+#' family, mixture definitions, interaction setting, quantization choice,
+#' bootstrap count, clustering, and seed fixed while varying only `MCsize`.
+#'
+#' The resulting object is designed for stability assessment rather than
+#' automatic tuning. Users should look for whether the fitted coefficients,
+#' adequacy summaries, and bootstrap behavior are reasonably consistent across
+#' the requested `MCsize` values.
+#'
+#' @examples
+#' \dontrun{
+#' dat <- sim_mixture_data(
+#'   n = 400,
+#'   pA = 3,
+#'   pB = 3,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   seed = 123
+#' )
+#'
+#' mcsize_sensitivity(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   MCsize_values = c(100, 200, 400),
+#'   q = 4,
+#'   B = 100,
+#'   seed = 13
+#' )
+#' }
+#'
 #' @export
 mcsize_sensitivity <- function(f,
                                data,
@@ -71,12 +114,57 @@ mcsize_sensitivity <- function(f,
 #' Re-fits [qgcomp.glm.multi()] across multiple integer `q` values while
 #' preserving the rest of the analysis specification.
 #'
+#' This helper is intended for robustness assessment, not for coefficient
+#' ranking across different quantization choices.
+#'
 #' @param f,data,mix1,mix2,interaction,family,centering,B,id,MCsize,seed
 #' Arguments passed through to [qgcomp.glm.multi()].
 #' @param q_values Integer vector of quantization choices to compare.
 #' @param keep_fits Logical; if `TRUE`, retain the full fitted objects.
 #'
 #' @return An object of class `"qgcompmulti_q_sensitivity"`.
+#'
+#' @details
+#' `q` sensitivity is implemented as a repeated-fit workflow in which all
+#' settings other than `q` are held fixed.
+#'
+#' Users should be cautious when comparing raw coefficient magnitudes across
+#' different values of `q`. A larger `q` implies a smaller one-quantile
+#' intervention step, so smaller coefficients may be expected mechanically even
+#' when the broader qualitative pattern of the fitted surface is stable. For
+#' that reason, the printed sensitivity object includes an explicit
+#' comparability note.
+#'
+#' The helper therefore supports sensitivity assessment, not a claim that one
+#' choice of `q` produces “stronger” or “weaker” effects based only on raw
+#' one-step coefficient magnitudes.
+#'
+#' @examples
+#' \dontrun{
+#' dat <- sim_mixture_data(
+#'   n = 400,
+#'   pA = 3,
+#'   pB = 3,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   seed = 123
+#' )
+#'
+#' q_sensitivity(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   q_values = c(3, 4, 5),
+#'   B = 100,
+#'   seed = 13
+#' )
+#' }
+#'
 #' @export
 q_sensitivity <- function(f,
                           data,

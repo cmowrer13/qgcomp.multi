@@ -23,3 +23,67 @@ when \code{type = "all"}.
 Returns structured diagnostics for intervention support, bootstrap behavior,
 and MSM adequacy from a fitted \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} object.
 }
+\details{
+#' These diagnostics are deliberately kept outside the main fitted-model
+summary so that users can inspect model fit, support, and computational
+behavior explicitly rather than having a very dense \code{summary()} method.
+
+The three main diagnostic families are:
+
+\itemize{
+\item \strong{Support diagnostics}, which summarize the fit-time
+intervention grid. For \code{q = NULL}, these diagnostics are especially
+important because the intervention grid is built from pooled marginal
+percentile values within each mixture.
+\item \strong{Bootstrap diagnostics}, which summarize how many bootstrap
+replications were requested, retained, or failed, together with any
+lightweight failure metadata stored in the fitted object.
+\item \strong{MSM adequacy diagnostics}, which compare the exact fit-time
+counterfactual surface to the fitted MSM surface on the response scale.
+}
+
+Support diagnostics should not be read as a full positivity proof. They are
+designed to help users see which intervention values define the stored
+surface and to highlight when original-scale pooled percentile interventions
+may deserve extra scrutiny.
+
+MSM adequacy is one of the most method-specific diagnostics in the package.
+Large residual discrepancies between the exact fit-time surface and the MSM
+surface suggest that the MSM may be a poor low-dimensional summary of the
+underlying counterfactual mean surface.
+}
+\examples{
+\dontrun{
+dat <- sim_mixture_data(
+  n = 400,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  seed = 123
+)
+
+fit <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  q = 4,
+  B = 100,
+  seed = 13
+)
+
+# Full diagnostic bundle
+diagnostics(fit)
+
+# Focused diagnostics
+support(fit)
+diagnostics(fit, type = "bootstrap")
+adequacy(fit)
+}
+
+}

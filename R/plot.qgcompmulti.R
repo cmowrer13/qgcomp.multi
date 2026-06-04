@@ -5,6 +5,11 @@
 #' heatmap over the stored fit-time MSM grid. Contour plotting is also
 #' supported, along with a slice-based interval display for MSM predictions.
 #'
+#' Plotting in `qgcomp.multi` is intentionally prediction-driven: the plotting
+#' method delegates the scientific computation to [predict.qgcompmulti()] and
+#' only handles rendering. This helps keep the plotted quantities aligned with
+#' the documented public prediction interface.
+#'
 #' @param x A fitted `"qgcompmulti"` object.
 #' @param style Character string specifying the surface display style.
 #' Supported values are `"heatmap"` and `"contour"`.
@@ -25,6 +30,58 @@
 #'
 #' @return Invisibly returns the structured prediction result used to draw the
 #' plot.
+#'
+#' @details
+#' The default `plot(fit)` call visualizes the fitted MSM surface over the
+#' stored fit-time MSM grid. For quantized fits, the heatmap axes correspond to
+#' the quantile-index intervention levels. For stored `q = NULL` heatmaps, the
+#' plotted axis labels are mapped back to the pooled percentile intervention
+#' values used at fit time, even when the MSM itself was fit on centered
+#' coordinates.
+#'
+#' `interval = TRUE` switches to a slice-based line display rather than trying
+#' to overlay uncertainty on the full two-dimensional surface. This keeps the
+#' uncertainty display readable and aligned with the currently supported MSM
+#' interval calculations.
+#'
+#' @examples
+#' \dontrun{
+#' dat <- sim_mixture_data(
+#'   n = 400,
+#'   pA = 3,
+#'   pB = 3,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   seed = 123
+#' )
+#'
+#' fit <- qgcomp.glm.multi(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   q = 4,
+#'   B = 100,
+#'   seed = 13
+#' )
+#'
+#' # Default heatmap of the fitted MSM surface
+#' plot(fit)
+#'
+#' # Contour rendering of the same stored MSM surface
+#' plot(fit, style = "contour")
+#'
+#' # Slice-based interval display
+#' plot(
+#'   fit,
+#'   interval = TRUE,
+#'   slice = list(var = "psi2", value = 1)
+#' )
+#' }
 #'
 #' @export
 plot.qgcompmulti <- function(x,

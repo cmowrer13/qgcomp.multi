@@ -6,6 +6,22 @@
 #' prediction on user-supplied data are also supported through explicit
 #' `type` values.
 #'
+#' In `qgcomp.multi`, it is important to distinguish between:
+#'
+#' \itemize{
+#'   \item \strong{MSM-based predictions}, which evaluate the fitted marginal
+#'   structural model on the MSM coding scale and support bootstrap percentile
+#'   intervals in Version 0.3.0; and
+#'   \item \strong{exact counterfactual predictions}, which come directly from
+#'   the fitted outcome model under specified interventions.
+#' }
+#'
+#' Exact arbitrary prediction requires the user to supply `data` because the
+#' exact counterfactual mean is defined by averaging predicted outcomes over an
+#' explicit covariate distribution. Without user-supplied data, the package can
+#' only return the exact fit-time surface that was stored when the original fit
+#' was computed.
+#'
 #' @param object A fitted `"qgcompmulti"` object.
 #' @param type Character string specifying the prediction target. Supported
 #' values are `"msm"`, `"msm_point"`, `"msm_contrast"`, `"exact"`, and
@@ -27,6 +43,89 @@
 #' returned object includes metadata identifying the prediction type, grid type,
 #' grid scale, estimand scale, the prediction estimates, and any interval
 #' information.
+#'
+#' @details
+#' The default `type = "msm"` returns fitted MSM predictions on the response
+#' scale. These predictions are the most natural targets for surface plotting,
+#' interval construction, and direct regime contrasts because the fitted object
+#' retains bootstrap coefficient draws for the MSM.
+#'
+#' `type = "exact"` has two different behaviors:
+#' \itemize{
+#'   \item If `data`, `grid`, and `at` are all omitted, the function returns
+#'   the exact fit-time counterfactual surface that was stored when the model
+#'   was fitted.
+#'   \item If `data` is supplied together with `grid` or `at`, the function
+#'   computes exact counterfactual means over the supplied covariate
+#'   distribution. This is why explicit `data` is required: the package needs a
+#'   concrete distribution over which to average the potential outcomes.
+#' }
+#'
+#' User-specified MSM grids are restricted to the stored fit-time support. The
+#' function allows interpolation within that support, but it does not allow
+#' arbitrary extrapolation beyond the intervention range used to fit the model.
+#'
+#' Public interval support in Version 0.3.0 is limited to MSM-based
+#' predictions. Exact public prediction targets do not currently return
+#' intervals.
+#'
+#' @examples
+#' \dontrun{
+#' dat <- sim_mixture_data(
+#'   n = 400,
+#'   pA = 3,
+#'   pB = 3,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   seed = 123
+#' )
+#'
+#' fit <- qgcomp.glm.multi(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   q = 4,
+#'   B = 100,
+#'   seed = 13
+#' )
+#'
+#' # Default MSM surface prediction on the stored fit-time grid
+#' pred_msm <- predict(fit)
+#'
+#' # MSM prediction at one regime, with bootstrap interval
+#' predict(
+#'   fit,
+#'   type = "msm_point",
+#'   at = c(psi1 = 1, psi2 = 2),
+#'   interval = TRUE
+#' )
+#'
+#' # Direct MSM contrast between two regimes
+#' predict(
+#'   fit,
+#'   type = "msm_contrast",
+#'   from = c(psi1 = 0, psi2 = 0),
+#'   to = c(psi1 = 3, psi2 = 3),
+#'   interval = TRUE
+#' )
+#'
+#' # Exact fit-time surface extraction
+#' predict(fit, type = "exact")
+#'
+#' # Exact arbitrary prediction requires explicit data because the
+#' # counterfactual mean must be averaged over a concrete covariate distribution
+#' predict(
+#'   fit,
+#'   type = "exact",
+#'   data = dat,
+#'   at = c(psi1 = 1, psi2 = 2)
+#' )
+#' }
 #'
 #' @export
 predict.qgcompmulti <- function(object,

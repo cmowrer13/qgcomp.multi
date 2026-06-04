@@ -17,3 +17,7 @@ An object of class \code{"qgcompmulti_adequacy_diagnostic"}.
 \description{
 Extract MSM adequacy diagnostics from a qgcompmulti fit
 }
+\details{
+The adequacy diagnostic evaluates how closely the fitted MSM reproduces the
+exact fit-time counterfactual surface stored in the fitted object.
+}

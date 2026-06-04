@@ -17,6 +17,24 @@ test_that("mcsize_sensitivity() returns a structured sensitivity object", {
   expect_identical(sens$settings_fixed$q, 4)
   expect_length(sens$fits, 2L)
 })
+test_that("mcsize_sensitivity() can be used with q = NULL fits", {
+  dat <- make_test_data()
+  sens <- mcsize_sensitivity(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    MCsize_values = c(60, 120),
+    interaction = TRUE,
+    q = NULL,
+    centering = "median",
+    B = 10,
+    seed = 123
+  )
+  expect_s3_class(sens, "qgcompmulti_mcsize_sensitivity")
+  expect_identical(sens$settings_fixed$q, NULL)
+  expect_identical(sens$settings_fixed$centering, "median")
+})
 test_that("q_sensitivity() returns a structured sensitivity object", {
   dat <- make_test_data()
   sens <- q_sensitivity(
@@ -36,6 +54,7 @@ test_that("q_sensitivity() returns a structured sensitivity object", {
   expect_true(is.character(sens$comparability_note))
   expect_match(sens$comparability_note, "not directly comparable across different choices of q")
   expect_length(sens$fits, 2L)
+  expect_identical(sens$settings_fixed$MCsize, nrow(dat))
 })
 test_that("sensitivity helpers can drop stored fits", {
   dat <- make_test_data()
@@ -117,4 +136,19 @@ test_that("sensitivity print methods run and q sensitivity warns about comparabi
   expect_output(print(mc_sens), "MCsize sensitivity")
   expect_output(print(q_sens), "Comparability note")
   expect_output(print(q_sens), "not directly comparable")
+})
+test_that("q_sensitivity() works for no-interaction fits", {
+  dat <- make_test_data()
+  sens <- q_sensitivity(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    q_values = c(3, 4),
+    interaction = FALSE,
+    B = 10,
+    seed = 123
+  )
+  expect_s3_class(sens, "qgcompmulti_q_sensitivity")
+  expect_false("psi12" %in% names(sens$results_table))
 })

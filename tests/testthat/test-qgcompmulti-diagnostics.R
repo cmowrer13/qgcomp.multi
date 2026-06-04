@@ -78,6 +78,13 @@ test_that("combined diagnostics return all three diagnostic families", {
   expect_s3_class(diag$bootstrap, "qgcompmulti_bootstrap_diagnostic")
   expect_s3_class(diag$adequacy, "qgcompmulti_adequacy_diagnostic")
 })
+test_that("diagnostics also work for no-interaction fits", {
+  fit <- fit_test_model(interaction = FALSE, q = 4, B = 10)
+  diag <- diagnostics(fit, type = "all")
+  expect_s3_class(diag$support, "qgcompmulti_support_diagnostic")
+  expect_s3_class(diag$bootstrap, "qgcompmulti_bootstrap_diagnostic")
+  expect_s3_class(diag$adequacy, "qgcompmulti_adequacy_diagnostic")
+})
 test_that("diagnostic objects print cleanly", {
   fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
   expect_output(print(support(fit)), "intervention support diagnostic")

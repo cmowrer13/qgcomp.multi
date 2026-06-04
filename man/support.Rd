@@ -17,3 +17,8 @@ An object of class \code{"qgcompmulti_support_diagnostic"}.
 \description{
 Extract intervention support diagnostics from a qgcompmulti fit
 }
+\details{
+The support diagnostic is particularly informative for \code{q = NULL}, where the
+stored intervention grid is defined by pooled percentile values rather than
+quantile indices.
+}
