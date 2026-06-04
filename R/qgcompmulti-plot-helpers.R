@@ -129,3 +129,313 @@ qgcompmulti_print_msm_table <- function(msm_table) {
   )
   invisible(msm_table)
 }
+
+#' @keywords internal
+#' @noRd
+qgcompmulti_default_surface_labels <- function(object) {
+  validate_qgcompmulti(object)
+  if (!is.null(object$mixtures$q)) {
+    return(list(
+      xlab = "Mixture 1 intervention (quantile index)",
+      ylab = "Mixture 2 intervention (quantile index)"
+    ))
+  }
+  list(
+    xlab = "Mixture 1 intervention",
+    ylab = "Mixture 2 intervention"
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_format_axis_values <- function(x, digits = 3) {
+  formatC(x, digits = digits, format = "fg", flag = "#")
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_surface_plot_data <- function(prediction_result) {
+  if (!is.list(prediction_result) || is.null(prediction_result$estimates)) {
+    stop("`prediction_result` must be a structured prediction result.", call. = FALSE)
+  }
+  estimates <- prediction_result$estimates
+  required_cols <- c("psi1", "psi2", "estimate")
+  if (!all(required_cols %in% names(estimates))) {
+    stop(
+      sprintf(
+        "Prediction estimates must contain columns: %s.",
+        paste(required_cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (anyDuplicated(estimates[c("psi1", "psi2")]) > 0L) {
+    stop(
+      "Surface plotting requires at most one prediction per (`psi1`, `psi2`) pair.",
+      call. = FALSE
+    )
+  }
+  x_vals <- sort(unique(estimates$psi1))
+  y_vals <- sort(unique(estimates$psi2))
+  expected_n <- length(x_vals) * length(y_vals)
+  if (nrow(estimates) != expected_n) {
+    stop(
+      "Surface plotting requires a rectangular prediction grid covering all (`psi1`, `psi2`) combinations.",
+      call. = FALSE
+    )
+  }
+  z_mat <- matrix(
+    NA_real_,
+    nrow = length(x_vals),
+    ncol = length(y_vals),
+    dimnames = list(as.character(x_vals), as.character(y_vals))
+  )
+  row_idx <- match(estimates$psi1, x_vals)
+  col_idx <- match(estimates$psi2, y_vals)
+  z_mat[cbind(row_idx, col_idx)] <- estimates$estimate
+  if (anyNA(z_mat)) {
+    stop(
+      "Surface plotting requires a complete rectangular prediction grid.",
+      call. = FALSE
+    )
+  }
+  list(
+    x = x_vals,
+    y = y_vals,
+    z = z_mat,
+    estimates = estimates
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_surface_axis_spec <- function(object,
+                                          prediction_result,
+                                          plot_data) {
+  x_at <- plot_data$x
+  y_at <- plot_data$y
+  x_labels <- qgcompmulti_format_axis_values(plot_data$x)
+  y_labels <- qgcompmulti_format_axis_values(plot_data$y)
+  if (!is.null(object$mixtures$q) ||
+      !identical(prediction_result$grid_type, "stored_fit_grid")) {
+    return(list(
+      x_at = x_at,
+      x_labels = x_labels,
+      y_at = y_at,
+      y_labels = y_labels
+    ))
+  }
+  intervention_grid <- object$prediction$intervention_grid
+  msm_grid <- object$prediction$msm_grid
+  if (is.null(intervention_grid) || is.null(msm_grid)) {
+    return(list(
+      x_at = x_at,
+      x_labels = x_labels,
+      y_at = y_at,
+      y_labels = y_labels
+    ))
+  }
+  x_map <- unique(data.frame(
+    msm = msm_grid$psi1,
+    intervention = intervention_grid$psi1,
+    row.names = NULL
+  ))
+  y_map <- unique(data.frame(
+    msm = msm_grid$psi2,
+    intervention = intervention_grid$psi2,
+    row.names = NULL
+  ))
+  x_map <- x_map[order(x_map$msm), , drop = FALSE]
+  y_map <- y_map[order(y_map$msm), , drop = FALSE]
+  if (length(plot_data$x) == nrow(x_map) &&
+      length(plot_data$y) == nrow(y_map) &&
+      isTRUE(all.equal(plot_data$x, x_map$msm, tolerance = 1e-8)) &&
+      isTRUE(all.equal(plot_data$y, y_map$msm, tolerance = 1e-8))) {
+    x_labels <- qgcompmulti_format_axis_values(x_map$intervention)
+    y_labels <- qgcompmulti_format_axis_values(y_map$intervention)
+  }
+  list(
+    x_at = x_at,
+    x_labels = x_labels,
+    y_at = y_at,
+    y_labels = y_labels
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_plot_heatmap <- function(plot_data,
+                                     object,
+                                     prediction_result,
+                                     xlab,
+                                     ylab,
+                                     main,
+                                     ...) {
+  axis_spec <- qgcompmulti_surface_axis_spec(object, prediction_result, plot_data)
+  dots <- list(...)
+  cols <- dots$col
+  if (is.null(cols)) {
+    cols <- grDevices::hcl.colors(64L, palette = "YlOrRd", rev = TRUE)
+  }
+  dots$col <- NULL
+  zlim <- range(plot_data$z, finite = TRUE)
+  old_mar <- graphics::par("mar")
+  graphics::layout(matrix(c(1L, 2L), nrow = 1L), widths = c(4, 1))
+  on.exit({
+    graphics::layout(1)
+    graphics::par(mar = old_mar)
+  }, add = TRUE)
+  graphics::par(mar = c(5.1, 4.1, 4.1, 2.1))
+  do.call(
+    graphics::image,
+    c(
+      list(
+        x = plot_data$x,
+        y = plot_data$y,
+        z = plot_data$z,
+        xlab = xlab,
+        ylab = ylab,
+        main = main,
+        col = cols,
+        axes = FALSE
+      ),
+      dots
+    )
+  )
+  graphics::axis(1, at = axis_spec$x_at, labels = axis_spec$x_labels)
+  graphics::axis(2, at = axis_spec$y_at, labels = axis_spec$y_labels)
+  graphics::box()
+  legend_breaks <- seq(zlim[1], zlim[2], length.out = length(cols) + 1L)
+  graphics::par(mar = c(5.1, 1.5, 4.1, 4.6))
+  graphics::plot.new()
+  graphics::plot.window(
+    xlim = c(0, 1),
+    ylim = zlim,
+    xaxs = "i",
+    yaxs = "i"
+  )
+  graphics::rect(
+    xleft = 0,
+    ybottom = legend_breaks[-length(legend_breaks)],
+    xright = 1,
+    ytop = legend_breaks[-1L],
+    col = cols,
+    border = NA
+  )
+  graphics::axis(4, at = pretty(zlim), labels = qgcompmulti_format_axis_values(pretty(zlim)))
+  graphics::mtext("Predicted outcome", side = 4, line = 2.8)
+  graphics::box()
+  invisible(plot_data)
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_plot_contour <- function(plot_data,
+                                     object,
+                                     prediction_result,
+                                     xlab,
+                                     ylab,
+                                     main,
+                                     ...) {
+  axis_spec <- qgcompmulti_surface_axis_spec(object, prediction_result, plot_data)
+  graphics::contour(
+    x = plot_data$x,
+    y = plot_data$y,
+    z = plot_data$z,
+    xlab = xlab,
+    ylab = ylab,
+    main = main,
+    axes = FALSE,
+    ...
+  )
+  graphics::axis(1, at = axis_spec$x_at, labels = axis_spec$x_labels)
+  graphics::axis(2, at = axis_spec$y_at, labels = axis_spec$y_labels)
+  graphics::box()
+  invisible(plot_data)
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_validate_plot_slice <- function(slice) {
+  if (!is.list(slice) || is.data.frame(slice)) {
+    stop(
+      "`slice` must be a list with elements `var` and `value`.",
+      call. = FALSE
+    )
+  }
+  if (!all(c("var", "value") %in% names(slice))) {
+    stop("`slice` must contain `var` and `value`.", call. = FALSE)
+  }
+  if (!is.character(slice$var) ||
+      length(slice$var) != 1L ||
+      is.na(slice$var) ||
+      !slice$var %in% c("psi1", "psi2")) {
+    stop("`slice$var` must be either \"psi1\" or \"psi2\".", call. = FALSE)
+  }
+  if (!is.numeric(slice$value) ||
+      length(slice$value) != 1L ||
+      is.na(slice$value) ||
+      !is.finite(slice$value)) {
+    stop("`slice$value` must be a single finite numeric value.", call. = FALSE)
+  }
+  invisible(slice)
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_build_slice_grid <- function(object, slice) {
+  validate_qgcompmulti(object)
+  qgcompmulti_validate_plot_slice(slice)
+  support_grid <- object$prediction$msm_grid
+  if (is.null(support_grid)) {
+    stop("No stored MSM grid is available for slice plotting.", call. = FALSE)
+  }
+  if (slice$var == "psi1") {
+    psi2_vals <- sort(unique(support_grid$psi2))
+    grid <- data.frame(
+      psi1 = rep(slice$value, length(psi2_vals)),
+      psi2 = psi2_vals,
+      row.names = NULL
+    )
+  } else {
+    psi1_vals <- sort(unique(support_grid$psi1))
+    grid <- data.frame(
+      psi1 = psi1_vals,
+      psi2 = rep(slice$value, length(psi1_vals)),
+      row.names = NULL
+    )
+  }
+  qgcompmulti_validate_grid_support(object, grid, scale = "msm")
+  qgcompmulti_standardize_grid(grid)
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_plot_interval_slice <- function(prediction_result,
+                                            slice,
+                                            xlab,
+                                            ylab,
+                                            main,
+                                            ...) {
+  qgcompmulti_validate_plot_slice(slice)
+  estimates <- prediction_result$estimates
+  intervals <- prediction_result$intervals
+  if (is.null(intervals)) {
+    stop(
+      "Interval slice plotting requires prediction intervals.",
+      call. = FALSE
+    )
+  }
+  varying_var <- if (slice$var == "psi1") "psi2" else "psi1"
+  x_vals <- estimates[[varying_var]]
+  ord <- order(x_vals)
+  x_vals <- x_vals[ord]
+  est_vals <- estimates$estimate[ord]
+  lower_vals <- intervals$lower[ord]
+  upper_vals <- intervals$upper[ord]
+  graphics::plot(
+    x = x_vals,
+    y = est_vals,
+    type = "l",
+    xlab = xlab,
+    ylab = ylab,
+    main = main,
+    ylim = range(c(lower_vals, upper_vals), na.rm = TRUE),
+    ...
+  )
+  graphics::lines(x_vals, lower_vals, lty = 2)
+  graphics::lines(x_vals, upper_vals, lty = 2)
+  invisible(prediction_result)
+}
