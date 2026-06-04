@@ -114,6 +114,18 @@ EXPECTED_SURFACE_COMPARISON_COLUMNS <- c(
   "msm_mean",
   "residual"
 )
+EXPECTED_INTERNAL_PREDICTION_FIELDS <- c(
+  "prediction_type",
+  "grid_type",
+  "grid_scale",
+  "estimand_scale",
+  "estimates",
+  "intervals",
+  "interval_type",
+  "uncertainty_source",
+  "data_supplied",
+  "contrast"
+)
 
 make_test_data <- function(seed = 123, n = 120) {
   key <- sprintf("data_%s_%s", seed, n)
