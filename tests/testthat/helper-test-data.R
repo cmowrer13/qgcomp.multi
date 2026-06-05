@@ -159,6 +159,24 @@ make_clustered_test_data <- function(seed = 123, n = 120, cluster_size = 10) {
   get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
 }
 
+make_uneven_clustered_test_data <- function(
+    seed = 123,
+    cluster_sizes = c(6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 7, 8)
+) {
+  n <- sum(cluster_sizes)
+  key <- sprintf(
+    "uneven_clustered_data_%s_%s",
+    seed,
+    paste(cluster_sizes, collapse = "_")
+  )
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- make_test_data(seed = seed, n = n)
+    dat$cluster_id <- rep(seq_along(cluster_sizes), times = cluster_sizes)
+    assign(key, dat, envir = .qgcompmulti_test_cache)
+  }
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
 make_test_fit_args <- function(data) {
   list(
     f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,

@@ -137,10 +137,6 @@ validate_qgcomp_multi_inputs <- function(
     stop("`MCsize` must be a single integer greater than or equal to 1.", call. = FALSE)
   }
 
-  if (MCsize > nrow(data)) {
-    stop("`MCsize` must be less than or equal to `nrow(data)`.", call. = FALSE)
-  }
-
   invisible(NULL)
 }
 

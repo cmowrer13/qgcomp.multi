@@ -60,11 +60,12 @@ variable. If supplied, Monte Carlo subsampling is performed at the cluster
 level rather than the observation level.}
 
 \item{MCsize}{Optional integer controlling the Monte Carlo sample size used
-to approximate the marginalization step in g-computation. If equal to
-\code{nrow(data)}, all observations are used. Smaller values compute predicted
-outcomes over a random subsample drawn from the empirical distribution. When
-\code{id} is supplied and \code{MCsize < nrow(data)}, the approximation is implemented
-by sampling \code{MCsize} clusters with replacement.}
+to approximate the marginalization step in g-computation. If \code{MCsize} is
+greater than or equal to the current analysis sample size, all observations
+are used. Smaller values compute predicted outcomes over a random subsample
+drawn from the empirical distribution. When \code{id} is supplied and
+\code{MCsize < nrow(data)}, the approximation is implemented by sampling \code{MCsize}
+clusters with replacement.}
 
 \item{seed}{Optional integer random seed used to make Monte Carlo
 subsampling reproducible when \code{MCsize < nrow(data)}. If \code{NULL}, the current

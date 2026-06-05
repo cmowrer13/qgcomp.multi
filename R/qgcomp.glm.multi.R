@@ -59,12 +59,12 @@
 #' variable. If supplied, bootstrap resampling is performed at the cluster
 #' level rather than the observation level.
 #' @param MCsize Optional integer controlling the Monte Carlo sample size used
-#' in the g-computation step. If equal to `nrow(data)`, the empirical
-#' covariate distribution is fully enumerated. Smaller values approximate the
-#' marginalization step using a random subsample, which can reduce computation
-#' time in large datasets. When `id` is supplied and `MCsize < nrow(data)`,
-#' the approximation is implemented by sampling `MCsize` clusters with
-#' replacement.
+#' in the g-computation step. If `MCsize` is greater than or equal to the
+#' current analysis sample size, the empirical covariate distribution is fully
+#' enumerated. Smaller values approximate the marginalization step using a
+#' random subsample, which can reduce computation time in large datasets. When
+#' `id` is supplied and `MCsize < nrow(data)`, the approximation is implemented
+#' by sampling `MCsize` clusters with replacement.
 #' @param seed Optional integer random seed used to make bootstrap resampling
 #' and any Monte Carlo subsampling reproducible. If `NULL`, the current RNG
 #' state is used and not modified by `qgcomp.glm.multi()`. When supplied, the

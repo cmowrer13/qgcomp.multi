@@ -92,17 +92,17 @@ test_that("sensitivity helpers validate requested values", {
     ),
     "positive integers"
   )
-  expect_error(
-    mcsize_sensitivity(
-      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
-      data = dat,
-      mix1 = c("X1", "X2", "X3"),
-      mix2 = c("W1", "W2", "W3"),
-      MCsize_values = c(nrow(dat) + 1),
-      B = 10
-    ),
-    "less than or equal to `nrow\\(data\\)`"
+  sens_mc_cap <- mcsize_sensitivity(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    MCsize_values = c(nrow(dat), nrow(dat) + 1, nrow(dat) + 10),
+    B = 10,
+    seed = 123
   )
+  expect_equal(sens_mc_cap$MCsize_values, nrow(dat))
+  expect_equal(sens_mc_cap$results_table$MCsize, nrow(dat))
   expect_error(
     q_sensitivity(
       f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,

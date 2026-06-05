@@ -84,7 +84,7 @@ test_that("validation rejects invalid q, centering, B, MCsize, and seed values",
       MCsize = 0
     )
   )
-  expect_error(
+  expect_silent(
     qgcomp.glm.multi(
       f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
       data = dat,

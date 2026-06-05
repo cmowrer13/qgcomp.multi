@@ -57,10 +57,7 @@ qgcompmulti_mcsize_values <- function(MCsize_values, n) {
   if (any(MCsize_values <= 0L)) {
     stop("`MCsize_values` must contain positive integers.", call. = FALSE)
   }
-  if (any(MCsize_values > n)) {
-    stop("All `MCsize_values` must be less than or equal to `nrow(data)`.", call. = FALSE)
-  }
-  unique(MCsize_values)
+  unique(pmin(MCsize_values, as.integer(n)))
 }
 #' @keywords internal
 #' @noRd

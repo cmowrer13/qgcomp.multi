@@ -54,11 +54,12 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' variable. If supplied, Monte Carlo subsampling is performed at the cluster
 #' level rather than the observation level.
 #' @param MCsize Optional integer controlling the Monte Carlo sample size used
-#' to approximate the marginalization step in g-computation. If equal to
-#' `nrow(data)`, all observations are used. Smaller values compute predicted
-#' outcomes over a random subsample drawn from the empirical distribution. When
-#' `id` is supplied and `MCsize < nrow(data)`, the approximation is implemented
-#' by sampling `MCsize` clusters with replacement.
+#' to approximate the marginalization step in g-computation. If `MCsize` is
+#' greater than or equal to the current analysis sample size, all observations
+#' are used. Smaller values compute predicted outcomes over a random subsample
+#' drawn from the empirical distribution. When `id` is supplied and
+#' `MCsize < nrow(data)`, the approximation is implemented by sampling `MCsize`
+#' clusters with replacement.
 #' @param seed Optional integer random seed used to make Monte Carlo
 #' subsampling reproducible when `MCsize < nrow(data)`. If `NULL`, the current
 #' RNG state is used and not modified by `qgcompmulti_msm_fit()`.
@@ -187,7 +188,7 @@ qgcompmulti_msm_fit <- function(f,
       )
       intervention_grid <- grids$intervention_grid
       msm_grid <- grids$msm_grid
-      if (MCsize == nrow(data)) {
+      if (MCsize >= nrow(data)) {
         nd <- data
       } else if (is.null(id)) {
         samp_idx <- sample(seq_len(nrow(data)), MCsize, replace = TRUE)
