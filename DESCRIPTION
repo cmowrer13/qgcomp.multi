@@ -13,6 +13,9 @@ RoxygenNote: 7.3.3
 Imports: 
     dplyr,
     MASS
-Suggests: 
+Suggests:
+    knitr,
+    rkarmdown,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3

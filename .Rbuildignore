@@ -5,3 +5,5 @@
 ^\\.Rhistory$
 ^README\.Rmd$
 ^LICENSE\.md$
+^doc$
+^Meta$
