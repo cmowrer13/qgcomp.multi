@@ -22,9 +22,8 @@ knitr::opts_chunk$set(
 `qgcomp.multi` extends quantile g-computation to settings with **two exposure
 mixtures** and their interaction.
 
-This document is meant to read like a real analysis walkthrough, not just a list
-of function calls. The example uses a simulated environmental health dataset
-with:
+This document is meant to read like a real analysis walkthrough. The example 
+uses a simulated environmental health dataset with:
 
 - Mixture 1: urinary phthalate metabolites
 - Mixture 2: urinary phenol biomarkers
@@ -32,8 +31,8 @@ with:
 
 The package can now do more than it could in the early proof-of-concept stage.
 The fitted object behaves like an S3 model object, and the package now supports
-prediction, plotting, and several diagnostics. This draft focuses on how an
-applied analyst would actually use those features.
+prediction, plotting, and several diagnostics. This vignette focuses on how an
+applied analyst would use those features.
 
 Two distinctions matter throughout:
 
@@ -41,7 +40,7 @@ Two distinctions matter throughout:
 - the **marginal structural model (MSM)**, which is the lower-dimensional summary
   that the package fits to predicted counterfactual means
 
-Those are not the same object, and a lot of the interpretation hinges on that.
+Those are two distinct objects, and a lot of the interpretation hinges on that.
 
 # What This Vignette Covers
 
@@ -74,8 +73,8 @@ percentile values within each mixture on the analysis scale. In that setting,
 the coefficients are tied to the original-scale intervention coding used to fit 
 the MSM.
 
-That choice matters. For biomarker work, it changes both what the model means
-and how easy it is to explain.
+That choice is important, as it changes both what the model means and how easy 
+it is to explain.
 
 # Simulate A Biomarker Dataset
 
@@ -137,8 +136,7 @@ analysis:
 - `B = 20` is used to keep the vignette runnable
 - some sensitivity examples use even smaller `B`
 
-That is fine for a teaching document, but not for a paper-ready analysis. In a
-real application, you would usually increase `B` enough that bootstrap intervals
+In a real application, you would usually increase `B` enough that bootstrap intervals
 and standard errors are stable, and you would check that your conclusions do not
 change meaningfully when `MCsize` is increased.
 
@@ -147,11 +145,8 @@ change meaningfully when `MCsize` is increased.
 We start with a standard quantized fit using the **raw biomarker concentrations**.
 
 When `q` is an integer, the exposures are quantized by rank. A monotone
-transformation such as `log()` preserves the ordering, so a simple logged-versus-
-raw change will usually not alter the quantized intervention coding.
-
-That is why users do not need to log-transform first just to run a quantized
-analysis.
+transformation such as `log()` preserves the ordering, so users do not need 
+to log-transform first to run a quantized analysis.
 
 ```{r}
 fit_q <- qgcomp.glm.multi(
@@ -265,7 +260,7 @@ predict(
 )
 ```
 
-In a paper, a contrast like that is often more useful than quoting `psi1` and
+In a manuscript, a contrast like that may be more useful than quoting `psi1` and
 `psi2` alone, because it maps onto a specific intervention comparison.
 
 # Exact Versus MSM Predictions
@@ -306,7 +301,7 @@ names(surf_q)
 
 ## Why arbitrary exact predictions require user-supplied data
 
-A genuinely new exact prediction is not just a model plug-in value. It is an
+A genuinely new exact prediction is not just a model plug-in value, it is an
 average of predicted potential outcomes over some covariate distribution.
 
 That is why arbitrary exact prediction requests need user-supplied `data`.
@@ -360,13 +355,12 @@ plot(
 )
 ```
 
-This is often a more readable uncertainty display than trying to put intervals
-directly on a full two-dimensional surface.
+This is intended to be a more readable uncertainty display than trying to put 
+intervals directly on a full two-dimensional surface.
 
 # Diagnostics For The Quantized Fit
 
-Diagnostics should be part of routine interpretation, not something you check
-only when a fit looks odd.
+Diagnostics should be part of routine interpretation of the model results.
 
 ## Intervention Support
 
@@ -374,7 +368,7 @@ only when a fit looks odd.
 support(fit_q)
 ```
 
-For a quantized model with `q = 4`, the support diagnostic is easy to read
+For a quantized model with `q = 4`, the support diagnostic is straightforward to read
 because the stored intervention grid is finite and discrete.
 
 Still, this is not a proof of causal positivity. It tells you which
@@ -392,7 +386,7 @@ This reports how many bootstrap replications were requested, how many were
 retained, and whether any failures were logged.
 
 If failures appear in a real analysis, that is a sign to look more closely at
-model specification, numerical stability, and the bootstrap sample size.
+model specification, numerical stability, and sparsity in covariates.
 
 ## MSM Adequacy
 
@@ -453,9 +447,9 @@ outcome model. So the terms `mep_ng_ml`, `I(mep_ng_ml^2)`, and the rest are oper
 on **quantized scores derived from the biomarkers**, not on the original
 continuous biomarker values themselves.
 
-That still makes sense as an adequacy demonstration. The point here is to show
-that once the outcome model implies a more curved intervention-response surface,
-the linear MSM may no longer be an exact summary of that surface.
+The point here is to show that once the outcome model implies a more curved 
+intervention-response surface, the linear MSM may no longer be an exact summary of 
+that surface.
 
 What does **not** change is the meaning of the intervention step itself. In this
 quantized analysis, a one-unit change in the MSM intervention coding is still a
@@ -507,7 +501,7 @@ The main reason to use `q = NULL` is that you want the outcome model and the
 intervention grid to live on the analysis scale you care about, rather than on
 quantile categories.
 
-For biomarker concentrations, that choice matters. Here the logged scale is
+For biomarker concentrations, that choice is important. Here the logged scale is
 easier to work with than the raw concentration scale because:
 
 - the biomarkers are right-skewed
@@ -541,8 +535,6 @@ summary(fit_cont)
 
 ## What the `q = NULL` intervention means
 
-This is where users should to slow down and read carefully.
-
 When `q = NULL`, the package builds a fit-time `3 x 3` intervention grid from
 pooled 25th, 50th, and 75th percentile values within each mixture. Under a
 given intervention, every component in a mixture is set to the same pooled
@@ -551,8 +543,8 @@ mixture-specific value on the analysis scale.
 That is not a one-quantile shift. It is an original-scale joint intervention
 defined by those common pooled percentile values.
 
-For some applications that is useful. For others it may feel artificial. There
-is no way around that judgment call, so it is better to say it directly.
+For some applications that is useful, but for others it may feel artificial. That 
+is a judgement call on the part of the analyst, so it is better to say it directly.
 
 ## Why median centering helps here
 
@@ -560,18 +552,18 @@ With `centering = "median"`, the MSM is fit using intervention values centered
 at the pooled median within each mixture. The outcome model itself is unchanged;
 the centering only changes the MSM coding.
 
-That makes the intercept easier to read. It now corresponds to the predicted
-outcome when both mixtures are set to their pooled median logged biomarker
-values.
+That makes the intercept easier to interpret, particularly with log-transformed exposures. 
+It now corresponds to the predicted outcome when both mixtures are set to their pooled 
+median biomarker values.
 
 That is usually more interpretable than an intercept tied to some arbitrary
-reference value on the raw concentration scale.
+reference value on the raw concentration scale, as zero on the log-scale does not
+correspond to "no exposure".
 
 Parameter interpretation in this setting is:
 
-- `psi1` is the expected change in outcome for a one-unit increase in the MSM
-  intervention coding for mixture 1, on the centered log-scale intervention
-  coding used by the fitted MSM
+- `psi1` is the expected change in outcome for a one-unit increase the mixture 1
+  components, when the elements of mixture 2 are held constant at their pooled median
 - `psi2` is the analogous one-unit change for mixture 2 on that same MSM scale
 - `psi1:psi2` describes how the slope for one mixture changes as the
   intervention level of the other mixture changes
@@ -600,9 +592,8 @@ predict(
 plot(fit_cont)
 ```
 
-For stored `q = NULL` heatmaps, the axis labels are shown on the intervention
-value scale rather than on the centered MSM scale. That is a good default,
-because those are the values most users will want to see.
+For `q = NULL` heatmaps, the axis labels are shown on the intervention
+value scale rather than on the centered MSM scale.
 
 ```{r}
 support(fit_cont)
@@ -646,9 +637,9 @@ mcsize_sensitivity(
 )
 ```
 
-The point is not to discover one universally correct `MCsize`, but to
-see whether the estimated coefficients, adequacy summaries, and bootstrap
-behavior are reasonably stable as the approximation changes.
+The point is not to discover one correct `MCsize`, but to see whether the estimated 
+coefficients, adequacy summaries, and bootstrap behavior are reasonably stable as the 
+approximation changes.
 
 # Sensitivity To `q`
 
@@ -675,18 +666,15 @@ q_sensitivity(
 
 The package warns that raw coefficient magnitudes are **not directly comparable across different choices of `q`**.
 
-That warning is important. A larger `q` means a smaller one-quantile step, so
-smaller coefficients can appear for purely mechanical reasons even when the
-substantive pattern is basically unchanged.
+A larger `q` means a smaller one-quantile step, so smaller coefficients can appear 
+for purely mechanical reasons even when the substantive pattern is basically unchanged.
 
 This helper is best treated as a robustness check, not a way to rank effect
 sizes across different quantization choices.
 
 # What An Applied User Should Check In A Real Analysis
 
-The software workflow is only part of the job. In a real environmental
-epidemiology analysis, I would want to see the analyst think through at least
-the following:
+In a real environmental epidemiology analysis, the analyst should think through the following:
 
 - whether the two mixtures were defined a priori or after looking at the data
 - whether the outcome model includes the covariates needed for exchangeability
@@ -707,7 +695,7 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 2. Use MSM predictions, contrasts, and plots to understand the fitted
    intervention-response surface.
 3. Check support, bootstrap behavior, and adequacy before you get too attached
-   to a tidy coefficient table.
+   to a coefficient table.
 4. Move to `q = NULL` when the original analysis scale matters enough to justify
    the more complicated intervention definition.
 5. For biomarker concentrations, log transformation plus median centering often
