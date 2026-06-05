@@ -241,6 +241,8 @@
 #' coef(fit_cont)
 #' confint(fit_cont)
 #'
+#' @importFrom stats as.formula coef gaussian glm predict quantile rnorm setNames terms vcov
+#'
 #' @export
 
 qgcomp.glm.multi <- function(f,
