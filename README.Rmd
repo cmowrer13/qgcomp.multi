@@ -20,17 +20,32 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-`qgcomp.multi` is an extension of quantile g-computation (Keil et al., 2020) to settings with multiple exposure mixtures and their interaction.
+`qgcomp.multi` extends quantile g-computation (Keil et al., 2020) to settings
+with two exposure mixtures and their interaction.
 
-In many environmental and epidemiologic studies, exposures arise in distinct groups (e.g., metals, phthalates, phenols) that may jointly influence health outcomes. While standard quantile g-computation estimates the effect of a single mixture, `qgcomp.multi` allows users to:
+In many environmental and epidemiologic studies, exposures come in distinct
+groups, such as metals, phthalates, or phenols, and investigators may want to
+estimate the effect of shifting one mixture while allowing the effect of that
+shift to depend on the level of another mixture. `qgcomp.multi` is built for
+that setting.
 
-* Estimate the effect of two exposure mixtures simultaneously
-* Evaluate interactions between mixtures
-* Fit the model using either quantized exposures or the original exposure scales via `q = NULL`
-* Obtain interpretable effect estimates via marginal structural models (MSMs)
+The package currently supports:
 
-The current package interface is designed for analyses with exactly two
-mixtures, supplied through `mix1` and `mix2`.
+* estimation with exactly two mixtures, supplied through `mix1` and `mix2`
+* optional interaction between the two mixture intervention variables
+* quantized analyses with `q >= 2`
+* original-scale analyses with `q = NULL`
+* MSM-based prediction, plotting, diagnostics, and sensitivity helpers
+
+The package works by fitting an outcome regression, computing predicted
+counterfactual means under joint interventions on the two mixtures, and then
+fitting a marginal structural model (MSM) to summarize that intervention-response
+surface.
+
+For causal interpretation, the usual identifying conditions for g-computation
+still matter: causal consistency, conditional exchangeability, positivity for the
+interventions under study, and adequate specification of the outcome model.
+The package does not test or guarantee those assumptions.
 
 ## Installation
 
@@ -93,33 +108,56 @@ should include:
 
 * the outcome variable
 * all exposure variables named in `mix1` and `mix2`
-* covariates you want included in the outcome model
+* covariates needed for confounding control
+* any nonlinear terms or transformations you want in the outcome model
 
 The `mix1` and `mix2` arguments define which exposure variables belong to each
 mixture. They do not automatically add variables to the formula, so the
-exposures should still appear in `f`.
+exposures still need to appear in `f`.
+
+One implementation detail is worth stating explicitly. If `interaction = TRUE`,
+the package fits:
+
+* an outcome model that includes a product between the sums of the
+  mixture components, and
+* an MSM that includes the `psi1 * psi2` interaction term
+
+So `interaction = TRUE` does not just change the summary model at the end. It
+also changes the nuisance outcome regression used in the g-computation step.
   
 ## Interpreting the MSM coefficients
 
-The main estimands are the coefficients of the marginal structural model
-(MSM):
- 
+The main estimands are the coefficients of the marginal structural model (MSM):
+
 * `psi1` is the Mixture 1 main effect
 * `psi2` is the Mixture 2 main effect
 * `psi1:psi2` is the mixture interaction when `interaction = TRUE`
 
-When `q` is an integer, these coefficients describe the change in the expected
-outcome associated with a one-quantile simultaneous increase in all components
-of the corresponding mixture. When `q = NULL`, the coefficients are defined on
-the original-scale intervention structure used to build the MSM, so their units
-depend on the exposure scales. In both cases, the MSM is fit to predicted
-potential outcomes on the response scale.
+When `q` is an integer, the MSM is indexed by quantized intervention levels.
+In that setting, a one-unit change in `psi1` or `psi2` corresponds to a
+simultaneous one-quantile increase in all components of the corresponding
+mixture.
 
-Interpretation also depends on the outcome type used in the outcome model:
- 
-* for continuous outcomes, the MSM coefficients are mean differences
+When `q = NULL`, the interpretation changes. The package does not use quantile
+scores. Instead, it builds a `3 x 3` fit-time intervention grid from pooled
+25th, 50th, and 75th percentile values within each mixture, and under a given
+intervention every component in a mixture is set to the same pooled
+mixture-specific value on the analysis scale. In that setting, the MSM
+coefficients are defined with respect to that original-scale intervention coding.
+
+In both cases, the MSM is fit to predicted counterfactual means on the response
+scale. That means:
+
+* for continuous outcomes, MSM coefficients are mean differences
 * for binary outcomes fit with `family = binomial()`, they are risk differences
-* for count outcomes fit with `family = poisson()`, they are differences in expected counts
+* for count outcomes fit with `family = poisson()`, they are differences in
+  expected counts
+
+The coefficients should be read as summaries of the intervention-response
+surface implied by the fitted outcome model. When that surface is close to
+linear in the chosen intervention coding, the MSM coefficients are especially
+easy to interpret. When the surface is more curved, the same coefficients are
+still defined, but they are doing more approximation work.
 
 ## Simulated Example
 
@@ -169,14 +207,14 @@ summary(fit)
 The default prediction target is the fitted marginal structural model (MSM)
 surface:
 
-```{r}
+```r
 pred_msm <- predict(fit)
 head(pred_msm$estimates)
 ```
 
 You can also request direct MSM contrasts between two intervention regimes:
 
-```{r}
+```r
 predict(
   fit,
   type = "msm_contrast",
@@ -191,17 +229,19 @@ predict(
 `qgcomp.multi` distinguishes between:
 
 * MSM-based predictions, which come from the fitted marginal structural model
-* exact counterfactual predictions, which come directly from the fitted outcome model
+* exact counterfactual predictions, which come directly from the fitted outcome
+  model
+
 The stored fit-time exact surface can be extracted without any additional data:
 
-```{r}
+```r
 predict(fit, type = "exact")
 ```
 
 For arbitrary exact prediction at a new intervention regime, the user must
 supply `data`:
 
-```{r}
+```r
 predict(
   fit,
   type = "exact",
@@ -210,11 +250,17 @@ predict(
 )
 ```
 
-Supplying `data` is required here because an exact counterfactual mean is defined by
+Supplying `data` is required because an exact counterfactual mean is defined by
 averaging predicted potential outcomes over a concrete covariate distribution.
-Without user-supplied data, the package does not know which covariate
-distribution to average over, so it can only return the exact surface that was
-already computed and stored at fit time.
+Without user-supplied data, the package can only return the exact surface that
+was already computed and stored at fit time.
+
+For MSM-based prediction, user inputs such as `grid`, `at`, `from`, and `to`
+are interpreted on the MSM coding scale. That point matters most when
+`q = NULL` and `centering = "median"`, because the stored heatmaps are labeled
+on the intervention-value scale even though prediction inputs live on the
+centered MSM scale. In that setting, `(0, 0)` corresponds to the pooled median
+intervention for both mixtures.
 
 In Version `0.3.0`, interval support is currently limited to MSM-based
 predictions.
@@ -253,26 +299,34 @@ the centered MSM coordinates used internally when `centering = "median"`.
 Support, bootstrap behavior, and MSM adequacy are all available through public
 diagnostic helpers:
 
-```{r}
+```r
 support(fit)
 diagnostics(fit, type = "bootstrap")
 adequacy(fit)
 ```
 
-These diagnostics are deliberately kept outside the main model summary so that
-users can inspect model behavior explicitly rather than relying on a very dense
-`summary()` output.
+These diagnostics are kept outside the main model summary so that users can
+inspect model behavior directly rather than relying on a crowded `summary()`
+output.
 
-Two important interpretation notes:
-* support diagnostics summarize the intervention grid and are especially
-  informative for `q = NULL`
+Two interpretation notes matter here:
+
+* support diagnostics summarize the intervention grid used to define the stored
+  surface; they are not a full proof of causal positivity
 * adequacy diagnostics compare the exact fit-time counterfactual surface to the
-  fitted MSM surface on the response scale
+  fitted MSM surface on the response scale; they are checks on MSM
+  approximation, not tests of whether the outcome model is true
+
+Adequacy is evaluated on the stored fit-time grid. So a good adequacy result
+means that the MSM tracks the exact fit-time surface well on that grid. It does
+not prove that the surface is globally linear between those points or beyond
+them.
   
 ## Sensitivity Workflow
 
 The package includes dedicated helpers for sensitivity to Monte Carlo size and
 quantization choice:
+
 ```{r, eval = FALSE}
 mcsize_sensitivity(
   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
@@ -304,10 +358,15 @@ expected mechanically rather than indicating a weaker overall mixture effect.
 ## Original-Scale Fitting with `q = NULL`
 
 If you do not want to quantize exposures, set `q = NULL`. In that case, the
-outcome model is fit on the original exposure scales and the MSM is built over
-a common pooled intervention grid within each mixture.
+outcome model is fit on the original analysis scale and the MSM is built over a
+pooled `3 x 3` intervention grid within each mixture.
 
-```{r example-original-scale, eval = FALSE}
+That intervention needs to be described carefully. For each mixture, the package
+computes pooled 25th, 50th, and 75th percentile values across the components in
+that mixture. Under a given intervention, every component in the mixture is then
+set to the same pooled mixture-specific value.
+
+```r
 fit_cont <- qgcomp.glm.multi(
   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
   data = dataset,
@@ -319,36 +378,51 @@ fit_cont <- qgcomp.glm.multi(
   B = 100,
   seed = 13
 )
- 
+
 summary(fit_cont)
 coef(fit_cont)
 confint(fit_cont)
 ```
 
-With `q = NULL`, the MSM coefficients are interpreted with respect to the
-original-scale exposure coding rather than a one-quantile increase.
-Choosing `centering = "median"` makes the intercept correspond to the predicted
-outcome when both mixtures are set to their pooled medians.
+With `q = NULL`, the MSM coefficients are not one-quantile effects. They are
+defined with respect to the original-scale intervention coding used to fit the
+MSM.
+
+If `centering = "median"`, the MSM is fit on intervention values centered at
+the pooled median within each mixture. That makes the intercept correspond to
+the predicted outcome when both mixtures are set to their pooled medians.
+
+This option can be useful when the original analysis scale matters, but users
+should still check whether the implied pooled intervention is scientifically
+sensible for the exposures at hand.
 
 ## Computational Considerations
 
-The g-computation step requires prediction over a grid of intervention levels for both mixtures, which can become computationally intensive.
+The g-computation step requires prediction over a two-dimensional intervention
+grid, and the bootstrap repeats that workflow many times. In moderate or large
+datasets, that can become expensive.
 
-To address this, `qgcomp.multi` includes a Monte Carlo approximation:
+To address that, `qgcomp.multi` includes a Monte Carlo approximation:
 
-* `MCsize` = nrow(data) → full computation
-* `MCsize` < nrow(data) → approximate marginalization
+* `MCsize = nrow(data)` means full empirical averaging
+* `MCsize < nrow(data)` means approximate marginalization over a random
+  subsample
 
-This can substantially reduce runtime in large datasets while preserving model structure.
+This reduces runtime, but it introduces an additional approximation. In a real
+analysis, `MCsize` should be treated as a stability question, not just a tuning
+knob.
 
 In practice:
- 
-* use a smaller `B` while developing code and checking model specification
-* increase `B` for your final analysis once the model is stable
+
+* use a smaller `B` while you are developing code and checking model
+  specification
+* increase `B` for the final analysis once the model is stable
 * keep `MCsize = nrow(data)` when full g-computation is feasible
-* consider a smaller `MCsize` when runtime is prohibitive, especially in large samples
-* use `seed` when you need the bootstrap-based inferential results to be
-  exactly reproducible across reruns
+* consider smaller `MCsize` values only when runtime is a real constraint
+* use `mcsize_sensitivity()` to check whether results are stable across
+  reasonable `MCsize` choices
+* use `seed` when you need bootstrap-based results to be exactly reproducible
+  across reruns
 
 ## Core Functions and Methods
 

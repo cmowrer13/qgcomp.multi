@@ -2,7 +2,7 @@
 % Please edit documentation in R/qgcompmulti_msm_fit.R
 \name{qgcompmulti_msm_fit}
 \alias{qgcompmulti_msm_fit}
-\title{Fit the marginal structural model for two-mixture quantile g-computation}
+\title{Fit the core outcome-model and MSM components for two-mixture g-computation}
 \usage{
 qgcompmulti_msm_fit(
   f,
@@ -33,17 +33,22 @@ first exposure mixture.}
 \item{mix2}{A character vector giving the names of the variables in the
 second exposure mixture.}
 
-\item{interaction}{Logical; if \code{TRUE}, includes an interaction term between
-the two mixture indices in the marginal structural model. If \code{FALSE}, only
-main effects are estimated.}
+\item{interaction}{Logical; if \code{TRUE}, the package includes an interaction
+term in both the outcome regression and the fitted MSM. In the current
+implementation, the outcome model is augmented with a cross-product between
+the sums of the components in \code{mix1} and \code{mix2}, and the MSM includes the
+\code{psi1 * psi2} interaction term. If \code{FALSE}, both models are fit without that
+interaction.}
 
 \item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
 \code{poisson()}) specifying the outcome model.}
 
 \item{q}{Integer greater than or equal to 2 giving the number of quantiles
-used to discretize the exposure variables and define the intervention grid,
-or \code{NULL} to skip quantization and define a 3 x 3 intervention grid using
-pooled 25th, 50th, and 75th percentiles for each mixture.}
+used to discretize the exposure variables, or \code{NULL} to skip quantization and
+fit the outcome model on the original exposure scale. When \code{q = NULL}, the
+fit-time intervention grid is defined by the pooled 25th, 50th, and 75th
+percentile values within each mixture, and under each intervention every
+component in a mixture is set to the same pooled mixture-specific value.}
 
 \item{centering}{Character string controlling how the marginal structural
 model intervention variables are coded when \code{q = NULL}. Must be one of \code{"none"}
@@ -68,40 +73,34 @@ RNG state is used and not modified by \code{qgcompmulti_msm_fit()}.}
 \value{
 A list with components:
 \describe{
-\item{outcome_fit}{The fitted outcome regression model object.}
-\item{msm_fit}{The fitted marginal structural model object.}
-\item{coefficients}{A named vector of MSM coefficients.}
-\item{n_used}{The number of observations used in the MSM pseudo-dataset
+\item{\code{outcome_fit}}{The fitted outcome regression model object.}
+\item{\code{msm_fit}}{The fitted marginal structural model object.}
+\item{\code{coefficients}}{A named vector of MSM coefficients.}
+\item{\code{n_used}}{The number of observations used in the g-computation
 prediction step.}
+\item{\code{intervention_grid}}{The fit-time intervention grid on the
+intervention-value scale.}
+\item{\code{msm_grid}}{The corresponding fit-time grid on the MSM coding scale.}
+\item{\code{counterfactual_surface}}{The exact fit-time counterfactual mean
+surface implied by the fitted outcome model.}
+\item{\code{msm_surface}}{The fitted MSM surface evaluated on the common
+fit-time grid.}
+\item{\code{surface_comparison}}{A direct exact-versus-MSM comparison object on
+the common fit-time grid.}
 }
 }
 \description{
-Fits the outcome regression, computes predicted potential outcomes under
-joint interventions on two exposure mixtures, and estimates the marginal
-structural model (MSM) coefficients that summarize the resulting
-two-dimensional dose-response surface. This function is primarily an
-internal helper used by \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} and will not typically
-need to be called directly by users.
+Fits the outcome regression, computes predicted potential outcomes under joint
+interventions on two exposure mixtures, and estimates the marginal structural
+model (MSM) coefficients that summarize the resulting two-dimensional
+intervention-response surface.
 }
 \details{
-Given a fitted outcome model, the function evaluates predicted outcomes over
-either a grid of uniform mixture quantiles or, when \code{q = NULL}, a 3 x 3 grid
-formed from the pooled 25th, 50th, and 75th percentiles of each mixture, and
-regresses these predictions on the mixture intervention levels to obtain MSM
-parameters. When \code{interaction = TRUE}, the fitted MSM has the form
-
-\deqn{
-E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
-}
-
-where \code{psi1} and \code{psi2} represent the main effects of increasing the
-intervention level for mixtures 1 and 2 by one unit on the MSM scale, and
-\code{psi12} represents their interaction on that same scale. For quantized
-analyses this is a one-quantile increase; for \code{q = NULL} it is a one-unit
-increase in the original-scale intervention coding.
-
-When \code{q = NULL} and \code{centering = "median"}, the MSM is fit using intervention
-values centered at the pooled median of each mixture.
+This is a lower-level fitting helper used internally by
+\code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}}. It is exported because it can be useful for method
+development, testing, and direct inspection of the fitted outcome model, MSM,
+and stored fit-time surfaces. Most users will want \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}}
+instead.
 
 This function carries out the core g-computation step for the two-mixture
 extension. It first fits a generalized linear model for the outcome using

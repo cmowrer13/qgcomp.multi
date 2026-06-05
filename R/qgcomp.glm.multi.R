@@ -1,27 +1,25 @@
 #' Fit a quantile g-computation model for two exposure mixtures
 #'
-#' Fits an extension of quantile g-computation for settings with two exposure
-#' mixtures and an optional interaction term. The function first quantizes the
-#' specified exposure variables, fits an outcome regression model, computes
-#' predicted potential outcomes under joint interventions on the two mixtures,
-#' and then fits a marginal structural model (MSM) to summarize the resulting
-#' dose-response surface. The current interface is designed for analyses with
-#' exactly two mixtures, supplied through `mix1` and `mix2`. Uncertainty is
-#' estimated using a nonparametric bootstrap.
+#' Fits a two-mixture g-computation model with an optional interaction between
+#' the mixture intervention variables. The function fits an outcome regression,
+#' computes predicted potential outcomes under joint interventions on the two
+#' mixtures, and then fits a marginal structural model (MSM) to summarize the
+#' resulting intervention-response surface. The current interface is designed for
+#' analyses with exactly two mixtures, supplied through `mix1` and `mix2`.
+#' Uncertainty is estimated using a nonparametric bootstrap.
 #'
 #' The fitted MSM has the form
 #'
 #' \deqn{
-#' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
+#' E[Y^{x(q1), w(q2)}] = \psi_0 + \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 #' }
 #'
-#' when `interaction = TRUE`. When `q` is an integer, `q1` and `q2` index joint
-#' quantile-based interventions on mixtures 1 and 2. When `q = NULL`, the same
-#' linear MSM is fit over common intervention values on the original exposure
-#' scale, using a 3 x 3 grid formed from the pooled 25th, 50th, and 75th
-#' percentiles within each mixture. In both cases, `psi1` and `psi2` represent
-#' the main effects of increasing the corresponding mixture intervention level
-#' by one unit on the MSM scale, and `psi12` represents their interaction.
+#' when `interaction = TRUE`. When `q` is an integer, `q1` and `q2` index
+#' quantized joint intervention levels for mixtures 1 and 2. When `q = NULL`,
+#' the same linear MSM is fit over original-scale intervention values using a
+#' `3 x 3` grid formed from the pooled 25th, 50th, and 75th percentile values
+#' within each mixture. In that setting, every component in a mixture is set to
+#' the same pooled mixture-specific value under a given intervention.
 #'
 #' @param f A model formula for the outcome regression. The formula should
 #' include the outcome and any baseline covariates. Mixture variables listed
@@ -35,16 +33,20 @@
 #' first exposure mixture.
 #' @param mix2 A character vector giving the names of the variables in the
 #' second exposure mixture.
-#' @param interaction Logical; if `TRUE`, includes an interaction term between
-#' the two mixture indices in the marginal structural model. If `FALSE`, only
-#' main effects are estimated.
+#' @param interaction Logical; if `TRUE`, the package includes an interaction
+#' term in both the outcome regression and the fitted MSM. In the current
+#' implementation, the outcome model is augmented with a product between
+#' the sums of the components in `mix1` and `mix2`, and the MSM includes the
+#' `psi1 * psi2` interaction term. If `FALSE`, both models are fit without that
+#' interaction.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
 #' @param q Integer greater than or equal to 2 giving the number of quantiles
-#' used to discretize the exposure variables, or `NULL` to skip quantization
-#' and fit the outcome model on the original exposure scale. When `q = NULL`,
-#' the intervention grid is defined by the pooled 25th, 50th, and 75th
-#' percentiles within each mixture.
+#' used to discretize the exposure variables, or `NULL` to skip quantization and
+#' fit the outcome model on the original exposure scale. When `q = NULL`, the
+#' fit-time intervention grid is defined by the pooled 25th, 50th, and 75th
+#' percentile values within each mixture, and under each intervention every
+#' component in a mixture is set to the same pooled mixture-specific value.
 #' @param centering Character string controlling how the marginal structural
 #' model intervention variables are coded when `q = NULL`. Must be one of
 #' `"none"` or `"median"`. With `"none"`, the MSM uses the raw intervention
@@ -82,9 +84,10 @@
 #'   \item{`fits`}{The fitted outcome regression and marginal structural model
 #'   (MSM) objects.}
 #'   \item{`prediction`}{Stored fit-time prediction objects for later
-#'   prediction, plotting, and diagnostic methods. , including the intervention
-#'   grid, the exact counterfactual surface, the corresponding MSM fitted surface,
-#'   and a direct comparison object on the common grid.}
+#'   prediction, plotting, and diagnostic methods, including the intervention
+#'   grid, the MSM-coded grid, the exact counterfactual surface, the
+#'   corresponding MSM fitted surface, and a comparison object on the common
+#'   fit-time grid.}
 #'   \item{`bootstrap`}{Retained bootstrap coefficient draws, bootstrap
 #'   replication counts and lightweight failure data.}
 #'   \item{`results`}{The MSM coefficient vector, standard errors, covariance
@@ -99,51 +102,49 @@
 #' For each bootstrap replication, the observed data are resampled, exposures
 #' are either quantized or left on their original scale depending on `q`, the
 #' outcome model is fit, and predicted potential outcomes are computed under
-#' either uniform quantile interventions or a 3 x 3 grid of pooled
-#' 25th/50th/75th percentile interventions for the two mixtures. A marginal
-#' structural model is then fit to these predicted outcomes to obtain the
-#' mixture effect estimates.
+#' joint interventions on the two mixtures. A marginal structural model is then
+#' fit to those predicted counterfactual means to obtain the reported mixture
+#' effect estimates.
 #'
-#' The `MCsize` argument provides a Monte Carlo approximation to the
-#' marginalization step in g-computation. Rather than averaging predictions
-#' over all observations, the MSM can be fit using predictions from a random
-#' subsample of size `MCsize`. This can substantially reduce computation time
-#' when the sample size is large or when the intervention grid is large. In
-#' practice, it is often reasonable to use a smaller `B` while developing an
-#' analysis and then increase `B` for the final analysis once the model
-#' specification is stable.
-#'
-#' If `seed` is supplied, the bootstrap resampling and any Monte Carlo
-#' subsampling are made reproducible without requiring the user to set the
-#' global RNG state outside the function.
-#'
-#' When `q` is an integer, `psi1` and `psi2` are interpreted as the change in
+#' When `q` is an integer, the intervention grid is `0, 1, ..., q - 1` for each
+#' mixture. In that setting, `psi1` and `psi2` are interpreted as the change in
 #' the marginal mean outcome associated with simultaneously increasing every
-#' component in mixtures 1 or 2 by one quantile, holding the other mixture
-#' intervention level fixed.
+#' component in the corresponding mixture by one quantile, holding the other
+#' mixture intervention level fixed at the lowest quantile.
 #'
-#' When `q = NULL`, the exposure variables are left on their original scales.
-#' The intervention grid is then defined by assigning every component in a
-#' mixture to a common pooled percentile value from that mixture. In this case,
-#' `psi1` and `psi2` are slopes with respect to that original-scale intervention
-#' coding, so their units depend on the measurement scales of the mixture
-#' components. If `centering = "median"`, the intercept corresponds to the
-#' predicted outcome when both mixtures are set to their pooled medians.
+#' When `q = NULL`, the exposure variables are left on their original analysis
+#' scales. The intervention grid is then defined by assigning every component in
+#' a mixture to a common pooled percentile value from that mixture. In this
+#' setting, the MSM coefficients are defined with respect to that original-scale
+#' intervention coding, so their units depend on the measurement scale of the
+#' underlying exposures. If `centering = "median"`, the MSM is fit on centered
+#' intervention values and the intercept corresponds to the pooled-median
+#' intervention for both mixtures.
+#'
+#' If `interaction = TRUE`, the current implementation adds an interaction term
+#' to both the outcome regression and the MSM. This means the MSM is summarizing
+#' a counterfactual surface implied by an interacting outcome model rather than
+#' simply adding an interaction at the final summary step.
 #'
 #' The outcome model is fit using `glm()`, so this function can be used with
-#' Gaussian, binomial, Poisson, and other generalized linear models supported
-#' by the supplied formula and family specification. Note that predicted
-#' potential outcomes are computed on the response scale and the marginal
-#' structural model is fit using an identity link, regardless of the outcome
-#' model.
+#' Gaussian, binomial, Poisson, and other generalized linear models supported by
+#' the supplied formula and family specification. Predicted potential outcomes
+#' are computed on the response scale and the MSM is fit using an identity link,
+#' regardless of the outcome-model link function.
 #'
-#' Interpretation of parameters therefore depends on the outcome type:
+#' Interpretation therefore depends on the outcome type:
 #' \itemize{
 #'   \item For continuous outcomes, parameters represent mean differences.
 #'   \item For binary outcomes, parameters represent differences in predicted
-#'   probabilities (risk differences).
+#'   probabilities, that is, risk differences.
 #'   \item For count outcomes, parameters represent differences in expected counts.
 #' }
+#'
+#' For causal interpretation, the usual identifying conditions for
+#' g-computation still apply: consistency, conditional exchangeability,
+#' positivity for the interventions under study, and adequate specification of
+#' the outcome model. The support diagnostic can help users inspect the
+#' intervention grid, but it should not be read as a full positivity proof.
 #'
 #' @examples
 #' dat <- sim_mixture_data(
@@ -207,7 +208,6 @@
 #'   seed = 13
 #' )
 #' }
-#'
 #'
 #' dat_cont <- sim_mixture_data(
 #'   n = 500,

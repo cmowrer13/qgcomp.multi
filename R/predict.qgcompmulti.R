@@ -1,12 +1,11 @@
 #' Predict from a qgcompmulti fit
 #'
-#' Generates prediction objects from a fitted [qgcomp.glm.multi()] model.
-#' The default prediction target is the fitted marginal structural model
-#' (MSM) surface. Exact fit-time surface extraction and exact arbitrary
-#' prediction on user-supplied data are also supported through explicit
-#' `type` values.
+#' Generates prediction objects from a fitted [qgcomp.glm.multi()] model. The
+#' default target is the fitted marginal structural model (MSM) surface. Exact
+#' fit-time surface extraction and exact arbitrary prediction on user-supplied
+#' data are also supported through explicit `type` values.
 #'
-#' In `qgcomp.multi`, it is important to distinguish between:
+#' In `qgcomp.multi`, it helps to keep two prediction targets separate:
 #'
 #' \itemize{
 #'   \item \strong{MSM-based predictions}, which evaluate the fitted marginal
@@ -16,22 +15,17 @@
 #'   the fitted outcome model under specified interventions.
 #' }
 #'
-#' Exact arbitrary prediction requires the user to supply `data` because the
-#' exact counterfactual mean is defined by averaging predicted outcomes over an
-#' explicit covariate distribution. Without user-supplied data, the package can
-#' only return the exact fit-time surface that was stored when the original fit
-#' was computed.
-#'
 #' @param object A fitted `"qgcompmulti"` object.
 #' @param type Character string specifying the prediction target. Supported
 #' values are `"msm"`, `"msm_point"`, `"msm_contrast"`, `"exact"`, and
 #' `"exact_contrast"`.
 #' @param grid Optional data frame with columns `psi1` and `psi2` giving a
-#' user-specified prediction grid.
+#' user-specified prediction grid on the MSM coding scale.
 #' @param at Optional named numeric vector or list with entries `psi1` and
-#' `psi2` giving a single intervention regime.
+#' `psi2` giving a single intervention regime on the MSM coding scale.
 #' @param from,to Optional named numeric vectors or lists with entries `psi1`
-#' and `psi2` defining the source and target regimes for a direct contrast.
+#' and `psi2` defining the source and target regimes for a direct contrast on
+#' the MSM coding scale.
 #' @param data Optional data frame used for exact arbitrary prediction or exact
 #' arbitrary contrasts. Exact arbitrary prediction requires explicit `data`.
 #' @param interval Logical; if `TRUE`, returns bootstrap percentile intervals
@@ -46,20 +40,28 @@
 #'
 #' @details
 #' The default `type = "msm"` returns fitted MSM predictions on the response
-#' scale. These predictions are the most natural targets for surface plotting,
+#' scale. These predictions are the natural targets for surface plotting,
 #' interval construction, and direct regime contrasts because the fitted object
 #' retains bootstrap coefficient draws for the MSM.
 #'
 #' `type = "exact"` has two different behaviors:
 #' \itemize{
-#'   \item If `data`, `grid`, and `at` are all omitted, the function returns
-#'   the exact fit-time counterfactual surface that was stored when the model
-#'   was fitted.
+#'   \item If `data`, `grid`, and `at` are all omitted, the function returns the
+#'   exact fit-time counterfactual surface that was stored when the model was
+#'   fitted.
 #'   \item If `data` is supplied together with `grid` or `at`, the function
 #'   computes exact counterfactual means over the supplied covariate
-#'   distribution. This is why explicit `data` is required: the package needs a
-#'   concrete distribution over which to average the potential outcomes.
+#'   distribution. Explicit `data` is required because the exact counterfactual
+#'   mean is defined by averaging predicted outcomes over a concrete covariate
+#'   distribution.
 #' }
+#'
+#' For MSM-based prediction, user-supplied inputs such as `grid`, `at`, `from`,
+#' and `to` are interpreted on the MSM coding scale. This distinction matters
+#' most when `q = NULL` and `centering = "median"`, because the plotted heatmap
+#' axes are labeled on the intervention-value scale even though MSM prediction
+#' inputs use centered coordinates. In that setting, `(0, 0)` corresponds to the
+#' pooled median intervention for both mixtures.
 #'
 #' User-specified MSM grids are restricted to the stored fit-time support. The
 #' function allows interpolation within that support, but it does not allow

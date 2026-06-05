@@ -25,13 +25,14 @@ values are \code{"msm"}, \code{"msm_point"}, \code{"msm_contrast"}, \code{"exact
 \code{"exact_contrast"}.}
 
 \item{grid}{Optional data frame with columns \code{psi1} and \code{psi2} giving a
-user-specified prediction grid.}
+user-specified prediction grid on the MSM coding scale.}
 
 \item{at}{Optional named numeric vector or list with entries \code{psi1} and
-\code{psi2} giving a single intervention regime.}
+\code{psi2} giving a single intervention regime on the MSM coding scale.}
 
 \item{from, to}{Optional named numeric vectors or lists with entries \code{psi1}
-and \code{psi2} defining the source and target regimes for a direct contrast.}
+and \code{psi2} defining the source and target regimes for a direct contrast on
+the MSM coding scale.}
 
 \item{data}{Optional data frame used for exact arbitrary prediction or exact
 arbitrary contrasts. Exact arbitrary prediction requires explicit \code{data}.}
@@ -50,14 +51,13 @@ grid scale, estimand scale, the prediction estimates, and any interval
 information.
 }
 \description{
-Generates prediction objects from a fitted \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} model.
-The default prediction target is the fitted marginal structural model
-(MSM) surface. Exact fit-time surface extraction and exact arbitrary
-prediction on user-supplied data are also supported through explicit
-\code{type} values.
+Generates prediction objects from a fitted \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} model. The
+default target is the fitted marginal structural model (MSM) surface. Exact
+fit-time surface extraction and exact arbitrary prediction on user-supplied
+data are also supported through explicit \code{type} values.
 }
 \details{
-In \code{qgcomp.multi}, it is important to distinguish between:
+In \code{qgcomp.multi}, it helps to keep two prediction targets separate:
 
 \itemize{
 \item \strong{MSM-based predictions}, which evaluate the fitted marginal
@@ -67,27 +67,29 @@ intervals in Version 0.3.0; and
 the fitted outcome model under specified interventions.
 }
 
-Exact arbitrary prediction requires the user to supply \code{data} because the
-exact counterfactual mean is defined by averaging predicted outcomes over an
-explicit covariate distribution. Without user-supplied data, the package can
-only return the exact fit-time surface that was stored when the original fit
-was computed.
-
 The default \code{type = "msm"} returns fitted MSM predictions on the response
-scale. These predictions are the most natural targets for surface plotting,
+scale. These predictions are the natural targets for surface plotting,
 interval construction, and direct regime contrasts because the fitted object
 retains bootstrap coefficient draws for the MSM.
 
 \code{type = "exact"} has two different behaviors:
 \itemize{
-\item If \code{data}, \code{grid}, and \code{at} are all omitted, the function returns
-the exact fit-time counterfactual surface that was stored when the model
-was fitted.
+\item If \code{data}, \code{grid}, and \code{at} are all omitted, the function returns the
+exact fit-time counterfactual surface that was stored when the model was
+fitted.
 \item If \code{data} is supplied together with \code{grid} or \code{at}, the function
 computes exact counterfactual means over the supplied covariate
-distribution. This is why explicit \code{data} is required: the package needs a
-concrete distribution over which to average the potential outcomes.
+distribution. Explicit \code{data} is required because the exact counterfactual
+mean is defined by averaging predicted outcomes over a concrete covariate
+distribution.
 }
+
+For MSM-based prediction, user-supplied inputs such as \code{grid}, \code{at}, \code{from},
+and \code{to} are interpreted on the MSM coding scale. This distinction matters
+most when \code{q = NULL} and \code{centering = "median"}, because the plotted heatmap
+axes are labeled on the intervention-value scale even though MSM prediction
+inputs use centered coordinates. In that setting, \verb{(0, 0)} corresponds to the
+pooled median intervention for both mixtures.
 
 User-specified MSM grids are restricted to the stored fit-time support. The
 function allows interpolation within that support, but it does not allow

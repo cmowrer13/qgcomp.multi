@@ -38,10 +38,11 @@ component.
 \details{
 Quantization is a key step in quantile g-computation, as it ensures that
 exposure variables measured on different scales are made comparable. By
-transforming each exposure into quantile categories, a one-unit increase
-corresponds to a shift of one quantile, allowing mixture effects to be
-interpreted as the joint effect of increasing all components by one
-quantile.
+transforming each exposure into quantile categories, a one-unit change in
+a quantized exposure corresponds to a shift of one quantile category. In the
+fitted two-mixture MSM, this supports the interpretation of the mixture
+coefficients as summaries of joint one-quantile shifts in all components of a
+mixture.
 
 Quantiles assign observations to groups of approximately equal size. The
 resulting categories are then shifted to start at 0 (rather than 1) to

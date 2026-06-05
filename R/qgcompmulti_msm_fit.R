@@ -9,33 +9,18 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
   ))
 }
 
-#' Fit the marginal structural model for two-mixture quantile g-computation
+#' Fit the core outcome-model and MSM components for two-mixture g-computation
 #'
-#' Fits the outcome regression, computes predicted potential outcomes under
-#' joint interventions on two exposure mixtures, and estimates the marginal
-#' structural model (MSM) coefficients that summarize the resulting
-#' two-dimensional dose-response surface. This function is primarily an
-#' internal helper used by [qgcomp.glm.multi()] and will not typically
-#' need to be called directly by users.
+#' Fits the outcome regression, computes predicted potential outcomes under joint
+#' interventions on two exposure mixtures, and estimates the marginal structural
+#' model (MSM) coefficients that summarize the resulting two-dimensional
+#' intervention-response surface.
 #'
-#' Given a fitted outcome model, the function evaluates predicted outcomes over
-#' either a grid of uniform mixture quantiles or, when `q = NULL`, a 3 x 3 grid
-#' formed from the pooled 25th, 50th, and 75th percentiles of each mixture, and
-#' regresses these predictions on the mixture intervention levels to obtain MSM
-#' parameters. When `interaction = TRUE`, the fitted MSM has the form
-#'
-#' \deqn{
-#' E[Y^{x(q1), w(q2)}] = \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
-#' }
-#'
-#' where `psi1` and `psi2` represent the main effects of increasing the
-#' intervention level for mixtures 1 and 2 by one unit on the MSM scale, and
-#' `psi12` represents their interaction on that same scale. For quantized
-#' analyses this is a one-quantile increase; for `q = NULL` it is a one-unit
-#' increase in the original-scale intervention coding.
-#'
-#' When `q = NULL` and `centering = "median"`, the MSM is fit using intervention
-#' values centered at the pooled median of each mixture.
+#' This is a lower-level fitting helper used internally by
+#' [qgcomp.glm.multi()]. It is exported because it can be useful for method
+#' development, testing, and direct inspection of the fitted outcome model, MSM,
+#' and stored fit-time surfaces. Most users will want [qgcomp.glm.multi()]
+#' instead.
 #'
 #' @param f A model formula for the outcome regression. The formula should
 #' include the outcome and any baseline covariates. Mixture variables listed
@@ -47,15 +32,20 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' first exposure mixture.
 #' @param mix2 A character vector giving the names of the variables in the
 #' second exposure mixture.
-#' @param interaction Logical; if `TRUE`, includes an interaction term between
-#' the two mixture indices in the marginal structural model. If `FALSE`, only
-#' main effects are estimated.
+#' @param interaction Logical; if `TRUE`, the package includes an interaction
+#' term in both the outcome regression and the fitted MSM. In the current
+#' implementation, the outcome model is augmented with a cross-product between
+#' the sums of the components in `mix1` and `mix2`, and the MSM includes the
+#' `psi1 * psi2` interaction term. If `FALSE`, both models are fit without that
+#' interaction.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
 #' @param q Integer greater than or equal to 2 giving the number of quantiles
-#' used to discretize the exposure variables and define the intervention grid,
-#' or `NULL` to skip quantization and define a 3 x 3 intervention grid using
-#' pooled 25th, 50th, and 75th percentiles for each mixture.
+#' used to discretize the exposure variables, or `NULL` to skip quantization and
+#' fit the outcome model on the original exposure scale. When `q = NULL`, the
+#' fit-time intervention grid is defined by the pooled 25th, 50th, and 75th
+#' percentile values within each mixture, and under each intervention every
+#' component in a mixture is set to the same pooled mixture-specific value.
 #' @param centering Character string controlling how the marginal structural
 #' model intervention variables are coded when `q = NULL`. Must be one of `"none"`
 #' or `"median"`. Centering affects only the MSM predictors and does not change
@@ -75,11 +65,20 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #'
 #' @return A list with components:
 #' \describe{
-#' \item{outcome_fit}{The fitted outcome regression model object.}
-#' \item{msm_fit}{The fitted marginal structural model object.}
-#' \item{coefficients}{A named vector of MSM coefficients.}
-#' \item{n_used}{The number of observations used in the MSM pseudo-dataset
-#' prediction step.}
+#'   \item{`outcome_fit`}{The fitted outcome regression model object.}
+#'   \item{`msm_fit`}{The fitted marginal structural model object.}
+#'   \item{`coefficients`}{A named vector of MSM coefficients.}
+#'   \item{`n_used`}{The number of observations used in the g-computation
+#'   prediction step.}
+#'   \item{`intervention_grid`}{The fit-time intervention grid on the
+#'   intervention-value scale.}
+#'   \item{`msm_grid`}{The corresponding fit-time grid on the MSM coding scale.}
+#'   \item{`counterfactual_surface`}{The exact fit-time counterfactual mean
+#'   surface implied by the fitted outcome model.}
+#'   \item{`msm_surface`}{The fitted MSM surface evaluated on the common
+#'   fit-time grid.}
+#'   \item{`surface_comparison`}{A direct exact-versus-MSM comparison object on
+#'   the common fit-time grid.}
 #' }
 #'
 #' @details

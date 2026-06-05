@@ -1,8 +1,10 @@
 #' Summarize a qgcompmulti fit
 #'
 #' Builds a structured summary object for a fitted `qgcompmulti` model. The
-#' summary foregrounds the marginal structural model (MSM) results while
-#' retaining key outcome-model details as supporting context.
+#' summary foregrounds the MSM results because those are the main reported
+#' estimands, but those coefficients should still be interpreted in light of the
+#' intervention coding and the adequacy of the MSM as a summary of the fitted
+#' outcome-model surface.
 #'
 #' @param object A fitted `qgcompmulti` object.
 #' @param ... Not used.

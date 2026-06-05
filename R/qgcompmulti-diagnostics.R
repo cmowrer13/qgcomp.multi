@@ -3,7 +3,7 @@
 #' Returns structured diagnostics for intervention support, bootstrap behavior,
 #' and MSM adequacy from a fitted [qgcomp.glm.multi()] object.
 #'
-#' #' These diagnostics are deliberately kept outside the main fitted-model
+#' These diagnostics are deliberately kept outside the main fitted-model
 #' summary so that users can inspect model fit, support, and computational
 #' behavior explicitly rather than having a very dense `summary()` method.
 #'
@@ -22,8 +22,9 @@
 #' \itemize{
 #'   \item \strong{Support diagnostics}, which summarize the fit-time
 #'   intervention grid. For `q = NULL`, these diagnostics are especially
-#'   important because the intervention grid is built from pooled marginal
-#'   percentile values within each mixture.
+#'   important because the intervention grid is built from pooled percentile
+#'   values within each mixture, and under each intervention every component in
+#'   a mixture is set to the same pooled mixture-specific value.
 #'   \item \strong{Bootstrap diagnostics}, which summarize how many bootstrap
 #'   replications were requested, retained, or failed, together with any
 #'   lightweight failure metadata stored in the fitted object.
@@ -33,13 +34,19 @@
 #'
 #' Support diagnostics should not be read as a full positivity proof. They are
 #' designed to help users see which intervention values define the stored
-#' surface and to highlight when original-scale pooled percentile interventions
-#' may deserve extra scrutiny.
+#' surface and to highlight when original-scale pooled interventions may deserve
+#' extra scrutiny.
 #'
 #' MSM adequacy is one of the most method-specific diagnostics in the package.
-#' Large residual discrepancies between the exact fit-time surface and the MSM
-#' surface suggest that the MSM may be a poor low-dimensional summary of the
-#' underlying counterfactual mean surface.
+#' It asks whether the fitted MSM is a reasonable low-dimensional summary of the
+#' exact fit-time surface implied by the fitted outcome model. It is not a test
+#' of whether the outcome model is true, and it is not a general check of causal
+#' identification.
+#'
+#' Adequacy is evaluated on the stored fit-time grid. A good adequacy result
+#' therefore means that the MSM tracks the exact fit-time surface well on that
+#' grid. It does not imply that the surface is globally linear between or beyond
+#' those intervention points.
 #'
 #' @examples
 #' \dontrun{
@@ -113,7 +120,9 @@ diagnostics.qgcompmulti <- function(object,
 #' @details
 #' The support diagnostic is particularly informative for `q = NULL`, where the
 #' stored intervention grid is defined by pooled percentile values rather than
-#' quantile indices.
+#' quantile indices. In that setting, every component in a mixture is set to the
+#' same pooled mixture-specific intervention value, so users should inspect the
+#' resulting grid for scientific plausibility as well as numerical range.
 #' @export
 support <- function(object, ...) {
   UseMethod("support")
@@ -132,7 +141,10 @@ support.qgcompmulti <- function(object, ...) {
 #'
 #' @details
 #' The adequacy diagnostic evaluates how closely the fitted MSM reproduces the
-#' exact fit-time counterfactual surface stored in the fitted object.
+#' exact fit-time counterfactual surface stored in the fitted object. This is a
+#' diagnostic of MSM approximation on the stored fit-time grid, not a test of
+#' whether the outcome model is correctly specified relative to the true
+#' data-generating process.
 #'
 #' @export
 adequacy <- function(object, ...) {

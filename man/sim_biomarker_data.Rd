@@ -46,9 +46,11 @@ Mixture 2 represents urinary phenol biomarkers:
 
 The outcome \code{inflammation_score} is generated from weighted mixture summaries
 on the log-concentration scale, a moderate positive interaction between the
-two mixtures, common epidemiologic covariates, and a mild quadratic term in
-the phthalate mixture. This design makes the fitted MSM informative but not
-unrealistically perfect.
+two mixtures, common epidemiologic covariates, and a small amount of
+deliberate nonlinearity. In the current implementation, that nonlinearity
+comes from a centered cubic term in the phthalate mixture score and a mild
+threshold term in the phenol mixture score. This design makes the fitted MSM
+informative without making the exact fit-time surface unrealistically perfect.
 
 This helper is intended for examples, documentation, and teaching. The
 exposure concentrations are simulated as correlated log-normal variables with

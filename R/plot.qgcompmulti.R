@@ -14,13 +14,14 @@
 #' @param style Character string specifying the surface display style.
 #' Supported values are `"heatmap"` and `"contour"`.
 #' @param grid Optional user-specified MSM grid with columns `psi1` and `psi2`.
-#' If omitted, the stored fit-time MSM grid is used.
+#' If omitted, the stored fit-time MSM grid is used. User-supplied values are
+#' interpreted on the MSM coding scale.
 #' @param interval Logical; if `TRUE`, produces a slice-based line display with
 #' bootstrap percentile intervals instead of a 2D surface plot.
 #' @param slice Optional list with elements `var` and `value` describing the
-#' fixed intervention coordinate for interval plotting. For example,
+#' fixed MSM coordinate for interval plotting. For example,
 #' `list(var = "psi2", value = 1)` fixes `psi2` and varies `psi1` over the
-#' stored MSM grid support.
+#' stored MSM-grid support.
 #' @param level Confidence level used when `interval = TRUE`.
 #' @param xlab Optional x-axis label.
 #' @param ylab Optional y-axis label.
@@ -34,10 +35,18 @@
 #' @details
 #' The default `plot(fit)` call visualizes the fitted MSM surface over the
 #' stored fit-time MSM grid. For quantized fits, the heatmap axes correspond to
-#' the quantile-index intervention levels. For stored `q = NULL` heatmaps, the
-#' plotted axis labels are mapped back to the pooled percentile intervention
-#' values used at fit time, even when the MSM itself was fit on centered
-#' coordinates.
+#' the quantile-index intervention levels.
+#'
+#' For stored `q = NULL` heatmaps, the plotted axis labels are mapped back to
+#' the pooled percentile intervention values used at fit time, even when the MSM
+#' itself was fit on centered coordinates. This means there are two scales in
+#' play:
+#' \itemize{
+#'   \item the \strong{intervention-value scale}, which is what users see on the
+#'   stored heatmap axes for `q = NULL`; and
+#'   \item the \strong{MSM coding scale}, which is what `grid` and `slice$value`
+#'   use for user-supplied prediction or plotting requests.
+#' }
 #'
 #' `interval = TRUE` switches to a slice-based line display rather than trying
 #' to overlay uncertainty on the full two-dimensional surface. This keeps the

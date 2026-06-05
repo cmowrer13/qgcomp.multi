@@ -19,5 +19,8 @@ Extract MSM adequacy diagnostics from a qgcompmulti fit
 }
 \details{
 The adequacy diagnostic evaluates how closely the fitted MSM reproduces the
-exact fit-time counterfactual surface stored in the fitted object.
+exact fit-time counterfactual surface stored in the fitted object. This is a
+diagnostic of MSM approximation on the stored fit-time grid, not a test of
+whether the outcome model is correctly specified relative to the true
+data-generating process.
 }

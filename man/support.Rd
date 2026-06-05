@@ -20,5 +20,7 @@ Extract intervention support diagnostics from a qgcompmulti fit
 \details{
 The support diagnostic is particularly informative for \code{q = NULL}, where the
 stored intervention grid is defined by pooled percentile values rather than
-quantile indices.
+quantile indices. In that setting, every component in a mixture is set to the
+same pooled mixture-specific intervention value, so users should inspect the
+resulting grid for scientific plausibility as well as numerical range.
 }
