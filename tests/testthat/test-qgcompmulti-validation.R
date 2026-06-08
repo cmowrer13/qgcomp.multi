@@ -42,7 +42,7 @@ test_that("validation rejects missing variables and missing formula terms", {
   )
 })
 
-test_that("validation rejects invalid q, centering, B, MCsize, and seed values", {
+test_that("validation rejects invalid q, centering, B, MCsize, seed, and progress values", {
   dat <- make_test_data()
   expect_error(
     qgcomp.glm.multi(
@@ -103,6 +103,17 @@ test_that("validation rejects invalid q, centering, B, MCsize, and seed values",
       B = 10,
       seed = 3.5
     )
+  )
+  expect_error(
+    qgcomp.glm.multi(
+      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+      data = dat,
+      mix1 = c("X1", "X2", "X3"),
+      mix2 = c("W1", "W2", "W3"),
+      B = 10,
+      progress = "yes"
+    ),
+    "`progress` must be either `TRUE` or `FALSE`"
   )
 })
 

@@ -70,6 +70,11 @@
 #' state is used and not modified by `qgcomp.glm.multi()`. When supplied, the
 #' same inputs and the same seed reproduce the same fitted object and
 #' inferential results.
+#' @param progress Logical; if `TRUE`, display a compact single-line bootstrap
+#' progress bar in the console while the model is fitting. The display reports
+#' percent complete, attempted bootstrap replications, elapsed time, and an
+#' estimated time remaining based on the running average bootstrap iteration
+#' time. Off by default.
 #'
 #' @return An object of class `"qgcompmulti"` representing the fitted
 #' two-mixture quantile g-computation model. Major components include:
@@ -139,6 +144,10 @@
 #'   probabilities, that is, risk differences.
 #'   \item For count outcomes, parameters represent differences in expected counts.
 #' }
+#'
+#' If `progress = TRUE`, the bootstrap loop prints a compact single-line status
+#' display. The failed-replicate counter is shown only after the first failed
+#' bootstrap iteration, so clean runs do not carry extra visual noise.
 #'
 #' For causal interpretation, the usual identifying conditions for
 #' g-computation still apply: consistency, conditional exchangeability,
@@ -256,7 +265,8 @@ qgcomp.glm.multi <- function(f,
                              B = 200,
                              id = NULL,
                              MCsize = nrow(data),
-                             seed = NULL) {
+                             seed = NULL,
+                             progress = FALSE) {
   call <- match.call()
 
   validate_qgcomp_multi_inputs(
@@ -271,7 +281,8 @@ qgcomp.glm.multi <- function(f,
     id = id,
     MCsize = MCsize,
     B = B,
-    seed = seed
+    seed = seed,
+    progress = progress
   )
 
   qgcompmulti_with_seed(
@@ -294,6 +305,8 @@ qgcomp.glm.multi <- function(f,
       coefs <- full_fit$coefficients
       psi_hat <- vector("list", B)
       failure_log <- vector("list", 0L)
+      progress_state <- qgcompmulti_progress_init(B = B, enabled = progress)
+      on.exit(qgcompmulti_progress_finish(progress_state), add = TRUE)
       for (b in seq_len(B)) {
         data_b <- qgcompmulti_resample_data(
           data = data_q,
@@ -321,9 +334,19 @@ qgcomp.glm.multi <- function(f,
             row.names = NULL,
             check.names = FALSE
           )
+          progress_state <- qgcompmulti_progress_tick(
+            progress_state,
+            iteration = b,
+            failed = TRUE
+          )
           next
         }
         psi_hat[[b]] <- boot_fit$coefficients
+        progress_state <- qgcompmulti_progress_tick(
+          progress_state,
+          iteration = b,
+          failed = FALSE
+        )
       }
       success_idx <- which(!vapply(psi_hat, is.null, logical(1)))
       if (length(success_idx) == 0L) {

@@ -38,7 +38,8 @@ validate_qgcomp_multi_inputs <- function(
     id,
     MCsize,
     B = NULL,
-    seed = NULL) {
+    seed = NULL,
+    progress = FALSE) {
 
   if (!inherits(f, "formula")) {
     stop("`f` must be a formula.", call. = FALSE)
@@ -135,6 +136,10 @@ validate_qgcomp_multi_inputs <- function(
 
   if (!is_scalar_whole_number(MCsize) || MCsize < 1L) {
     stop("`MCsize` must be a single integer greater than or equal to 1.", call. = FALSE)
+  }
+
+  if (!is.logical(progress) || length(progress) != 1L || is.na(progress)) {
+    stop("`progress` must be either `TRUE` or `FALSE`.", call. = FALSE)
   }
 
   invisible(NULL)

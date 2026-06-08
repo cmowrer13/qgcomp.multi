@@ -16,7 +16,8 @@ qgcomp.glm.multi(
   B = 200,
   id = NULL,
   MCsize = nrow(data),
-  seed = NULL
+  seed = NULL,
+  progress = FALSE
 )
 }
 \arguments{
@@ -80,6 +81,12 @@ and any Monte Carlo subsampling reproducible. If \code{NULL}, the current RNG
 state is used and not modified by \code{qgcomp.glm.multi()}. When supplied, the
 same inputs and the same seed reproduce the same fitted object and
 inferential results.}
+
+\item{progress}{Logical; if \code{TRUE}, display a compact single-line bootstrap
+progress bar in the console while the model is fitting. The display reports
+percent complete, attempted bootstrap replications, elapsed time, and an
+estimated time remaining based on the running average bootstrap iteration
+time. Off by default.}
 }
 \value{
 An object of class \code{"qgcompmulti"} representing the fitted
@@ -172,6 +179,10 @@ Interpretation therefore depends on the outcome type:
 probabilities, that is, risk differences.
 \item For count outcomes, parameters represent differences in expected counts.
 }
+
+If \code{progress = TRUE}, the bootstrap loop prints a compact single-line status
+display. The failed-replicate counter is shown only after the first failed
+bootstrap iteration, so clean runs do not carry extra visual noise.
 
 For causal interpretation, the usual identifying conditions for
 g-computation still apply: consistency, conditional exchangeability,
