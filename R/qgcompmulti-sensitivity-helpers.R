@@ -61,6 +61,34 @@ qgcompmulti_mcsize_values <- function(MCsize_values, n) {
 }
 #' @keywords internal
 #' @noRd
+qgcompmulti_b_values <- function(B_values) {
+  if (!is.numeric(B_values) || length(B_values) == 0L || anyNA(B_values)) {
+    stop("`B_values` must be a non-empty numeric vector.", call. = FALSE)
+  }
+  B_values <- as.integer(B_values)
+  if (any(B_values < 2L)) {
+    stop("All `B_values` must be integers greater than or equal to 2.", call. = FALSE)
+  }
+  unique(B_values)
+}
+
+#' @keywords internal
+#' @noRd
+qgcompmulti_sensitivity_refit_seeds <- function(n_fits, seed = NULL) {
+  if (!is_scalar_whole_number(n_fits) || n_fits < 1L) {
+    stop("`n_fits` must be a positive integer.", call. = FALSE)
+  }
+  if (is.null(seed)) {
+    return(rep(list(NULL), n_fits))
+  }
+  derived <- qgcompmulti_with_seed(
+    seed,
+    sample.int(.Machine$integer.max, size = n_fits, replace = FALSE)
+  )
+  as.list(as.integer(derived))
+}
+#' @keywords internal
+#' @noRd
 qgcompmulti_q_values <- function(q_values) {
   if (!is.numeric(q_values) || length(q_values) == 0L || anyNA(q_values)) {
     stop("`q_values` must be a non-empty numeric vector.", call. = FALSE)

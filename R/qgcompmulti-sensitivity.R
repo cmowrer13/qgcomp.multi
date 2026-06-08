@@ -109,6 +109,125 @@ mcsize_sensitivity <- function(f,
     class = "qgcompmulti_mcsize_sensitivity"
   )
 }
+#' Sensitivity to bootstrap iteration count in qgcompmulti fits
+#'
+#' Re-fits [qgcomp.glm.multi()] across multiple `B` values while preserving
+#' the rest of the analysis specification.
+#'
+#' This helper is intended to answer a practical inferential question: are the
+#' reported bootstrap-based standard errors and related summaries reasonably
+#' stable as the number of bootstrap replications changes?
+#'
+#' @param f,data,mix1,mix2,interaction,family,q,centering,id,MCsize,seed
+#' Arguments passed through to [qgcomp.glm.multi()].
+#' @param B_values Integer vector of bootstrap iteration counts to compare.
+#' @param keep_fits Logical; if `TRUE`, retain the full fitted objects.
+#'
+#' @return An object of class `"qgcompmulti_b_sensitivity"`.
+#'
+#' @details
+#' `B` sensitivity is implemented as a repeated-fit workflow in which all
+#' settings other than `B` are held fixed.
+#'
+#' When `seed` is supplied, this helper treats it as a master seed and
+#' deterministically derives one distinct fit-specific seed for each requested
+#' value of `B`. This preserves reproducibility of the overall sensitivity
+#' workflow while avoiding reuse of the same bootstrap resamples across the
+#' different refits.
+#'
+#' The resulting object is designed for stability assessment rather than
+#' automatic tuning. Users should focus especially on whether bootstrap-based
+#' standard errors, bootstrap retention counts, and broad qualitative
+#' conclusions are reasonably consistent across the requested `B` values.
+#'
+#' @examples
+#' \dontrun{
+#' dat <- sim_mixture_data(
+#'   n = 400,
+#'   pA = 3,
+#'   pB = 3,
+#'   rho_within_A = 0.3,
+#'   rho_within_B = 0.3,
+#'   rho_between = 0.2,
+#'   psi1 = 0.5,
+#'   psi2 = 0.3,
+#'   psi12 = 0.2,
+#'   seed = 123
+#' )
+#'
+#' b_sensitivity(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   B_values = c(50, 100, 200),
+#'   q = 4,
+#'   MCsize = nrow(dat),
+#'   seed = 13
+#' )
+#' }
+#'
+#' @export
+b_sensitivity <- function(f,
+                          data,
+                          mix1,
+                          mix2,
+                          B_values,
+                          interaction = TRUE,
+                          family = gaussian(),
+                          q = 4,
+                          centering = "none",
+                          id = NULL,
+                          MCsize = nrow(data),
+                          seed = NULL,
+                          keep_fits = TRUE) {
+  B_values <- qgcompmulti_b_values(B_values)
+  fit_seeds <- qgcompmulti_sensitivity_refit_seeds(length(B_values), seed)
+  fits <- lapply(seq_along(B_values), function(i) {
+    qgcomp.glm.multi(
+      f = f,
+      data = data,
+      mix1 = mix1,
+      mix2 = mix2,
+      interaction = interaction,
+      family = family,
+      q = q,
+      centering = centering,
+      B = B_values[[i]],
+      id = id,
+      MCsize = MCsize,
+      seed = fit_seeds[[i]]
+    )
+  })
+  results_table <- qgcompmulti_build_sensitivity_table(
+    values = as.list(B_values),
+    parameter_name = "B",
+    fits = fits
+  )
+  structure(
+    list(
+      workflow_type = "b_sensitivity",
+      call_template = match.call(),
+      settings_fixed = list(
+        interaction = interaction,
+        family = family,
+        q = q,
+        centering = centering,
+        id = id,
+        MCsize = MCsize,
+        seed = seed
+      ),
+      B_values = B_values,
+      results_table = results_table,
+      fits = if (isTRUE(keep_fits)) fits else NULL,
+      notes = paste(
+        "Only B varies across refits; all other analysis settings are held fixed.",
+        "When `seed` is supplied, it is treated as a master seed and deterministically expanded into distinct fit-specific seeds so bootstrap draws are not reused across different values of B."
+      )
+    ),
+    class = "qgcompmulti_b_sensitivity"
+  )
+}
 #' Sensitivity to quantization choice in qgcompmulti fits
 #'
 #' Re-fits [qgcomp.glm.multi()] across multiple integer `q` values while
@@ -226,6 +345,13 @@ q_sensitivity <- function(f,
 #' @export
 print.qgcompmulti_mcsize_sensitivity <- function(x, ...) {
   cat("qgcompmulti MCsize sensitivity\n\n")
+  cat(x$notes, "\n\n", sep = "")
+  qgcompmulti_print_sensitivity_table(x$results_table)
+  invisible(x)
+}
+#' @export
+print.qgcompmulti_b_sensitivity <- function(x, ...) {
+  cat("qgcompmulti B sensitivity\n\n")
   cat(x$notes, "\n\n", sep = "")
   qgcompmulti_print_sensitivity_table(x$results_table)
   invisible(x)
