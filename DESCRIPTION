@@ -14,6 +14,7 @@ Imports:
     dplyr,
     MASS
 Suggests:
+    broom,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
