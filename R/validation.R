@@ -145,6 +145,110 @@ validate_qgcomp_multi_inputs <- function(
   invisible(NULL)
 }
 
+validate_qgcomp_multi_mi_inputs <- function(
+    f,
+    data,
+    mix1,
+    mix2,
+    interaction,
+    family,
+    q,
+    centering,
+    id,
+    MCsize = NULL,
+    B = NULL,
+    seed = NULL,
+    keep_fits = FALSE,
+    progress = FALSE) {
+
+  if (!inherits(f, "formula")) {
+    stop("`f` must be a formula.", call. = FALSE)
+  }
+
+  if (!(inherits(data, "mids") || is.list(data))) {
+    stop(
+      "`data` must be either a `mids` object or a non-empty list of completed data frames.",
+      call. = FALSE
+    )
+  }
+
+  if (is.list(data) && length(data) == 0L) {
+    stop("`data` must not be an empty list.", call. = FALSE)
+  }
+
+  validate_mix_names(mix1, "mix1")
+  validate_mix_names(mix2, "mix2")
+
+  if (length(intersect(mix1, mix2)) > 0L) {
+    stop("`mix1` and `mix2` must not contain overlapping variables.", call. = FALSE)
+  }
+
+  formula_vars <- all.vars(f)
+  missing_mix_terms <- setdiff(c(mix1, mix2), formula_vars)
+
+  if (length(missing_mix_terms) > 0L) {
+    stop(
+      sprintf(
+        "All mixture variables must appear in `f`. Missing from formula: %s",
+        paste(missing_mix_terms, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(interaction) || length(interaction) != 1L || is.na(interaction)) {
+    stop("`interaction` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  if (!inherits(family, "family")) {
+    stop("`family` must be a valid GLM family object, such as gaussian(), binomial(), or poisson().", call. = FALSE)
+  }
+
+  validate_q_argument(q)
+
+  if (!is.character(centering) || length(centering) != 1L || is.na(centering)) {
+    stop("`centering` must be a single character string.", call. = FALSE)
+  }
+
+  if (!centering %in% c("none", "median")) {
+    stop("`centering` must be one of \"none\" or \"median\".", call. = FALSE)
+  }
+
+  if (!is.null(q) && centering != "none") {
+    warning("`centering` is ignored unless `q = NULL`.", call. = FALSE)
+  }
+
+  if (!is.null(B)) {
+    if (!is_scalar_whole_number(B) || B < 2L) {
+      stop("`B` must be a single integer greater than or equal to 2.", call. = FALSE)
+    }
+  }
+
+  if (!is.null(MCsize)) {
+    if (!is_scalar_whole_number(MCsize) || MCsize < 1L) {
+      stop("`MCsize` must be `NULL` or a single integer greater than or equal to 1.", call. = FALSE)
+    }
+  }
+
+  if (!is.null(seed) && !is_scalar_whole_number(seed)) {
+    stop("`seed` must be `NULL` or a single integer.", call. = FALSE)
+  }
+
+  if (!is.null(id) && (!is.character(id) || length(id) != 1L || is.na(id))) {
+    stop("`id` must be `NULL` or a single character string.", call. = FALSE)
+  }
+
+  if (!is.logical(keep_fits) || length(keep_fits) != 1L || is.na(keep_fits)) {
+    stop("`keep_fits` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  if (!is.logical(progress) || length(progress) != 1L || is.na(progress)) {
+    stop("`progress` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  invisible(NULL)
+}
+
 validate_quantize_mixtures_inputs <- function(data, mix1, mix2, q) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data.frame.", call. = FALSE)

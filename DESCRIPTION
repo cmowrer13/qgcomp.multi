@@ -16,6 +16,7 @@ Imports:
 Suggests:
     broom,
     knitr,
+    mice,
     rmarkdown,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr

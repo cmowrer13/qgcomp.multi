@@ -1,0 +1,182 @@
+test_that("qgcomp.glm.multi.mi pools completed-list fits and stores master-seed metadata", {
+  completed <- make_completed_data_list(m = 3, seed = 321)
+
+  fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    seed = 812,
+    keep_fits = FALSE
+  )
+
+  manual_fits <- lapply(
+    seq_along(completed),
+    function(i) {
+      qgcomp.glm.multi(
+        f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+        data = completed[[i]],
+        mix1 = c("X1", "X2", "X3"),
+        mix2 = c("W1", "W2", "W3"),
+        interaction = TRUE,
+        q = 4,
+        B = 10,
+        MCsize = nrow(completed[[i]]),
+        seed = fit$mi_info$fit_seeds[[i]]
+      )
+    }
+  )
+
+  manual <- qgcompmulti_pool_mi_fits(
+    fits = manual_fits,
+    input_type = "completed_list",
+    keep_fits = FALSE,
+    seed = 812L,
+    fit_seeds = fit$mi_info$fit_seeds,
+    formula = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C
+  )
+
+  expect_s3_class(fit, "qgcompmulti_mi")
+  expect_identical(fit$mi_info$input_type, "completed_list")
+  expect_false(fit$mi_info$keep_fits)
+  expect_equal(fit$analysis$MCsize, nrow(completed[[1]]))
+  expect_null(fit$fits$imputation_fits)
+  expect_length(fit$mi_info$fit_seeds, 3)
+  expect_identical(fit$mi_info$seed, 812L)
+  expect_equal(fit$results$coefficients, manual$results$coefficients)
+  expect_equal(fit$results$vcov, manual$results$vcov)
+  expect_equal(fit$results$df, manual$results$df)
+})
+
+test_that("qgcomp.glm.multi.mi optionally retains per-imputation fits and handles q = NULL", {
+  completed <- make_completed_data_list(m = 3, seed = 654)
+
+  fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = FALSE,
+    q = NULL,
+    centering = "median",
+    B = 10,
+    keep_fits = TRUE,
+    seed = 415
+  )
+
+  expect_s3_class(fit, "qgcompmulti_mi")
+  expect_true(fit$mi_info$keep_fits)
+  expect_identical(names(fit$results$coefficients), EXPECTED_COEF_NAMES_NO_INTERACTION)
+  expect_identical(fit$mixtures$centering, "median")
+  expect_length(fit$fits$imputation_fits, 3)
+  expect_true(all(vapply(fit$fits$imputation_fits, inherits, logical(1), what = "qgcompmulti")))
+})
+
+test_that("qgcomp.glm.multi.mi supports clustered completed-list workflows", {
+  completed <- make_completed_data_list(m = 3, seed = 777, clustered = TRUE)
+
+  fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    id = "cluster_id",
+    seed = 511
+  )
+
+  expect_true(fit$data_info$has_clusters)
+  expect_identical(fit$data_info$cluster_var, "cluster_id")
+  expect_equal(fit$data_info$n_clusters, length(unique(completed[[1]]$cluster_id)))
+})
+
+test_that("qgcomp.glm.multi.mi supports mids input when mice is installed", {
+  skip_if_not_installed("mice")
+
+  mids <- make_test_mids(m = 3, seed = 888)
+  completed <- mice::complete(mids, action = "all")
+
+  fit_mids <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = mids,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    seed = 902
+  )
+
+  fit_list <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    seed = 902
+  )
+
+  expect_identical(fit_mids$mi_info$input_type, "mids")
+  expect_identical(fit_list$mi_info$input_type, "completed_list")
+  expect_equal(fit_mids$results$coefficients, fit_list$results$coefficients)
+  expect_equal(fit_mids$results$vcov, fit_list$results$vcov)
+  expect_equal(fit_mids$mi_info$fit_seeds, fit_list$mi_info$fit_seeds)
+})
+
+test_that("qgcomp.glm.multi.mi rejects incomplete or incompatible completed-list inputs", {
+  completed <- make_completed_data_list(m = 3, seed = 999)
+
+  bad_missing <- completed
+  bad_missing[[2]]$X1[1] <- NA_real_
+  expect_error(
+    qgcomp.glm.multi.mi(
+      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+      data = bad_missing,
+      mix1 = c("X1", "X2", "X3"),
+      mix2 = c("W1", "W2", "W3"),
+      interaction = TRUE,
+      q = 4,
+      B = 10
+    ),
+    "still contains missing values"
+  )
+
+  bad_rows <- completed
+  bad_rows[[3]] <- bad_rows[[3]][-1, , drop = FALSE]
+  expect_error(
+    qgcomp.glm.multi.mi(
+      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+      data = bad_rows,
+      mix1 = c("X1", "X2", "X3"),
+      mix2 = c("W1", "W2", "W3"),
+      interaction = TRUE,
+      q = 4,
+      B = 10
+    ),
+    "same number of rows"
+  )
+
+  bad_cluster <- make_completed_data_list(m = 3, seed = 111, clustered = TRUE)
+  bad_cluster[[2]] <- bad_cluster[[2]][c(2:nrow(bad_cluster[[2]]), 1), , drop = FALSE]
+  rownames(bad_cluster[[2]]) <- NULL
+  expect_error(
+    qgcomp.glm.multi.mi(
+      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+      data = bad_cluster,
+      mix1 = c("X1", "X2", "X3"),
+      mix2 = c("W1", "W2", "W3"),
+      interaction = TRUE,
+      q = 4,
+      B = 10,
+      id = "cluster_id"
+    ),
+    "identical cluster IDs and ordering"
+  )
+})

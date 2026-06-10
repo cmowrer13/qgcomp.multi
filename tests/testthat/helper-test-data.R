@@ -348,6 +348,81 @@ fit_test_model_list <- function(interaction = TRUE,
   get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
 }
 
+make_mi_incomplete_data <- function(seed = 123, clustered = FALSE) {
+  key <- paste("mi_incomplete", seed, clustered, sep = "_")
+
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- if (clustered) {
+      make_clustered_test_data(seed = seed)
+    } else {
+      make_test_data(seed = seed)
+    }
+
+    dat$X1[seq(5, nrow(dat), by = 11)] <- NA_real_
+    dat$W2[seq(3, nrow(dat), by = 13)] <- NA_real_
+    dat$C[seq(7, nrow(dat), by = 17)] <- NA_real_
+
+    assign(key, dat, envir = .qgcompmulti_test_cache)
+  }
+
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
+make_completed_data_list <- function(m = 3, seed = 123, clustered = FALSE) {
+  stopifnot(m >= 1L)
+
+  key <- paste("mi_completed_list", m, seed, clustered, sep = "_")
+
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- make_mi_incomplete_data(seed = seed, clustered = clustered)
+
+    x1_missing <- is.na(dat$X1)
+    w2_missing <- is.na(dat$W2)
+    c_missing <- is.na(dat$C)
+
+    x1_fill <- mean(dat$X1, na.rm = TRUE)
+    w2_fill <- mean(dat$W2, na.rm = TRUE)
+    c_fill <- mean(dat$C, na.rm = TRUE)
+
+    completed <- lapply(
+      seq_len(m),
+      function(i) {
+        dat_i <- dat
+        dat_i$X1[x1_missing] <- x1_fill + (i - ((m + 1) / 2)) * 0.05
+        dat_i$W2[w2_missing] <- w2_fill - (i - ((m + 1) / 2)) * 0.05
+        dat_i$C[c_missing] <- c_fill + (i - ((m + 1) / 2)) * 0.02
+        dat_i
+      }
+    )
+
+    assign(key, completed, envir = .qgcompmulti_test_cache)
+  }
+
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
+make_test_mids <- function(m = 3, seed = 123, clustered = FALSE) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("`mice` must be installed to build test mids objects.", call. = FALSE)
+  }
+
+  key <- paste("mi_mids", m, seed, clustered, sep = "_")
+
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- make_mi_incomplete_data(seed = seed, clustered = clustered)
+    mids <- mice::mice(
+      dat,
+      m = m,
+      maxit = 1,
+      printFlag = FALSE,
+      seed = seed
+    )
+    assign(key, mids, envir = .qgcompmulti_test_cache)
+  }
+
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
 fit_engine_result <- function(interaction = TRUE,
                               q = 4,
                               centering = "none",
