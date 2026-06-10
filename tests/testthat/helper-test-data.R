@@ -67,6 +67,70 @@ EXPECTED_COMPONENT_FIELDS <- list(
     "coefficient_labels"
   )
 )
+EXPECTED_MI_TOP_COMPONENTS <- c(
+  "call",
+  "formula",
+  "data_info",
+  "mixtures",
+  "mi_info",
+  "analysis",
+  "fits",
+  "results",
+  "labels"
+)
+EXPECTED_MI_COMPONENT_FIELDS <- list(
+  data_info = c(
+    "n_input",
+    "n_used",
+    "outcome",
+    "has_clusters",
+    "cluster_var",
+    "n_clusters",
+    "quantized"
+  ),
+  mixtures = c(
+    "mix1",
+    "mix2",
+    "q",
+    "centering"
+  ),
+  mi_info = c(
+    "m",
+    "input_type",
+    "keep_fits",
+    "seed",
+    "fit_seeds",
+    "n_input_per_imputation",
+    "n_used_per_imputation"
+  ),
+  analysis = c(
+    "interaction",
+    "family",
+    "family_name",
+    "link",
+    "B",
+    "id",
+    "MCsize"
+  ),
+  fits = c("imputation_fits"),
+  results = c(
+    "coefficients",
+    "std_error",
+    "vcov",
+    "coef_table",
+    "within_var",
+    "between_var",
+    "total_var",
+    "df",
+    "riv",
+    "fmi"
+  ),
+  labels = c(
+    "mixture_labels",
+    "coefficient_names",
+    "coefficient_labels"
+  )
+)
 EXPECTED_SUMMARY_COMPONENTS <- c(
   "call",
   "formula",
@@ -231,6 +295,56 @@ fit_test_model <- function(interaction = TRUE,
     )
     assign(key, fit, envir = .qgcompmulti_test_cache)
   }
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+fit_test_model_list <- function(interaction = TRUE,
+                                q = 4,
+                                centering = "none",
+                                clustered = FALSE,
+                                B = 10,
+                                data_seeds = c(101, 202, 303),
+                                fit_seeds = data_seeds + 1000L) {
+  stopifnot(length(data_seeds) == length(fit_seeds))
+
+  key <- paste(
+    "fit_list",
+    interaction,
+    if (is.null(q)) "NULL" else as.character(q),
+    centering,
+    clustered,
+    B,
+    paste(data_seeds, collapse = "_"),
+    paste(fit_seeds, collapse = "_"),
+    sep = "_"
+  )
+
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    fits <- lapply(
+      seq_along(data_seeds),
+      function(i) {
+        dat <- if (clustered) {
+          make_clustered_test_data(seed = data_seeds[[i]])
+        } else {
+          make_test_data(seed = data_seeds[[i]])
+        }
+        qgcomp.glm.multi(
+          f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+          data = dat,
+          mix1 = c("X1", "X2", "X3"),
+          mix2 = c("W1", "W2", "W3"),
+          interaction = interaction,
+          q = q,
+          centering = centering,
+          B = B,
+          id = if (clustered) "cluster_id" else NULL,
+          MCsize = nrow(dat),
+          seed = fit_seeds[[i]]
+        )
+      }
+    )
+    assign(key, fits, envir = .qgcompmulti_test_cache)
+  }
+
   get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
 }
 
