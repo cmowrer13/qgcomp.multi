@@ -3,15 +3,19 @@ test_that("core extractor methods return the expected types", {
   expect_type(coef(fit), "double")
   expect_true(is.matrix(vcov(fit)))
   expect_true(is.matrix(confint(fit)))
+  expect_type(residuals(fit), "double")
   expect_s3_class(formula(fit), "formula")
   expect_equal(nobs(fit), fit$data_info$n_used)
+  expect_type(df.residual(fit), "double")
 })
 
 test_that("extractor methods agree with stored results", {
   fit <- fit_test_model(interaction = TRUE, q = 4)
   expect_equal(coef(fit), fit$results$coefficients)
   expect_equal(vcov(fit), fit$results$vcov)
+  expect_equal(residuals(fit), stats::residuals(fit$fits$outcome_fit))
   expect_equal(nobs(fit), fit$data_info$n_used)
+  expect_equal(df.residual(fit), nobs(fit) - length(coef(fit)))
 })
 
 test_that("coefficient, covariance, and confidence interval outputs are aligned", {
