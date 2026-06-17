@@ -46,7 +46,7 @@
 #'   per-imputation `qgcomp.glm.multi()` calls when `parallel = TRUE`. Leave
 #'   `NULL` to use the active non-sequential `future` plan when one is already
 #'   set, or otherwise let the ordinary-fit path choose a temporary local worker
-#'   count automatically. If a non-sequantial `future` plan is already active,
+#'   count automatically. If a non-sequential `future` plan is already active,
 #'   supplying an explicit `workers` value is treated as an unsupported
 #'   combination and errors cleanly
 #'
@@ -83,10 +83,10 @@
 #' clusters rather than rows.
 #'
 #' Pooled results in `0.4.0` stay focused on MSM inference and a compact
-#' compact summary layer. The pooled object does not yet try to replicate the
+#' summary layer. The pooled object does not yet try to replicate the
 #' full prediction and diagnostics surface of ordinary single-fit
 #' `qgcompmulti` objects. Use the pooled extractors, `summary()`, and the
-#' pooled `tidy()`, and `glance()` methods for reportingl use `keep_fits = TRUE`
+#' pooled `tidy()`, and `glance()` methods for reporting use `keep_fits = TRUE`
 #' only when you explicitly need the stored per-imputation single-fit objects.
 #'
 #' When `data` is a `mids` object, the optional `mice` package must be

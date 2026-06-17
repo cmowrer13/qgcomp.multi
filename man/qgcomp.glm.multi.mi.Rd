@@ -80,7 +80,7 @@ multiple-imputation loop itself remains serial in Version \verb{0.4.0}.}
 per-imputation \code{qgcomp.glm.multi()} calls when \code{parallel = TRUE}. Leave
 \code{NULL} to use the active non-sequential \code{future} plan when one is already
 set, or otherwise let the ordinary-fit path choose a temporary local worker
-count automatically. If a non-sequantial \code{future} plan is already active,
+count automatically. If a non-sequential \code{future} plan is already active,
 supplying an explicit \code{workers} value is treated as an unsupported
 combination and errors cleanly}
 }
@@ -124,10 +124,10 @@ same order, and the ordinary per-imputation fits continue to resample
 clusters rather than rows.
 
 Pooled results in \verb{0.4.0} stay focused on MSM inference and a compact
-compact summary layer. The pooled object does not yet try to replicate the
+summary layer. The pooled object does not yet try to replicate the
 full prediction and diagnostics surface of ordinary single-fit
 \code{qgcompmulti} objects. Use the pooled extractors, \code{summary()}, and the
-pooled \code{tidy()}, and \code{glance()} methods for reportingl use \code{keep_fits = TRUE}
+pooled \code{tidy()}, and \code{glance()} methods for reporting use \code{keep_fits = TRUE}
 only when you explicitly need the stored per-imputation single-fit objects.
 
 When \code{data} is a \code{mids} object, the optional \code{mice} package must be
