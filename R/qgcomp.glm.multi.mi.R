@@ -35,8 +35,18 @@
 #' @param keep_fits Logical; if `TRUE`, retain the full per-imputation
 #'   `qgcompmulti` fitted objects inside the pooled result. Defaults to `FALSE`
 #'   to keep the pooled object lean.
-#' @param progress Logical; if `TRUE`, pass the existing serial bootstrap
-#'   progress display through to each per-imputation fit.
+#' @param progress Logical; if `TRUE`, request the existing bootstrap progress
+#'   display within each per-imputation fit. Progress remains serial-only, so
+#'   `progress = TRUE` with `parallel = TRUE` is normalized once at the wrapper
+#'   level and disabled with a single warning.
+#' @param parallel Logical; if `TRUE`, allow each per-imputation fit to use the
+#'   established bootstrap-level parallel engine from `qgcomp.glm.multi()`. The
+#'   multiple-imputation loop itself remains serial in Version `0.4.0`.
+#' @param workers Optional integer worker count passed through to the
+#'   per-imputation `qgcomp.glm.multi()` calls when `parallel = TRUE`. Leave
+#'   `NULL` to use the active non-sequential `future` plan when one is already
+#'   set, or otherwise let the ordinary-fit path choose a temporary local worker
+#'   count automatically.
 #'
 #' @return An object of class `"qgcompmulti_mi"` containing pooled MSM
 #'   coefficients, pooled covariance and standard errors, Rubin pooling
@@ -50,6 +60,15 @@
 #' structurally compatible, fits one `qgcomp.glm.multi()` model per imputation,
 #' and pools the resulting MSM coefficient vectors and covariance matrices using
 #' the internal Rubin-pooling helpers defined for the `"qgcompmulti_mi"` class.
+#'
+#' Optional parallel execution in `0.4.0` stays at one level only. The wrapper
+#' itself still iterates over imputations serially, but each ordinary
+#' per-imputation fit may dispatch its bootstrap replications through the same
+#' `future.apply` backend already used for single-dataset fits. Reproducibility
+#' for these workflows is defined within a fixed backend and execution mode: the
+#' wrapper treats `seed` as a master seed, deterministically expands it into
+#' independent per-imputation fit seeds, and then each ordinary fit expands its
+#' own fit seed into full-fit and worker-level bootstrap seeds.
 #'
 #' Pooled results in `0.4.0` are intentionally focused on MSM inference and a
 #' compact summary layer. The pooled object does not yet try to replicate the
@@ -112,7 +131,9 @@ qgcomp.glm.multi.mi <- function(f,
                                 MCsize = NULL,
                                 seed = NULL,
                                 keep_fits = FALSE,
-                                progress = FALSE) {
+                                progress = FALSE,
+                                parallel = FALSE,
+                                workers = NULL) {
   call <- match.call()
 
   validate_qgcomp_multi_mi_inputs(
@@ -129,12 +150,18 @@ qgcomp.glm.multi.mi <- function(f,
     B = B,
     seed = seed,
     keep_fits = keep_fits,
-    progress = progress
+    progress = progress,
+    parallel = parallel,
+    workers = workers
   )
 
   input_type <- qgcompmulti_mi_input_type(data)
   completed <- qgcompmulti_mi_completed_data(data, input_type = input_type)
   mcsize_value <- if (is.null(MCsize)) nrow(completed[[1]]) else as.integer(MCsize)
+  progress_enabled <- qgcompmulti_parallel_progress_flag(
+    parallel = parallel,
+    progress = progress
+  )
 
   qgcompmulti_mi_validate_completed_data(
     completed = completed,
@@ -148,7 +175,9 @@ qgcomp.glm.multi.mi <- function(f,
     id = id,
     MCsize = mcsize_value,
     B = B,
-    progress = progress
+    progress = progress_enabled,
+    parallel = parallel,
+    workers = workers
   )
 
   fit_seeds <- qgcompmulti_mi_fit_seeds(length(completed), seed = seed)
@@ -165,7 +194,9 @@ qgcomp.glm.multi.mi <- function(f,
     id = id,
     MCsize = mcsize_value,
     fit_seeds = fit_seeds,
-    progress = progress
+    progress = progress_enabled,
+    parallel = parallel,
+    workers = workers
   )
 
   qgcompmulti_pool_mi_fits(

@@ -175,7 +175,9 @@ validate_qgcomp_multi_mi_inputs <- function(
     B = NULL,
     seed = NULL,
     keep_fits = FALSE,
-    progress = FALSE) {
+    progress = FALSE,
+    parallel = FALSE,
+    workers = NULL) {
 
   if (!inherits(f, "formula")) {
     stop("`f` must be a formula.", call. = FALSE)
@@ -260,6 +262,20 @@ validate_qgcomp_multi_mi_inputs <- function(
 
   if (!is.logical(progress) || length(progress) != 1L || is.na(progress)) {
     stop("`progress` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  if (!is.logical(parallel) || length(parallel) != 1L || is.na(parallel)) {
+    stop("`parallel` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  if (!is.null(workers)) {
+    if (!parallel) {
+      stop("`workers` is only supported when `parallel = TRUE`.", call. = FALSE)
+    }
+
+    if (!is_scalar_whole_number(workers) || workers < 1L) {
+      stop("`workers` must be `NULL` or a single integer greater than or equal to 1.", call. = FALSE)
+    }
   }
 
   invisible(NULL)

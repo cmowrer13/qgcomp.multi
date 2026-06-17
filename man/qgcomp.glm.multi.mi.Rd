@@ -18,7 +18,9 @@ qgcomp.glm.multi.mi(
   MCsize = NULL,
   seed = NULL,
   keep_fits = FALSE,
-  progress = FALSE
+  progress = FALSE,
+  parallel = FALSE,
+  workers = NULL
 )
 }
 \arguments{
@@ -65,8 +67,20 @@ result.}
 \code{qgcompmulti} fitted objects inside the pooled result. Defaults to \code{FALSE}
 to keep the pooled object lean.}
 
-\item{progress}{Logical; if \code{TRUE}, pass the existing serial bootstrap
-progress display through to each per-imputation fit.}
+\item{progress}{Logical; if \code{TRUE}, request the existing bootstrap progress
+display within each per-imputation fit. Progress remains serial-only, so
+\code{progress = TRUE} with \code{parallel = TRUE} is normalized once at the wrapper
+level and disabled with a single warning.}
+
+\item{parallel}{Logical; if \code{TRUE}, allow each per-imputation fit to use the
+established bootstrap-level parallel engine from \code{qgcomp.glm.multi()}. The
+multiple-imputation loop itself remains serial in Version \verb{0.4.0}.}
+
+\item{workers}{Optional integer worker count passed through to the
+per-imputation \code{qgcomp.glm.multi()} calls when \code{parallel = TRUE}. Leave
+\code{NULL} to use the active non-sequential \code{future} plan when one is already
+set, or otherwise let the ordinary-fit path choose a temporary local worker
+count automatically.}
 }
 \value{
 An object of class \code{"qgcompmulti_mi"} containing pooled MSM
@@ -87,6 +101,15 @@ data-frame list, the function validates that the completed datasets are
 structurally compatible, fits one \code{qgcomp.glm.multi()} model per imputation,
 and pools the resulting MSM coefficient vectors and covariance matrices using
 the internal Rubin-pooling helpers defined for the \code{"qgcompmulti_mi"} class.
+
+Optional parallel execution in \verb{0.4.0} stays at one level only. The wrapper
+itself still iterates over imputations serially, but each ordinary
+per-imputation fit may dispatch its bootstrap replications through the same
+\code{future.apply} backend already used for single-dataset fits. Reproducibility
+for these workflows is defined within a fixed backend and execution mode: the
+wrapper treats \code{seed} as a master seed, deterministically expands it into
+independent per-imputation fit seeds, and then each ordinary fit expands its
+own fit seed into full-fit and worker-level bootstrap seeds.
 
 Pooled results in \verb{0.4.0} are intentionally focused on MSM inference and a
 compact summary layer. The pooled object does not yet try to replicate the

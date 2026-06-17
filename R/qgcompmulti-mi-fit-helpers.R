@@ -60,7 +60,9 @@ qgcompmulti_mi_validate_completed_data <- function(completed,
                                                    id,
                                                    MCsize,
                                                    B,
-                                                   progress = FALSE) {
+                                                   progress = FALSE,
+                                                   parallel = FALSE,
+                                                   workers = NULL) {
   if (!is.list(completed) || length(completed) == 0L) {
     stop("`completed` must be a non-empty list of data frames.", call. = FALSE)
   }
@@ -137,7 +139,9 @@ qgcompmulti_mi_validate_completed_data <- function(completed,
     MCsize = MCsize,
     B = B,
     seed = NULL,
-    progress = progress
+    progress = progress,
+    parallel = parallel,
+    workers = workers
   )
 
   invisible(completed)
@@ -176,7 +180,9 @@ qgcompmulti_mi_fit_models <- function(completed,
                                       id,
                                       MCsize,
                                       fit_seeds,
-                                      progress = FALSE) {
+                                      progress = FALSE,
+                                      parallel = FALSE,
+                                      workers = NULL) {
   if (!is.list(completed) || length(completed) == 0L) {
     stop("`completed` must be a non-empty list of data frames.", call. = FALSE)
   }
@@ -201,7 +207,9 @@ qgcompmulti_mi_fit_models <- function(completed,
         id = id,
         MCsize = MCsize,
         seed = fit_seeds[[i]],
-        progress = progress
+        progress = progress,
+        parallel = parallel,
+        workers = workers
       )
     }
   )
