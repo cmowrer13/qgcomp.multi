@@ -230,7 +230,7 @@ test_that("qgcomp.glm.multi.mi supports clustered parallel completed-list workfl
   expect_equal(fit$data_info$n_clusters, length(unique(completed[[1]]$cluster_id)))
 })
 
-test_that("qgcomp.glm.multi.mi supports mids input when mice is installed", {
+test_that("qgcomp.glm.multi.mi supports mids input with keep_fits and bootstrap-level parallelism when mice is installed", {
   skip_if_not_installed("mice")
 
   mids <- make_test_mids(m = 3, seed = 888)
@@ -242,9 +242,13 @@ test_that("qgcomp.glm.multi.mi supports mids input when mice is installed", {
     mix1 = c("X1", "X2", "X3"),
     mix2 = c("W1", "W2", "W3"),
     interaction = TRUE,
-    q = 4,
-    B = 10,
-    seed = 902
+    q = NULL,
+    centering = "median",
+    B = 6,
+    seed = 903,
+    keep_fits = TRUE,
+    parallel = TRUE,
+    workers = 2
   )
 
   fit_list <- qgcomp.glm.multi.mi(
@@ -253,13 +257,20 @@ test_that("qgcomp.glm.multi.mi supports mids input when mice is installed", {
     mix1 = c("X1", "X2", "X3"),
     mix2 = c("W1", "W2", "W3"),
     interaction = TRUE,
-    q = 4,
-    B = 10,
-    seed = 902
+    q = NULL,
+    centering = "median",
+    B = 6,
+    seed = 903,
+    keep_fits = TRUE,
+    parallel = TRUE,
+    workers = 2
   )
 
   expect_identical(fit_mids$mi_info$input_type, "mids")
   expect_identical(fit_list$mi_info$input_type, "completed_list")
+  expect_true(fit_mids$mi_info$keep_fits)
+  expect_identical(fit_mids$mixtures$centering, "median")
+  expect_length(fit_mids$fits$imputation_fits, 3L)
   expect_equal(fit_mids$results$coefficients, fit_list$results$coefficients)
   expect_equal(fit_mids$results$vcov, fit_list$results$vcov)
   expect_equal(fit_mids$mi_info$fit_seeds, fit_list$mi_info$fit_seeds)

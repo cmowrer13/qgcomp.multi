@@ -131,7 +131,9 @@ test_that("predict fails clearly on invalid public combinations", {
   expect_error(predict(fit, type = "msm_point"))
   expect_error(predict(fit, type = "msm_contrast", from = c(psi1 = 0, psi2 = 0)))
   expect_error(predict(fit, type = "exact", at = c(psi1 = 1, psi2 = 2)))
-  expect_error(predict(fit, type = "exact", data = dat, interval = TRUE))
+  expect_error(predict(fit, type = "exact", data = dat, interval = TRUE),
+               "Version 0.4.0"
+               )
   expect_error(predict(fit, type = "exact_contrast", from = c(psi1 = 0, psi2 = 0), to = c(psi1 = 1, psi2 = 2)))
   expect_error(predict(fit, type = "msm", at = c(psi1 = 1, psi2 = 2)))
   expect_error(

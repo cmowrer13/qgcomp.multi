@@ -34,6 +34,11 @@ The fitted object behaves like an S3 model object, and the package now supports
 prediction, plotting, and several diagnostics. This vignette focuses on how an
 applied analyst would use those features.
 
+This vignette stays within the single-dataset workflow. Version `0.4.0` also
+adds native multiple-imputation fitting and optional bootstrap-level parallel
+execution, but those workflows are documented in the function help pages and
+the README rather than a separate MI or parallel vignette.
+
 Two distinctions matter throughout:
 
 - the **outcome model**, which is the regression model you fit to the observed data
@@ -326,7 +331,7 @@ For quantized analyses, interpolation like this is usually not the main goal.
 It becomes more natural when `q = NULL`, because users may want predictions at
 custom intervention values on the original analysis scale.
 
-In Version `0.3.0`, bootstrap percentile-based interval support is attached to 
+In Version `0.4.0`, bootstrap percentile-based interval support is attached to 
 MSM-based predictions, but not to arbitrary exact predictions.
 
 # Plot The Fitted MSM Surface
@@ -701,4 +706,3 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 5. For biomarker concentrations, log transformation plus median centering often
    makes original-scale summaries easier to read.
 6. Use the sensitivity helpers to look for instability.
-

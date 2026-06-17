@@ -24,6 +24,11 @@ The package currently supports:
 - optional interaction between the two mixture intervention variables
 - quantized analyses with `q >= 2`
 - original-scale analyses with `q = NULL`
+- native multiple-imputation pooling through `qgcomp.glm.multi.mi()`
+- optional bootstrap-level parallel execution for ordinary fits and
+  native MI workflows
+- broom-style `tidy()` and `glance()` methods for single-fit and pooled
+  MI objects
 - MSM-based prediction, plotting, diagnostics, and sensitivity helpers
 
 The package works by fitting an outcome regression, computing predicted
@@ -83,14 +88,19 @@ use, the recommended workflow is:
 - optionally supply `seed` when you want bootstrap and Monte Carlo draws
   to be reproducible across repeated fits
 
-The `0.3.0` interface then extends into:
+Version `0.4.0` also adds:
 
 - `predict()` for MSM-based prediction, direct contrasts, and exact
   prediction targets
 - `plot()` for fitted MSM surface displays
 - `support()`, `diagnostics()`, and `adequacy()` for model checking
-- `mcsize_sensitivity()` and `q_sensitivity()` for practical robustness
-  checks
+- `mcsize_sensitivity()`, `b_sensitivity()`, and `q_sensitivity()` for
+  practical robustness checks
+- `qgcomp.glm.multi.mi()` for native Rubin-pooled multiple-imputation
+  analysis
+- optional `parallel` and `workers` controls for bootstrap-level
+  parallelism
+- `tidy()` and `glance()` methods for single-fit and pooled MI reporting
 
 ## Specifying the Outcome Model
 
@@ -207,10 +217,10 @@ fit
 #> 
 #> MSM coefficients:
 #>                        Estimate Std. Error z value  Pr(>|z|)    
-#> Intercept             -0.153249   0.130625 -1.1732 0.2407179    
-#> Mixture 1 main effect  0.546206   0.085165  6.4135 1.422e-10 ***
-#> Mixture 2 main effect  0.386574   0.089292  4.3293 1.496e-05 ***
-#> Mixture interaction    0.170116   0.051373  3.3114 0.0009282 ***
+#> Intercept             -0.153249   0.117175 -1.3079    0.1909    
+#> Mixture 1 main effect  0.546206   0.072070  7.5788 3.488e-14 ***
+#> Mixture 2 main effect  0.386574   0.081828  4.7242 2.310e-06 ***
+#> Mixture interaction    0.170116   0.043726  3.8905    0.0001 ***
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -220,10 +230,10 @@ coef(fit)
 
 confint(fit)
 #>                   2.5 %    97.5 %
-#> (Intercept) -0.40927019 0.1027722
-#> psi1         0.37928521 0.7131271
-#> psi2         0.21156465 0.5615836
-#> psi1:psi2    0.06942787 0.2708050
+#> (Intercept) -0.38290783 0.0764098
+#> psi1         0.40495108 0.6874613
+#> psi2         0.22619376 0.5469545
+#> psi1:psi2    0.08441578 0.2558171
 ```
 
 For a fuller report that still keeps the MSM as the primary focus, call:
@@ -254,10 +264,10 @@ summary(fit)
 #> 
 #> MSM coefficients:
 #>                        Estimate Std. Error z value  Pr(>|z|)    
-#> Intercept             -0.153249   0.130625 -1.1732 0.2407179    
-#> Mixture 1 main effect  0.546206   0.085165  6.4135 1.422e-10 ***
-#> Mixture 2 main effect  0.386574   0.089292  4.3293 1.496e-05 ***
-#> Mixture interaction    0.170116   0.051373  3.3114 0.0009282 ***
+#> Intercept             -0.153249   0.117175 -1.3079    0.1909    
+#> Mixture 1 main effect  0.546206   0.072070  7.5788 3.488e-14 ***
+#> Mixture 2 main effect  0.386574   0.081828  4.7242 2.310e-06 ***
+#> Mixture interaction    0.170116   0.043726  3.8905    0.0001 ***
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 
@@ -333,7 +343,7 @@ are labeled on the intervention-value scale even though prediction
 inputs live on the centered MSM scale. In that setting, `(0, 0)`
 corresponds to the pooled median intervention for both mixtures.
 
-In Version `0.3.0`, interval support is currently limited to MSM-based
+In Version `0.4.0`, interval support is currently limited to MSM-based
 predictions.
 
 ## Plotting Workflow
@@ -401,7 +411,7 @@ those points or beyond them.
 ## Sensitivity Workflow
 
 The package includes dedicated helpers for sensitivity to Monte Carlo
-size and quantization choice:
+size, the number of bootstrap iterations, and quantization choice:
 
 ``` r
 mcsize_sensitivity(
@@ -412,6 +422,17 @@ mcsize_sensitivity(
   MCsize_values = c(250, 500, 1000),
   q = 4,
   B = 100,
+  seed = 13
+)
+
+b_sensitivity(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  B_values = c(50, 100, 200),
+  q = 4,
+  MCsize = nrow(dat),
   seed = 13
 )
 
@@ -475,6 +496,151 @@ This option can be useful when the original analysis scale matters, but
 users should still check whether the implied pooled intervention is
 scientifically sensible for the exposures at hand.
 
+## Native Multiple Imputation Workflow
+
+Version `0.4.0` adds a native multiple-imputation wrapper:
+
+- `qgcomp.glm.multi.mi()` fits one `qgcomp.glm.multi()` model per
+  completed imputation
+- it pools the marginal structural model (MSM) coefficients and
+  covariance internally using Rubin’s rules
+- the returned `qgcompmulti_mi` object is built for inference
+- pooled prediction and pooled diagnostics are not yet implemented in
+  `0.4.0`
+
+Use this route when you want `qgcomp.multi` to handle the imputation
+normalization, repeated fitting, and Rubin pooling steps itself.
+
+``` r
+dat <- sim_mixture_data(
+  n = 150,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  return_quantized = FALSE,
+  seed = 123
+)
+
+imp_list <- lapply(
+  seq_len(3),
+  function(i) {
+    dat_i <- dat
+    dat_i$X1 <- dat_i$X1 + rnorm(nrow(dat_i), sd = 0.02 * i)
+    dat_i$W2 <- dat_i$W2 + rnorm(nrow(dat_i), sd = 0.02 * i)
+    dat_i
+  }
+)
+
+fit_mi <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 10,
+  seed = 13
+)
+
+summary(fit_mi)
+coef(fit_mi)
+confint(fit_mi)
+```
+
+If you want the stored per-imputation fitted objects as well as the
+pooled result, set `keep_fits = TRUE`:
+
+``` r
+fit_mi_keep <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = NULL,
+  centering = "median",
+  B = 10,
+  seed = 17,
+  keep_fits = TRUE
+)
+
+fit_mi_keep$mi_info$keep_fits
+fit_mi_keep$fits$imputation_fits[[1]]
+```
+
+`mids` objects from the optional `mice` package are also supported:
+
+``` r
+library(mice)
+
+dat_miss <- dat
+dat_miss$X1[sample.int(nrow(dat_miss), 10)] <- NA_real_
+dat_miss$W2[sample.int(nrow(dat_miss), 10)] <- NA_real_
+
+mids_obj <- mice(dat_miss, m = 3, maxit = 1, printFlag = FALSE)
+
+fit_mi_mids <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = mids_obj,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 10,
+  seed = 19
+)
+```
+
+## Optional Bootstrap-Level Parallelism
+
+Version `0.4.0` also adds one level of optional parallelism. The
+supported pattern is:
+
+- for ordinary fits, parallelize bootstrap replications within
+  `qgcomp.glm.multi()`
+- for native MI fits, keep the imputation loop serial and parallelize
+  the bootstrap replications inside each per-imputation fit
+
+``` r
+fit_parallel <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 20,
+  seed = 29,
+  parallel = TRUE,
+  workers = 2
+)
+
+fit_mi_parallel <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 10,
+  seed = 31,
+  parallel = TRUE,
+  workers = 2
+)
+```
+
+Two behavior notes:
+
+- reproducibility is defined within a fixed backend and execution mode,
+  not as exact equality between serial and parallel runs
+- `progress = TRUE` is supported only in serial mode and is disabled
+  with a clear warning when `parallel = TRUE`
+
 ## Computational Considerations
 
 The g-computation step requires prediction over a two-dimensional
@@ -523,15 +689,21 @@ The standard fitted-model methods include:
 - `formula()` — original fitted formula
 - `nobs()` — number of observations actually used
 
-New `0.3.0` public methods include:
+Version `0.4.0` public interfaces now also include:
 
+- `qgcomp.glm.multi.mi()` — native multiple-imputation fitting and
+  pooling
 - `predict()` — MSM predictions, contrasts, and exact prediction targets
 - `plot()` — MSM surface plotting
 - `diagnostics()` — structured model diagnostics
 - `support()` — intervention support diagnostic
 - `adequacy()` — MSM adequacy diagnostic
 - `mcsize_sensitivity()` — repeated-fit sensitivity to Monte Carlo size
+- `b_sensitivity()` — repeated-fit sensitivity to number of bootstrap
+  iterations
 - `q_sensitivity()` — repeated-fit sensitivity to quantization choice
+- `tidy()` and `glance()` — broom-style reporting helpers for single-fit
+  and pooled MI objects
 
 ## References
 

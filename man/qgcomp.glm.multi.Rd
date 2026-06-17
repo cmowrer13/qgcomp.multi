@@ -97,7 +97,9 @@ disabled with an explicit warning.}
 \item{workers}{Optional integer worker count for the internal
 \code{future::multisession} path. Leave \code{NULL} to use the active non-sequential
 \code{future} plan when one is already set, or otherwise let
-\code{qgcomp.glm.multi()} choose a temporary local worker count automatically.}
+\code{qgcomp.glm.multi()} choose a temporary local worker count automatically.
+If a non-sequential \code{future} plan is already active, supplying an explicit
+\code{workers} value is treated as an unsupported combination and errors clearly.}
 }
 \value{
 An object of class \code{"qgcompmulti"} representing the fitted
@@ -199,10 +201,12 @@ Version \verb{0.4.0}, so requesting \code{progress = TRUE} together with
 \code{parallel = TRUE} disables the progress display with an explicit warning.
 
 When \code{parallel = TRUE}, the bootstrap replications are dispatched with
-\code{future.apply}. Reproducibility is defined within a fixed backend and
-execution mode. The function treats \code{seed} as a master seed and
-deterministically expands it into one full-fit seed plus one bootstrap-worker
-seed per replication.
+\code{future.apply}. If no non-sequential \code{future} plan is already active and
+\code{workers} is left \code{NULL}, the function uses a temporary local
+\code{future::multisession} path. Reproducibility is defined within a fixed
+backend and execution mode. The function treats \code{seed} as a master seed and
+deterministically expands it into one full-fit seed plus one
+bootstrap-worker seed per replication.
 
 For causal interpretation, the usual identifying conditions for
 g-computation still apply: consistency, conditional exchangeability,
@@ -241,6 +245,21 @@ fit
 summary(fit)
 coef(fit)
 confint(fit)
+
+# Optional bootstrap-level parallelized computation
+parallel_fit <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3", "X4"),
+  mix2 = c("W1", "W2", "W3", "W4"),
+  interaction = TRUE,
+  q = 4,
+  B = 100,
+  MCsize = nrow(dat),
+  seed = 13,
+  parallel = TRUE,
+  workers = 2
+)
 
 # Public prediction and plotting workflow
 \dontrun{

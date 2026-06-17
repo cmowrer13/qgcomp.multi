@@ -26,6 +26,13 @@ A data frame with one row per pooled MSM coefficient and columns
 Returns a broom-style coefficient table for the pooled marginal structural
 model (MSM) coefficients stored in a fitted \code{qgcompmulti_mi} object.
 }
+\details{
+This method stays coefficient-centric. It reports the pooled MSM coefficients
+and Rubin-style inferential quantities that belong naturally in a reporting
+table, while leaving fit-level metadata to \code{\link[broom:reexports]{broom::glance()}} and leaving
+per-imputation fitted-model inspection to the stored \code{"qgcompmulti"} objects
+when \code{keep_fits = TRUE}.
+}
 \seealso{
 \code{\link[broom:reexports]{broom::glance()}}, \code{\link[=coef.qgcompmulti_mi]{coef.qgcompmulti_mi()}}, \code{\link[=vcov.qgcompmulti_mi]{vcov.qgcompmulti_mi()}},
 \code{\link[=confint.qgcompmulti_mi]{confint.qgcompmulti_mi()}}, \code{\link[=summary.qgcompmulti_mi]{summary.qgcompmulti_mi()}},

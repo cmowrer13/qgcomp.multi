@@ -82,6 +82,8 @@
 #' `future::multisession` path. Leave `NULL` to use the active non-sequential
 #' `future` plan when one is already set, or otherwise let
 #' `qgcomp.glm.multi()` choose a temporary local worker count automatically.
+#' If a non-sequential `future` plan is already active, supplying an explicit
+#' `workers` value is treated as an unsupported combination and errors clearly.
 #'
 #' @return An object of class `"qgcompmulti"` representing the fitted
 #' two-mixture quantile g-computation model. Major components include:
@@ -160,10 +162,12 @@
 #' `parallel = TRUE` disables the progress display with an explicit warning.
 #'
 #' When `parallel = TRUE`, the bootstrap replications are dispatched with
-#' `future.apply`. Reproducibility is defined within a fixed backend and
-#' execution mode. The function treats `seed` as a master seed and
-#' deterministically expands it into one full-fit seed plus one bootstrap-worker
-#' seed per replication.
+#' `future.apply`. If no non-sequential `future` plan is already active and
+#' `workers` is left `NULL`, the function uses a temporary local
+#' `future::multisession` path. Reproducibility is defined within a fixed
+#' backend and execution mode. The function treats `seed` as a master seed and
+#' deterministically expands it into one full-fit seed plus one
+#' bootstrap-worker seed per replication.
 #'
 #' For causal interpretation, the usual identifying conditions for
 #' g-computation still apply: consistency, conditional exchangeability,
@@ -202,6 +206,21 @@
 #' summary(fit)
 #' coef(fit)
 #' confint(fit)
+#'
+#' # Optional bootstrap-level parallelized computation
+#' parallel_fit <- qgcomp.glm.multi(
+#'   f = Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C,
+#'   data = dat,
+#'   mix1 = c("X1", "X2", "X3", "X4"),
+#'   mix2 = c("W1", "W2", "W3", "W4"),
+#'   interaction = TRUE,
+#'   q = 4,
+#'   B = 100,
+#'   MCsize = nrow(dat),
+#'   seed = 13,
+#'   parallel = TRUE,
+#'   workers = 2
+#' )
 #'
 #' # Public prediction and plotting workflow
 #' \dontrun{

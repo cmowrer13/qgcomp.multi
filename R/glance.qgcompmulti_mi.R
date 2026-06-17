@@ -11,6 +11,12 @@
 #'   imputations, input-type metadata, mixture coding metadata, Monte Carlo
 #'   size, interaction status, retained-fit status, and clustering metadata.
 #'
+#' @details
+#' `glance()` stays compact for pooled MI objects. It summarizes how
+#' the pooled fit was constructed, but it does not try to stand in for pooled
+#' prediction output, pooled diagnostics, or a full scientific narrative about
+#' model adequacy.
+#'
 #' @seealso [broom::tidy()], [summary.qgcompmulti_mi()], [print.qgcompmulti_mi()],
 #'   [qgcomp.glm.multi.mi()]
 #' @exportS3Method broom::glance

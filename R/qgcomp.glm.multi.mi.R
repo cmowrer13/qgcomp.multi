@@ -46,7 +46,9 @@
 #'   per-imputation `qgcomp.glm.multi()` calls when `parallel = TRUE`. Leave
 #'   `NULL` to use the active non-sequential `future` plan when one is already
 #'   set, or otherwise let the ordinary-fit path choose a temporary local worker
-#'   count automatically.
+#'   count automatically. If a non-sequantial `future` plan is already active,
+#'   supplying an explicit `workers` value is treated as an unsupported
+#'   combination and errors cleanly
 #'
 #' @return An object of class `"qgcompmulti_mi"` containing pooled MSM
 #'   coefficients, pooled covariance and standard errors, Rubin pooling
@@ -60,6 +62,12 @@
 #' structurally compatible, fits one `qgcomp.glm.multi()` model per imputation,
 #' and pools the resulting MSM coefficient vectors and covariance matrices using
 #' the internal Rubin-pooling helpers defined for the `"qgcompmulti_mi"` class.
+#' In `0.4.0`, this is the recommended route when you want `qgcomp.multi` to
+#' handle the completed-data normalization, repeated fitting, and Rubin pooling
+#' step itself. Users who need to stay inside a broader `mice` pipeline can
+#' still fit `qgcomp.glm.multi()` through `mice::with()` and then rely on the
+#' package's `tidy()`, `glance()`, and `df.residual()` compatibility work when
+#' that better matches the analysis pipeline.
 #'
 #' Optional parallel execution in `0.4.0` stays at one level only. The wrapper
 #' itself still iterates over imputations serially, but each ordinary
@@ -69,11 +77,17 @@
 #' wrapper treats `seed` as a master seed, deterministically expands it into
 #' independent per-imputation fit seeds, and then each ordinary fit expands its
 #' own fit seed into full-fit and worker-level bootstrap seeds.
+#' Clustered workflows are also supported in `0.4.0`: when `id` is
+#' supplied, each completed dataset must share identical cluster IDs in the
+#' same order, and the ordinary per-imputation fits continue to resample
+#' clusters rather than rows.
 #'
-#' Pooled results in `0.4.0` are intentionally focused on MSM inference and a
+#' Pooled results in `0.4.0` stay focused on MSM inference and a compact
 #' compact summary layer. The pooled object does not yet try to replicate the
 #' full prediction and diagnostics surface of ordinary single-fit
-#' `qgcompmulti` objects.
+#' `qgcompmulti` objects. Use the pooled extractors, `summary()`, and the
+#' pooled `tidy()`, and `glance()` methods for reportingl use `keep_fits = TRUE`
+#' only when you explicitly need the stored per-imputation single-fit objects.
 #'
 #' When `data` is a `mids` object, the optional `mice` package must be
 #' installed. Inputs supplied as a plain list must already be fully completed:
@@ -116,6 +130,59 @@
 #' )
 #'
 #' fit_mi$results$coef_table
+#' coef(fit_mi)
+#' confint(fit_mi)
+#'
+#' fit_mi_keep <- qgcomp.glm.multi.mi(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = imp_list,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   interaction = TRUE,
+#'   q = NULL,
+#'   centering = "median",
+#'   B = 5,
+#'   seed = 17,
+#'   keep_fits = TRUE
+#' )
+#'
+#' fit_mi_keep$mi_info$keep_fits
+#' fit_mi_keep$mixtures$centering
+#'
+#' \dontrun{
+#' # Bootstrap-level parallelism inside each per-imputation fit
+#' fit_mi_parallel <- qgcomp.glm.multi.mi(
+#'   f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'   data = imp_list,
+#'   mix1 = c("X1", "X2", "X3"),
+#'   mix2 = c("W1", "W2", "W3"),
+#'   interaction = TRUE,
+#'   q = 4,
+#'   B = 5,
+#'   seed = 19,
+#'   parallel = TRUE,
+#'   workers = 2
+#' )
+#'
+#' # `mids` inputs remain supported when the optional `mice` package is
+#' # installed
+#' if (requireNamespace("mice", quietly = TRUE)) {
+#'   dat_miss <- dat
+#'   dat_miss$X1[sample.int(nrow(dat_miss), 8)] <- NA_real_
+#'   mids_obj <- mice::mice(dat_miss, m = 3, maxit = 1, printFlag = FALSE)
+#'
+#'   fit_mi_mids <- qgcomp.glm.multi.mi(
+#'     f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+#'     data = mids_obj,
+#'     mix1 = c("X1", "X2", "X3"),
+#'     mix2 = c("W1", "W2", "W3"),
+#'     interaction = TRUE,
+#'     q = 4,
+#'     B = 5,
+#'     seed = 23
+#'   )
+#' }
+#' }
 #'
 #' @export
 qgcomp.glm.multi.mi <- function(f,

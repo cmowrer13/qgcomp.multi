@@ -21,6 +21,12 @@ size, interaction status, retained-fit status, and clustering metadata.
 Returns a one-row metadata summary for a fitted \code{qgcompmulti_mi} object.
 The output is intentionally compact and inference-focused.
 }
+\details{
+\code{glance()} stays compact for pooled MI objects. It summarizes how
+the pooled fit was constructed, but it does not try to stand in for pooled
+prediction output, pooled diagnostics, or a full scientific narrative about
+model adequacy.
+}
 \seealso{
 \code{\link[broom:reexports]{broom::tidy()}}, \code{\link[=summary.qgcompmulti_mi]{summary.qgcompmulti_mi()}}, \code{\link[=print.qgcompmulti_mi]{print.qgcompmulti_mi()}},
 \code{\link[=qgcomp.glm.multi.mi]{qgcomp.glm.multi.mi()}}

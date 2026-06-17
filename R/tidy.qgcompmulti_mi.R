@@ -14,6 +14,13 @@
 #'   `conf.int = TRUE`, the returned data frame also includes `conf.low` and
 #'   `conf.high`.
 #'
+#' @details
+#' This method stays coefficient-centric. It reports the pooled MSM coefficients
+#' and Rubin-style inferential quantities that belong naturally in a reporting
+#' table, while leaving fit-level metadata to [broom::glance()] and leaving
+#' per-imputation fitted-model inspection to the stored `"qgcompmulti"` objects
+#' when `keep_fits = TRUE`.
+#'
 #' @seealso [broom::glance()], [coef.qgcompmulti_mi()], [vcov.qgcompmulti_mi()],
 #'   [confint.qgcompmulti_mi()], [summary.qgcompmulti_mi()],
 #'   [qgcomp.glm.multi.mi()]

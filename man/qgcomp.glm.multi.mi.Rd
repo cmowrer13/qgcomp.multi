@@ -80,7 +80,9 @@ multiple-imputation loop itself remains serial in Version \verb{0.4.0}.}
 per-imputation \code{qgcomp.glm.multi()} calls when \code{parallel = TRUE}. Leave
 \code{NULL} to use the active non-sequential \code{future} plan when one is already
 set, or otherwise let the ordinary-fit path choose a temporary local worker
-count automatically.}
+count automatically. If a non-sequantial \code{future} plan is already active,
+supplying an explicit \code{workers} value is treated as an unsupported
+combination and errors cleanly}
 }
 \value{
 An object of class \code{"qgcompmulti_mi"} containing pooled MSM
@@ -101,6 +103,12 @@ data-frame list, the function validates that the completed datasets are
 structurally compatible, fits one \code{qgcomp.glm.multi()} model per imputation,
 and pools the resulting MSM coefficient vectors and covariance matrices using
 the internal Rubin-pooling helpers defined for the \code{"qgcompmulti_mi"} class.
+In \verb{0.4.0}, this is the recommended route when you want \code{qgcomp.multi} to
+handle the completed-data normalization, repeated fitting, and Rubin pooling
+step itself. Users who need to stay inside a broader \code{mice} pipeline can
+still fit \code{qgcomp.glm.multi()} through \code{mice::with()} and then rely on the
+package's \code{tidy()}, \code{glance()}, and \code{df.residual()} compatibility work when
+that better matches the analysis pipeline.
 
 Optional parallel execution in \verb{0.4.0} stays at one level only. The wrapper
 itself still iterates over imputations serially, but each ordinary
@@ -110,11 +118,17 @@ for these workflows is defined within a fixed backend and execution mode: the
 wrapper treats \code{seed} as a master seed, deterministically expands it into
 independent per-imputation fit seeds, and then each ordinary fit expands its
 own fit seed into full-fit and worker-level bootstrap seeds.
+Clustered workflows are also supported in \verb{0.4.0}: when \code{id} is
+supplied, each completed dataset must share identical cluster IDs in the
+same order, and the ordinary per-imputation fits continue to resample
+clusters rather than rows.
 
-Pooled results in \verb{0.4.0} are intentionally focused on MSM inference and a
+Pooled results in \verb{0.4.0} stay focused on MSM inference and a compact
 compact summary layer. The pooled object does not yet try to replicate the
 full prediction and diagnostics surface of ordinary single-fit
-\code{qgcompmulti} objects.
+\code{qgcompmulti} objects. Use the pooled extractors, \code{summary()}, and the
+pooled \code{tidy()}, and \code{glance()} methods for reportingl use \code{keep_fits = TRUE}
+only when you explicitly need the stored per-imputation single-fit objects.
 
 When \code{data} is a \code{mids} object, the optional \code{mice} package must be
 installed. Inputs supplied as a plain list must already be fully completed:
@@ -157,5 +171,58 @@ fit_mi <- qgcomp.glm.multi.mi(
 )
 
 fit_mi$results$coef_table
+coef(fit_mi)
+confint(fit_mi)
+
+fit_mi_keep <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = NULL,
+  centering = "median",
+  B = 5,
+  seed = 17,
+  keep_fits = TRUE
+)
+
+fit_mi_keep$mi_info$keep_fits
+fit_mi_keep$mixtures$centering
+
+\dontrun{
+# Bootstrap-level parallelism inside each per-imputation fit
+fit_mi_parallel <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 5,
+  seed = 19,
+  parallel = TRUE,
+  workers = 2
+)
+
+# `mids` inputs remain supported when the optional `mice` package is
+# installed
+if (requireNamespace("mice", quietly = TRUE)) {
+  dat_miss <- dat
+  dat_miss$X1[sample.int(nrow(dat_miss), 8)] <- NA_real_
+  mids_obj <- mice::mice(dat_miss, m = 3, maxit = 1, printFlag = FALSE)
+
+  fit_mi_mids <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = mids_obj,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    B = 5,
+    seed = 23
+  )
+}
+}
 
 }

@@ -62,7 +62,7 @@ In \code{qgcomp.multi}, it helps to keep two prediction targets separate:
 \itemize{
 \item \strong{MSM-based predictions}, which evaluate the fitted marginal
 structural model on the MSM coding scale and support bootstrap percentile
-intervals in Version 0.3.0; and
+intervals in Version 0.4.0; and
 \item \strong{exact counterfactual predictions}, which come directly from
 the fitted outcome model under specified interventions.
 }
@@ -95,7 +95,7 @@ User-specified MSM grids are restricted to the stored fit-time support. The
 function allows interpolation within that support, but it does not allow
 arbitrary extrapolation beyond the intervention range used to fit the model.
 
-Public interval support in Version 0.3.0 is limited to MSM-based
+Public interval support in Version 0.4.0 is limited to MSM-based
 predictions. Exact public prediction targets do not currently return
 intervals.
 }

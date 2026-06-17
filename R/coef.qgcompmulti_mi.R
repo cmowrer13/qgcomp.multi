@@ -20,6 +20,15 @@
 #' term-specific t critical values when finite Rubin degrees of freedom are
 #' available and normal critical values otherwise.
 #'
+#' @details
+#' These extractors operate on the pooled multiple-imputation result, not on
+#' the individual completed-data fits. They therefore return Rubin-pooled MSM
+#' coefficient summaries for the inferential target defined by
+#' [qgcomp.glm.multi.mi()], rather than per-imputation coefficient tables,
+#' pooled prediction objects, or pooled diagnostics. If you need to inspect the
+#' stored completed-data fits directly, fit with `keep_fits = TRUE` and extract
+#' the individual `"qgcompmulti"` objects from `object$fits$imputation_fits`.
+#'
 #' @seealso [summary.qgcompmulti_mi()], [print.qgcompmulti_mi()],
 #'   [broom::tidy()], [broom::glance()], [qgcomp.glm.multi.mi()]
 #' @name qgcompmulti-mi-extractors

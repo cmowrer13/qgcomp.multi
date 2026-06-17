@@ -38,6 +38,15 @@ available and normal critical values otherwise.
 Extract the pooled marginal structural model (MSM) coefficient results from a
 fitted \code{qgcompmulti_mi} object using standard R generics.
 }
+\details{
+These extractors operate on the pooled multiple-imputation result, not on
+the individual completed-data fits. They therefore return Rubin-pooled MSM
+coefficient summaries for the inferential target defined by
+\code{\link[=qgcomp.glm.multi.mi]{qgcomp.glm.multi.mi()}}, rather than per-imputation coefficient tables,
+pooled prediction objects, or pooled diagnostics. If you need to inspect the
+stored completed-data fits directly, fit with \code{keep_fits = TRUE} and extract
+the individual \code{"qgcompmulti"} objects from \code{object$fits$imputation_fits}.
+}
 \seealso{
 \code{\link[=summary.qgcompmulti_mi]{summary.qgcompmulti_mi()}}, \code{\link[=print.qgcompmulti_mi]{print.qgcompmulti_mi()}},
 \code{\link[broom:reexports]{broom::tidy()}}, \code{\link[broom:reexports]{broom::glance()}}, \code{\link[=qgcomp.glm.multi.mi]{qgcomp.glm.multi.mi()}}

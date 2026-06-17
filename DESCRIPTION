@@ -1,6 +1,6 @@
 Package: qgcomp.multi
 Title: Quantile G-Computation for Multiple Exposure Mixtures
-Version: 0.3.2
+Version: 0.4.0
 Authors@R: 
     person("Carson", "Mowrer", , "carson.mowrer@unc.edu", role = c("aut", "cre"))
 Author: Carson Mowrer [aut, cre]

@@ -361,7 +361,7 @@ validate_predict_qgcompmulti_inputs <- function(type,
       stop("`type = \"exact\"` does not support `from` or `to`.", call. = FALSE)
     }
     if (isTRUE(interval)) {
-      stop("Intervals are not supported for public exact predictions in Version 0.3.0.", call. = FALSE)
+      stop("Intervals are not supported for public exact predictions in Version 0.4.0.", call. = FALSE)
     }
     if (is.null(data) && (!is.null(grid) || !is.null(at))) {
       stop("Exact arbitrary prediction requires explicit `data` when `grid` or `at` is supplied.", call. = FALSE)
@@ -378,7 +378,7 @@ validate_predict_qgcompmulti_inputs <- function(type,
       stop("`type = \"exact_contrast\"` does not support `grid` or `at`.", call. = FALSE)
     }
     if (isTRUE(interval)) {
-      stop("Intervals are not supported for public exact contrasts in Version 0.3.0.", call. = FALSE)
+      stop("Intervals are not supported for public exact contrasts in Version 0.4.0.", call. = FALSE)
     }
   }
   invisible(NULL)
