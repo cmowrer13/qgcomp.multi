@@ -65,16 +65,23 @@
 #' random subsample, which can reduce computation time in large datasets. When
 #' `id` is supplied and `MCsize < nrow(data)`, the approximation is implemented
 #' by sampling `MCsize` clusters with replacement.
-#' @param seed Optional integer random seed used to make bootstrap resampling
-#' and any Monte Carlo subsampling reproducible. If `NULL`, the current RNG
-#' state is used and not modified by `qgcomp.glm.multi()`. When supplied, the
-#' same inputs and the same seed reproduce the same fitted object and
-#' inferential results.
+#' @param seed Optional integer master seed used to make the main fit,
+#' bootstrap resampling, and any Monte Carlo subsampling reproducible. When
+#' supplied, the function deterministically derives one full-fit seed and one
+#' bootstrap-worker seed per replication. If `NULL`, the current RNG state is
+#' used and not modified by `qgcomp.glm.multi()`.
 #' @param progress Logical; if `TRUE`, display a compact single-line bootstrap
 #' progress bar in the console while the model is fitting. The display reports
 #' percent complete, attempted bootstrap replications, elapsed time, and an
 #' estimated time remaining based on the running average bootstrap iteration
-#' time. Off by default.
+#' time. Off by default. Serial mode only; if `parallel = TRUE`, progress is
+#' disabled with an explicit warning.
+#' @param parallel Logical; if `TRUE`, dispatch bootstrap replications through
+#' `future.apply`. Parallelism is limited to the bootstrap replication layer.
+#' @param workers Optional integer worker count for the internal
+#' `future::multisession` path. Leave `NULL` to use the active non-sequential
+#' `future` plan when one is already set, or otherwise let
+#' `qgcomp.glm.multi()` choose a temporary local worker count automatically.
 #'
 #' @return An object of class `"qgcompmulti"` representing the fitted
 #' two-mixture quantile g-computation model. Major components include:
@@ -146,8 +153,17 @@
 #' }
 #'
 #' If `progress = TRUE`, the bootstrap loop prints a compact single-line status
-#' display. The failed-replicate counter is shown only after the first failed
-#' bootstrap iteration, so clean runs do not carry extra visual noise.
+#' display in serial mode. The failed-replicate counter is shown only after the
+#' first failed bootstrap iteration, so clean runs do not carry extra visual
+#' noise. Parallel execution is intentionally limited to one level in
+#' Version `0.4.0`, so requesting `progress = TRUE` together with
+#' `parallel = TRUE` disables the progress display with an explicit warning.
+#'
+#' When `parallel = TRUE`, the bootstrap replications are dispatched with
+#' `future.apply`. Reproducibility is defined within a fixed backend and
+#' execution mode. The function treats `seed` as a master seed and
+#' deterministically expands it into one full-fit seed plus one bootstrap-worker
+#' seed per replication.
 #'
 #' For causal interpretation, the usual identifying conditions for
 #' g-computation still apply: consistency, conditional exchangeability,
@@ -266,7 +282,9 @@ qgcomp.glm.multi <- function(f,
                              id = NULL,
                              MCsize = nrow(data),
                              seed = NULL,
-                             progress = FALSE) {
+                             progress = FALSE,
+                             parallel = FALSE,
+                             workers = NULL) {
   call <- match.call()
 
   validate_qgcomp_multi_inputs(
@@ -282,16 +300,40 @@ qgcomp.glm.multi <- function(f,
     MCsize = MCsize,
     B = B,
     seed = seed,
-    progress = progress
+    progress = progress,
+    parallel = parallel,
+    workers = workers
   )
 
-  qgcompmulti_with_seed(
-    seed,
-    {
-      data_q <- quantize_mixtures(data, mix1, mix2, q)
-      full_fit <- qgcompmulti_msm_fit(
-        f = f,
+  progress_enabled <- qgcompmulti_parallel_progress_flag(
+    parallel = parallel,
+    progress = progress
+  )
+  seed_plan <- qgcompmulti_bootstrap_seed_plan(B = B, seed = seed)
+  data_q <- quantize_mixtures(data, mix1, mix2, q)
+  full_fit <- qgcompmulti_msm_fit(
+    f = f,
+    data = data_q,
+    mix1 = mix1,
+    mix2 = mix2,
+    interaction = interaction,
+    family = family,
+    q = q,
+    centering = centering,
+    id = id,
+    MCsize = MCsize,
+    seed = seed_plan$full_fit_seed
+  )
+  labels <- build_qgcompmulti_labels(interaction = interaction)
+  coefs <- full_fit$coefficients
+
+  bootstrap_results <- qgcompmulti_run_bootstrap_replicates(
+    B = B,
+    worker_fun = function(b) {
+      qgcompmulti_bootstrap_replicate_fit(
+        replicate = b,
         data = data_q,
+        f = f,
         mix1 = mix1,
         mix2 = mix2,
         interaction = interaction,
@@ -299,127 +341,74 @@ qgcomp.glm.multi <- function(f,
         q = q,
         centering = centering,
         id = id,
-        MCsize = MCsize
-      )
-      labels <- build_qgcompmulti_labels(interaction = interaction)
-      coefs <- full_fit$coefficients
-      psi_hat <- vector("list", B)
-      failure_log <- vector("list", 0L)
-      progress_state <- qgcompmulti_progress_init(B = B, enabled = progress)
-      on.exit(qgcompmulti_progress_finish(progress_state), add = TRUE)
-      for (b in seq_len(B)) {
-        data_b <- qgcompmulti_resample_data(
-          data = data_q,
-          id = id
-        )
-        boot_fit <- tryCatch(
-          qgcompmulti_msm_fit(
-            f = f,
-            data = data_b,
-            mix1 = mix1,
-            mix2 = mix2,
-            interaction = interaction,
-            family = family,
-            q = q,
-            centering = centering,
-            id = id,
-            MCsize = MCsize
-          ),
-          error = function(e) e
-        )
-        if (inherits(boot_fit, "error")) {
-          failure_log[[length(failure_log) + 1L]] <- data.frame(
-            replicate = b,
-            message = conditionMessage(boot_fit),
-            row.names = NULL,
-            check.names = FALSE
-          )
-          progress_state <- qgcompmulti_progress_tick(
-            progress_state,
-            iteration = b,
-            failed = TRUE
-          )
-          next
-        }
-        psi_hat[[b]] <- boot_fit$coefficients
-        progress_state <- qgcompmulti_progress_tick(
-          progress_state,
-          iteration = b,
-          failed = FALSE
-        )
-      }
-      success_idx <- which(!vapply(psi_hat, is.null, logical(1)))
-      if (length(success_idx) == 0L) {
-        stop("All bootstrap replications failed.", call. = FALSE)
-      }
-      psi_hat <- do.call(
-        rbind,
-        lapply(
-          psi_hat[success_idx],
-          function(x) matrix(x, nrow = 1L, dimnames = list(NULL, names(x)))
-        )
-      )
-      std.err <- build_qgcompmulti_std_error(
-        coef_draws = psi_hat,
-        coef_names = names(coefs)
-      )
-      varcov <- build_qgcompmulti_vcov(
-        coef_draws = psi_hat,
-        coef_names = names(coefs)
-      )
-      data_info <- build_qgcompmulti_data_info(
-        data = data,
-        formula = f,
-        q = q,
-        id = id,
-        n_used = full_fit$n_used
-      )
-      mixtures <- build_qgcompmulti_mixtures(
-        mix1 = mix1,
-        mix2 = mix2,
-        q = q,
-        centering = centering
-      )
-      analysis <- build_qgcompmulti_analysis(
-        interaction = interaction,
-        family = family,
-        B = B,
-        id = id,
         MCsize = MCsize,
-        seed = seed
+        seed = seed_plan$worker_seeds[[b]]
       )
-      fits <- build_qgcompmulti_fits(full_fit)
-      prediction <- build_qgcompmulti_prediction(
-        intervention_grid = full_fit$intervention_grid,
-        msm_grid = full_fit$msm_grid,
-        counterfactual_surface = full_fit$counterfactual_surface,
-        msm_surface = full_fit$msm_surface,
-        surface_comparison = full_fit$surface_comparison
-      )
-      failure_log_df <- if (length(failure_log) == 0L) {
-        NULL
-      } else {
-        do.call(rbind, failure_log)
-      }
-      bootstrap <- build_qgcompmulti_bootstrap(
-        coef_draws = psi_hat,
-        B_requested = B,
-        failure_log = failure_log_df
-      )
-      results <- build_qgcompmulti_results(coefs, std.err, varcov)
-      fit <- new_qgcompmulti(
-        call = call,
-        formula = f,
-        data_info = data_info,
-        mixtures = mixtures,
-        analysis = analysis,
-        fits = fits,
-        prediction = prediction,
-        bootstrap = bootstrap,
-        results = results,
-        labels = labels
-      )
-      fit
-    }
+    },
+    parallel = parallel,
+    workers = workers,
+    progress = progress_enabled
   )
+
+  bootstrap_results <- qgcompmulti_collect_bootstrap_results(
+    results = bootstrap_results,
+    coef_names = names(coefs)
+  )
+  psi_hat <- bootstrap_results$coef_draws
+  std.err <- build_qgcompmulti_std_error(
+    coef_draws = psi_hat,
+    coef_names = names(coefs)
+  )
+  varcov <- build_qgcompmulti_vcov(
+    coef_draws = psi_hat,
+    coef_names = names(coefs)
+  )
+  data_info <- build_qgcompmulti_data_info(
+    data = data,
+    formula = f,
+    q = q,
+    id = id,
+    n_used = full_fit$n_used
+  )
+  mixtures <- build_qgcompmulti_mixtures(
+    mix1 = mix1,
+    mix2 = mix2,
+    q = q,
+    centering = centering
+  )
+  analysis <- build_qgcompmulti_analysis(
+    interaction = interaction,
+    family = family,
+    B = B,
+    id = id,
+    MCsize = MCsize,
+    seed = seed
+  )
+  fits <- build_qgcompmulti_fits(full_fit)
+  prediction <- build_qgcompmulti_prediction(
+    intervention_grid = full_fit$intervention_grid,
+    msm_grid = full_fit$msm_grid,
+    counterfactual_surface = full_fit$counterfactual_surface,
+    msm_surface = full_fit$msm_surface,
+    surface_comparison = full_fit$surface_comparison
+  )
+  bootstrap <- build_qgcompmulti_bootstrap(
+    coef_draws = psi_hat,
+    B_requested = B,
+    failure_log = bootstrap_results$failure_log
+  )
+  results <- build_qgcompmulti_results(coefs, std.err, varcov)
+  fit <- new_qgcompmulti(
+    call = call,
+    formula = f,
+    data_info = data_info,
+    mixtures = mixtures,
+    analysis = analysis,
+    fits = fits,
+    prediction = prediction,
+    bootstrap = bootstrap,
+    results = results,
+    labels = labels
+  )
+  fit
 }

@@ -17,7 +17,9 @@ qgcomp.glm.multi(
   id = NULL,
   MCsize = nrow(data),
   seed = NULL,
-  progress = FALSE
+  progress = FALSE,
+  parallel = FALSE,
+  workers = NULL
 )
 }
 \arguments{
@@ -76,17 +78,26 @@ random subsample, which can reduce computation time in large datasets. When
 \code{id} is supplied and \code{MCsize < nrow(data)}, the approximation is implemented
 by sampling \code{MCsize} clusters with replacement.}
 
-\item{seed}{Optional integer random seed used to make bootstrap resampling
-and any Monte Carlo subsampling reproducible. If \code{NULL}, the current RNG
-state is used and not modified by \code{qgcomp.glm.multi()}. When supplied, the
-same inputs and the same seed reproduce the same fitted object and
-inferential results.}
+\item{seed}{Optional integer master seed used to make the main fit,
+bootstrap resampling, and any Monte Carlo subsampling reproducible. When
+supplied, the function deterministically derives one full-fit seed and one
+bootstrap-worker seed per replication. If \code{NULL}, the current RNG state is
+used and not modified by \code{qgcomp.glm.multi()}.}
 
 \item{progress}{Logical; if \code{TRUE}, display a compact single-line bootstrap
 progress bar in the console while the model is fitting. The display reports
 percent complete, attempted bootstrap replications, elapsed time, and an
 estimated time remaining based on the running average bootstrap iteration
-time. Off by default.}
+time. Off by default. Serial mode only; if \code{parallel = TRUE}, progress is
+disabled with an explicit warning.}
+
+\item{parallel}{Logical; if \code{TRUE}, dispatch bootstrap replications through
+\code{future.apply}. Parallelism is limited to the bootstrap replication layer.}
+
+\item{workers}{Optional integer worker count for the internal
+\code{future::multisession} path. Leave \code{NULL} to use the active non-sequential
+\code{future} plan when one is already set, or otherwise let
+\code{qgcomp.glm.multi()} choose a temporary local worker count automatically.}
 }
 \value{
 An object of class \code{"qgcompmulti"} representing the fitted
@@ -181,8 +192,17 @@ probabilities, that is, risk differences.
 }
 
 If \code{progress = TRUE}, the bootstrap loop prints a compact single-line status
-display. The failed-replicate counter is shown only after the first failed
-bootstrap iteration, so clean runs do not carry extra visual noise.
+display in serial mode. The failed-replicate counter is shown only after the
+first failed bootstrap iteration, so clean runs do not carry extra visual
+noise. Parallel execution is intentionally limited to one level in
+Version \verb{0.4.0}, so requesting \code{progress = TRUE} together with
+\code{parallel = TRUE} disables the progress display with an explicit warning.
+
+When \code{parallel = TRUE}, the bootstrap replications are dispatched with
+\code{future.apply}. Reproducibility is defined within a fixed backend and
+execution mode. The function treats \code{seed} as a master seed and
+deterministically expands it into one full-fit seed plus one bootstrap-worker
+seed per replication.
 
 For causal interpretation, the usual identifying conditions for
 g-computation still apply: consistency, conditional exchangeability,
