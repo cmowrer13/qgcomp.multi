@@ -1,5 +1,9 @@
 ---
 title: "Applied Workflow for Two-Mixture Quantile g-Computation"
+description: >
+  Start here for an end-to-end single-dataset workflow using qgcomp.multi,
+  including fitting, interpretation, prediction, plotting, diagnostics, and
+  original-scale analyses with q = NULL.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Applied Workflow for Two-Mixture Quantile g-Computation}
@@ -22,8 +26,11 @@ knitr::opts_chunk$set(
 `qgcomp.multi` extends quantile g-computation to settings with **two exposure
 mixtures** and their interaction.
 
-This document is meant to read like a real analysis walkthrough. The example 
-uses a simulated environmental health dataset with:
+This is the main article to read after the homepage. It walks through a
+single-dataset analysis from model setup to interpretation, prediction,
+plotting, and post-fit checks.
+
+The example uses a simulated environmental health dataset with:
 
 - Mixture 1: urinary phthalate metabolites
 - Mixture 2: urinary phenol biomarkers
@@ -31,13 +38,14 @@ uses a simulated environmental health dataset with:
 
 The package can now do more than it could in the early proof-of-concept stage.
 The fitted object behaves like an S3 model object, and the package now supports
-prediction, plotting, and several diagnostics. This vignette focuses on how an
-applied analyst would use those features.
+prediction, plotting, diagnostics, sensitivity checks, multiple-imputation
+workflows, and optional bootstrap-level parallel execution.
 
-This vignette stays within the single-dataset workflow. Version `0.4.0` also
-adds native multiple-imputation fitting and optional bootstrap-level parallel
-execution, but those workflows are documented in the function help pages and
-the README rather than a separate MI or parallel vignette.
+This article keeps the focus on the **single-dataset applied workflow**. Two
+short companion articles cover:
+
+- multiple imputation and optional bootstrap-level parallelism
+- diagnostics, adequacy, and sensitivity checks as a compact post-fit reference
 
 Two distinctions matter throughout:
 
@@ -61,6 +69,9 @@ This workflow shows:
 - intervention support, bootstrap, and adequacy diagnostics
 - sensitivity to `MCsize`
 - sensitivity to `q`
+
+For native multiple-imputation fitting and optional parallel execution, see the
+separate companion article on those workflows.
 
 # Before You Fit Anything
 
@@ -706,3 +717,10 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 5. For biomarker concentrations, log transformation plus median centering often
    makes original-scale summaries easier to read.
 6. Use the sensitivity helpers to look for instability.
+
+# Related Articles
+
+For workflows that go beyond the single-dataset path used here, see:
+
+- [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
+- [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

@@ -41,6 +41,18 @@ footer:
   components:
     source: Source on [GitHub](https://github.com/cmowrer13/qgcomp.multi).
 
+articles:
+  - title: Applied workflows
+    desc: >
+      Start with the main workflow article, then use the shorter companion
+      articles for multiple imputation, optional bootstrap-level parallelism,
+      diagnostics, adequacy, and sensitivity checks.
+    navbar: ~
+    contents:
+      - qgcompmulti-workflow
+      - qgcompmulti-mi-parallel
+      - qgcompmulti-diagnostics-sensitivity
+
 reference:
   - title: Model fitting
     contents:

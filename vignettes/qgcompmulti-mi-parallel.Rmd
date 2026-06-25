@@ -1,0 +1,210 @@
+---
+title: "Multiple Imputation and Parallel Workflows"
+description: >
+  Use qgcomp.glm.multi.mi() for multiply imputed analyses and optional
+  bootstrap-level parallel execution for ordinary and MI workflows.
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multiple Imputation and Parallel Workflows}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "100%"
+)
+```
+
+# Introduction
+
+Version `0.4.0` adds two workflow-oriented capabilities that often matter
+together in practice:
+
+- native multiple-imputation fitting through `qgcomp.glm.multi.mi()`
+- optional bootstrap-level parallel execution for ordinary and MI workflows
+
+This article is a short companion to the main workflow vignette. It focuses on
+when to use the native MI wrapper, what the pooled object contains, and how the
+parallel option fits into larger repeated-fit analyses.
+
+# When to use the native MI wrapper
+
+Use `qgcomp.glm.multi.mi()` when you want `qgcomp.multi` to:
+
+- fit one `qgcomp.glm.multi()` model per imputation
+- pool the MSM coefficients and covariance internally using Rubin's rules
+
+In Version `0.4.0`, the pooled object is focused on inference and summary. It
+does not try to reproduce the full prediction and diagnostics surface of a
+single-fit `qgcompmulti` object.
+
+# A small completed-data example
+
+```{r}
+library(qgcomp.multi)
+
+dat <- sim_mixture_data(
+  n = 120,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  return_quantized = FALSE,
+  seed = 123
+)
+
+imp_list <- lapply(
+  seq_len(2),
+  function(i) {
+    dat_i <- dat
+    dat_i$X1 <- dat_i$X1 + rnorm(nrow(dat_i), sd = 0.02 * i)
+    dat_i$W2 <- dat_i$W2 + rnorm(nrow(dat_i), sd = 0.02 * i)
+    dat_i
+  }
+)
+```
+
+Fit the pooled model:
+
+```{r}
+fit_mi <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 5,
+  seed = 13
+)
+```
+
+Inspect the pooled result:
+
+```{r}
+summary(fit_mi)
+coef(fit_mi)
+confint(fit_mi)
+```
+
+# Retaining per-imputation fits
+
+If you want the full completed-data fits in addition to the pooled result, set
+`keep_fits = TRUE`.
+
+```{r, eval = FALSE}
+fit_mi_keep <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = NULL,
+  centering = "median",
+  B = 5,
+  seed = 17,
+  keep_fits = TRUE
+)
+
+fit_mi_keep$mi_info$keep_fits
+fit_mi_keep$fits$imputation_fits[[1]]
+```
+
+This is useful when you want pooled inference as the main result but still need
+to inspect one or more single-fit `qgcompmulti` objects directly.
+
+# `mids` objects are also supported
+
+The wrapper also accepts `mice::mids` objects when the optional `mice` package
+is installed.
+
+```{r, eval = FALSE}
+library(mice)
+
+dat_miss <- dat
+dat_miss$X1[sample.int(nrow(dat_miss), 8)] <- NA_real_
+dat_miss$W2[sample.int(nrow(dat_miss), 8)] <- NA_real_
+
+mids_obj <- mice(dat_miss, m = 3, maxit = 1, printFlag = FALSE)
+
+fit_mi_mids <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = mids_obj,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 5,
+  seed = 19
+)
+```
+
+# Optional bootstrap-level parallelism
+
+Version `0.4.0` supports one level of optional parallelism.
+
+For ordinary fits, bootstrap replications can be dispatched in parallel inside
+`qgcomp.glm.multi()`:
+
+```{r, eval = FALSE}
+fit_parallel <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 20,
+  seed = 29,
+  parallel = TRUE,
+  workers = 2
+)
+```
+
+For native MI fits, the imputation loop stays serial, but the bootstrap work
+inside each completed-data fit can still be parallelized:
+
+```{r, eval = FALSE}
+fit_mi_parallel <- qgcomp.glm.multi.mi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = imp_list,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 10,
+  seed = 31,
+  parallel = TRUE,
+  workers = 2
+)
+```
+
+# Practical notes
+
+Several practical limits are worth stating plainly:
+
+- the MI loop itself is still serial in Version `0.4.0`
+- reproducibility is defined within a fixed backend and execution mode, not as
+  exact equality between serial and parallel runs
+- `progress = TRUE` is supported only in serial mode and is disabled with a
+  clear warning when `parallel = TRUE`
+- pooled prediction and pooled diagnostics are not yet the main target of the
+  pooled MI object
+
+In practice, the native MI wrapper is best used when pooled MSM inference is the
+main goal and you want the package to manage the repeated fitting and Rubin
+pooling directly.
+
+# Related Articles
+
+- [Applied Workflow for Two-Mixture Quantile g-Computation](qgcompmulti-workflow.html)
+- [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)
