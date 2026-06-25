@@ -18,7 +18,7 @@ template:
   opengraph:
     image:
       src: man/figures/social-card.png
-      alt: "Hexagon logo for qgcomp.multi with a two-mixture interaction motif in deep teal."
+      alt: "Hexagon logo for qgcomp.multi with two-mixture interaction motif in deep teal."
 
 navbar:
   bg: light
