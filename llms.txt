@@ -1,0 +1,268 @@
+# qgcomp.multi
+
+`qgcomp.multi` extends quantile g-computation to settings with **two
+exposure mixtures** and their interaction. It is designed for analyses
+where exposures come in distinct groups and the effect of shifting one
+mixture may depend on the level of another.
+
+The package fits an outcome regression model, computes predicted
+counterfactual means under joint interventions on the two mixtures, and
+then fits a marginal structural model (MSM) to summarize the resulting
+intervention-response surface.
+
+## What the package does
+
+`qgcomp.multi` currently supports:
+
+- two-mixture estimation through
+  [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
+- optional interaction between the two mixture intervention variables
+- quantized analyses with `q >= 2`
+- original-scale analyses with `q = NULL`
+- MSM-based prediction, plotting, diagnostics, and adequacy checks
+- sensitivity helpers for Monte Carlo size, bootstrap size, and
+  quantization
+- native multiple-imputation pooling through
+  [`qgcomp.glm.multi.mi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.mi.md)
+- optional bootstrap-level parallel execution
+- broom-style `tidy()` and `glance()` methods for single-fit and pooled
+  MI objects
+
+## Installation
+
+You can install the development version from GitHub:
+
+``` r
+
+devtools::install_github("cmowrer13/qgcomp.multi")
+```
+
+## Main quantized workflow
+
+For a standard quantized analysis, fit a two-mixture model with
+[`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md):
+
+``` r
+
+library(qgcomp.multi)
+
+fit <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dataset,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 100,
+  seed = 13
+)
+
+summary(fit)
+coef(fit)
+confint(fit)
+```
+
+In this setting, the MSM coefficients summarize the expected outcome
+change associated with simultaneous one-quantile shifts in the component
+exposures of each mixture.
+
+## Original-scale fitting with `q = NULL`
+
+If quantization is not scientifically appropriate for the analysis, set
+`q = NULL` to fit the outcome model on the original analysis scale and
+build the MSM over a pooled `3 x 3` intervention grid within each
+mixture.
+
+``` r
+
+fit_cont <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dataset,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = NULL,
+  centering = "median",
+  B = 100,
+  seed = 13
+)
+
+summary(fit_cont)
+coef(fit_cont)
+confint(fit_cont)
+```
+
+With `q = NULL`, the MSM coefficients are not one-quantile effects. They
+are defined with respect to the original-scale intervention coding used
+to fit the MSM, so interpretation should stay tied to the actual
+intervention grid.
+
+## Model interpretation
+
+The main estimands are the coefficients of the fitted marginal
+structural model:
+
+- `psi1`: Mixture 1 main effect
+- `psi2`: Mixture 2 main effect
+- `psi1:psi2`: interaction between the two mixtures when
+  `interaction = TRUE`
+
+These are summaries of the intervention-response surface implied by the
+fitted outcome model. For causal interpretation, the usual g-computation
+conditions still matter: consistency, exchangeability, positivity, and
+adequate outcome model specification.
+
+## Beyond the basic fit
+
+The package also includes tools for:
+
+- MSM prediction and direct contrasts with
+  [`predict()`](https://rdrr.io/r/stats/predict.html)
+- surface visualization with
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html)
+- intervention support, bootstrap, and adequacy diagnostics
+- sensitivity analysis with
+  [`mcsize_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/mcsize_sensitivity.md),
+  [`b_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/b_sensitivity.md),
+  and
+  [`q_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/q_sensitivity.md)
+- native multiply imputed analysis with
+  [`qgcomp.glm.multi.mi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.mi.md)
+- optional bootstrap-level parallelism for larger workflows
+
+Those features are documented in more detail in the workflow article,
+function reference, and the fuller README on GitHub.
+
+## Where to go next
+
+- Read the [workflow
+  article](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
+  for a fuller end-to-end example
+- Browse the [function
+  reference](https://cmowrer13.github.io/qgcomp.multi/reference/index.md)
+  for the complete API
+- Review the [news
+  page](https://cmowrer13.github.io/qgcomp.multi/news/index.md) for
+  recent release history
+- View the source repository on
+  [GitHub](https://github.com/cmowrer13/qgcomp.multi)
+
+## References
+
+Keil AP, Buckley JP, O’Brien KM, Ferguson KK, Zhao S, White AJ. A
+Quantile-Based g-Computation Approach to Addressing the Effects of
+Exposure Mixtures. Environmental Health Perspectives.
+2020;128(4):047004.
+
+# Package index
+
+## Model fitting
+
+- [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
+  : Fit a quantile g-computation model for two exposure mixtures
+- [`qgcomp.glm.multi.mi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.mi.md)
+  : Fit a pooled multiple-imputation quantile g-computation model
+- [`qgcompmulti_msm_fit()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti_msm_fit.md)
+  : Fit the core outcome-model and MSM components for two-mixture
+  g-computation
+
+## Prediction and intervention surfaces
+
+- [`predict(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/predict.qgcompmulti.md)
+  : Predict from a qgcompmulti fit
+- [`fitted_surface()`](https://cmowrer13.github.io/qgcomp.multi/reference/fitted_surface.md)
+  : Extract stored fit-time surfaces from a qgcompmulti fit
+- [`intervention_grid()`](https://cmowrer13.github.io/qgcomp.multi/reference/intervention_grid.md)
+  : Extract stored intervention grids from a qgcompmulti fit
+- [`plot(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/plot.qgcompmulti.md)
+  : Plot a qgcompmulti fit
+
+## Diagnostics
+
+- [`support()`](https://cmowrer13.github.io/qgcomp.multi/reference/support.md)
+  : Extract intervention support diagnostics from a qgcompmulti fit
+- [`diagnostics()`](https://cmowrer13.github.io/qgcomp.multi/reference/diagnostics.md)
+  : Diagnostic summaries for a qgcompmulti fit
+- [`adequacy()`](https://cmowrer13.github.io/qgcomp.multi/reference/adequacy.md)
+  : Extract MSM adequacy diagnostics from a qgcompmulti fit
+
+## Sensitivity analysis
+
+- [`mcsize_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/mcsize_sensitivity.md)
+  : Sensitivity to Monte Carlo size in qgcompmulti fits
+- [`b_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/b_sensitivity.md)
+  : Sensitivity to bootstrap iteration count in qgcompmulti fits
+- [`q_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/q_sensitivity.md)
+  : Sensitivity to quantization choice in qgcompmulti fits
+
+## Reporting and extractors
+
+- [`summary(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/summary.qgcompmulti.md)
+  [`print(`*`<summary.qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/summary.qgcompmulti.md)
+  : Summarize a qgcompmulti fit
+- [`summary(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/summary.qgcompmulti_mi.md)
+  [`print(`*`<summary.qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/summary.qgcompmulti_mi.md)
+  : Summarize a pooled qgcompmulti multiple-imputation fit
+- [`print(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti.md)
+  : Print a qgcompmulti fit
+- [`print(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti_mi.md)
+  : Print a pooled qgcompmulti multiple-imputation fit
+- [`confint(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/confint.qgcompmulti.md)
+  : Wald confidence intervals for qgcompmulti coefficients
+- [`tidy(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti.md)
+  : Tidy coefficient summaries for qgcompmulti fits
+- [`tidy(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti_mi.md)
+  : Tidy coefficient summaries for pooled qgcompmulti
+  multiple-imputation fits
+- [`glance(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/glance.qgcompmulti.md)
+  : Glance summaries for qgcompmulti fits
+- [`glance(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/glance.qgcompmulti_mi.md)
+  : Glance summaries for pooled qgcompmulti multiple-imputation fits
+- [`coef(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  [`formula(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  [`nobs(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  [`df.residual(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  [`residuals(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  [`vcov(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-extractors.md)
+  : Core extractor methods for qgcompmulti objects
+- [`coef(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-mi-extractors.md)
+  [`vcov(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-mi-extractors.md)
+  [`confint(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcompmulti-mi-extractors.md)
+  : Core extractor methods for pooled qgcompmulti multiple-imputation
+  objects
+
+## Data preparation and simulation
+
+- [`quantize_mixtures()`](https://cmowrer13.github.io/qgcomp.multi/reference/quantize_mixtures.md)
+  : Quantize exposure variables for two-mixture quantile g-computation
+- [`sim_mixture_data()`](https://cmowrer13.github.io/qgcomp.multi/reference/sim_mixture_data.md)
+  : Generate simulated dataset with two exposure mixtures
+- [`sim_biomarker_data()`](https://cmowrer13.github.io/qgcomp.multi/reference/sim_biomarker_data.md)
+  : Simulate a biomarker dataset for two-mixture inflammation analyses
+
+# Articles
+
+### Applied workflows
+
+Start with the main workflow article, then use the shorter companion
+articles for multiple imputation, optional bootstrap-level parallelism,
+diagnostics, adequacy, and sensitivity checks.
+
+- [Applied Workflow for Two-Mixture Quantile
+  g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md):
+
+  Start here for an end-to-end single-dataset workflow using
+  qgcomp.multi, including fitting, interpretation, prediction, plotting,
+  diagnostics, and original-scale analyses with q = NULL.
+
+- [Multiple Imputation and Parallel
+  Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md):
+
+  Use qgcomp.glm.multi.mi() for multiply imputed analyses and optional
+  bootstrap-level parallel execution for ordinary and MI workflows.
+
+- [Diagnostics and Sensitivity
+  Checks](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-diagnostics-sensitivity.md):
+
+  Use support(), diagnostics(), adequacy(), and the sensitivity helpers
+  to check how stable and interpretable a qgcomp.multi analysis is.
