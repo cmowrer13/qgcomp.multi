@@ -11,7 +11,7 @@
 #' The fitted MSM has the form
 #'
 #' \deqn{
-#' E[Y^{x(q1), w(q2)}] = \psi_0 + \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
+#' E[Y^{x(q_1), w(q_2)}] = \psi_0 + \psi_1 q_1 + \psi_2 q_2 + \psi_{12} q_1 q_2
 #' }
 #'
 #' when `interaction = TRUE`. When `q` is an integer, `q1` and `q2` index

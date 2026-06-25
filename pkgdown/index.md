@@ -1,4 +1,4 @@
-# qgcomp.multi
+# qgcomp.multi <img src="man/figures/logo.png" align="right" height="140" alt="qgcomp.multi hexagon logo" />
 
 `qgcomp.multi` extends quantile g-computation to settings with **two exposure
 mixtures** and their interaction. It is designed for analyses where exposures

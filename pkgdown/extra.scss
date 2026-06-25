@@ -1,0 +1,85 @@
+.navbar {
+  border-bottom: 1px solid rgba(15, 109, 115, 0.12);
+  box-shadow: 0 1px 0 rgba(15, 109, 115, 0.04);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.navbar-nav .nav-link {
+  font-weight: 500;
+}
+
+.template-home .page-header {
+  margin-bottom: 1.5rem;
+}
+
+.template-home main h1 {
+  letter-spacing: -0.02em;
+}
+
+.template-home main > p:first-of-type {
+  color: #496269;
+  font-size: 1.08rem;
+  max-width: 52rem;
+}
+
+.template-home main h2,
+.template-article main h2,
+.template-reference-index main h2,
+.template-news main h2 {
+  margin-top: 2.3rem;
+  letter-spacing: -0.01em;
+}
+
+.template-home main h2 {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(15, 109, 115, 0.12);
+}
+
+.sidebar .pkgdown-sidebar h2,
+.sidebar .pkgdown-sidebar h3 {
+  letter-spacing: 0;
+}
+
+.pkgdown-sidebar .list-unstyled li {
+  margin-bottom: 0.3rem;
+}
+
+pre,
+.sourceCode {
+  border-radius: 12px;
+}
+
+pre {
+  border: 1px solid rgba(15, 109, 115, 0.10);
+}
+
+code {
+  border-radius: 0.35rem;
+}
+
+.ref-index .ref-section {
+  margin-bottom: 2rem;
+}
+
+.ref-index .ref-section h2 {
+  border-bottom: 1px solid rgba(15, 109, 115, 0.12);
+  padding-bottom: 0.3rem;
+}
+
+.template-article main p,
+.template-home main p,
+.template-news main p {
+  max-width: 52rem;
+}
+
+.footer {
+  border-top: 1px solid rgba(15, 109, 115, 0.12);
+}
+
+.footer p {
+  color: #5a6b70;
+}

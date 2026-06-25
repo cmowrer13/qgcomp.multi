@@ -2,6 +2,23 @@ url: https://cmowrer13.github.io/qgcomp.multi/
 
 template:
   bootstrap: 5
+  theme: arrow-light
+  math-rendering: katex
+  bslib:
+    bg: "#f7faf9"
+    fg: "#18343a"
+    primary: "#0f6d73"
+    secondary: "#5d6f73"
+    border-color: "#d8e2e4"
+    code-bg: "#eef4f5"
+    code-color: "#174850"
+    base_font: {google: "Source Sans 3"}
+    heading_font: {google: "IBM Plex Sans"}
+    code_font: {google: "JetBrains Mono"}
+  opengraph:
+    image:
+      src: man/figures/social-card.png
+      alt: "Hexagon logo for qgcomp.multi with a two-mixture interaction motif in deep teal."
 
 navbar:
   bg: light
@@ -27,10 +44,6 @@ home:
       href: articles/qgcompmulti-workflow.html
     - text: Function reference
       href: reference/index.html
-    - text: Source code
-      href: https://github.com/cmowrer13/qgcomp.multi
-    - text: Report an issue
-      href: https://github.com/cmowrer13/qgcomp.multi/issues
   sidebar:
     structure: [links, citation, authors, toc]
 
@@ -85,6 +98,7 @@ reference:
       - summary.qgcompmulti_mi
       - print.qgcompmulti
       - print.qgcompmulti_mi
+      - confint.qgcompmulti
       - tidy.qgcompmulti
       - tidy.qgcompmulti_mi
       - glance.qgcompmulti

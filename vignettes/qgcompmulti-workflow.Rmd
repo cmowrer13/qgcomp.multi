@@ -349,20 +349,20 @@ MSM-based predictions, but not to arbitrary exact predictions.
 
 The default plot is a heatmap of the fitted MSM surface.
 
-```{r}
+```{r, fig.alt="Heatmap of the fitted MSM surface for the quantized two-mixture model."}
 plot(fit_q)
 ```
 
 A contour plot is also available:
 
-```{r}
+```{r, fig.alt="Contour plot of the fitted MSM surface for the quantized two-mixture model."}
 plot(fit_q, style = "contour")
 ```
 
 For uncertainty, the first public plotting form is a slice-based interval
 display:
 
-```{r}
+```{r, fig.alt="Slice-based interval plot showing uncertainty in the fitted MSM surface for the quantized model at a fixed psi2 value."}
 plot(
   fit_q,
   interval = TRUE,
@@ -604,7 +604,7 @@ predict(
 )
 ```
 
-```{r}
+```{r, fig.alt="Heatmap of the fitted MSM surface for the original-scale q equals NULL model."}
 plot(fit_cont)
 ```
 
