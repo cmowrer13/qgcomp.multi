@@ -1,9 +1,11 @@
 ^qgcomp\.multi\.Rproj$
 ^\.Rproj\.user$
-^\\.Rhistory$
-^\\.git$
-^\\.Rhistory$
+^\.Rhistory$
+^\.git$
+^\.github$
 ^README\.Rmd$
 ^LICENSE\.md$
 ^doc$
 ^Meta$
+^docs$
+^_pkgdown\.yml$

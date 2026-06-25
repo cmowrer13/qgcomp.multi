@@ -6,6 +6,8 @@ Authors@R:
 Author: Carson Mowrer [aut, cre]
 Maintainer: Carson Mowrer <carson.mowrer@unc.edu>
 Description: qgcomp.multi is an extension of Quantile g-Computation, developed by Keil et al. to estimate the joint effect of multiple exposure mixtures and their interaction using marginal structural models.
+URL: https://cmowrer13.github.io/qgcomp.multi/, https://github.com/cmowrer13/qgcomp.multi
+BugReports: https://github.com/cmowrer13/qgcomp.multi/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
