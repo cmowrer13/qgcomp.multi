@@ -40,3 +40,48 @@ footer:
     right: built_with
   components:
     source: Source on [GitHub](https://github.com/cmowrer13/qgcomp.multi).
+
+reference:
+  - title: Model fitting
+    contents:
+      - qgcomp.glm.multi
+      - qgcomp.glm.multi.mi
+      - qgcompmulti_msm_fit
+
+  - title: Prediction and intervention surfaces
+    contents:
+      - predict.qgcompmulti
+      - fitted_surface
+      - intervention_grid
+      - plot.qgcompmulti
+
+  - title: Diagnostics
+    contents:
+      - support
+      - diagnostics
+      - adequacy
+
+  - title: Sensitivity analysis
+    contents:
+      - mcsize_sensitivity
+      - b_sensitivity
+      - q_sensitivity
+
+  - title: Reporting and extractors
+    contents:
+      - summary.qgcompmulti
+      - summary.qgcompmulti_mi
+      - print.qgcompmulti
+      - print.qgcompmulti_mi
+      - tidy.qgcompmulti
+      - tidy.qgcompmulti_mi
+      - glance.qgcompmulti
+      - glance.qgcompmulti_mi
+      - qgcompmulti-extractors
+      - qgcompmulti-mi-extractors
+
+  - title: Data preparation and simulation
+    contents:
+      - quantize_mixtures
+      - sim_mixture_data
+      - sim_biomarker_data
