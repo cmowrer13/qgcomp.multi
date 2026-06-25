@@ -1,4 +1,42 @@
 url: https://cmowrer13.github.io/qgcomp.multi/
+
 template:
   bootstrap: 5
 
+navbar:
+  bg: light
+  type: light
+  structure:
+    left: [home, reference, articles, news]
+    right: [search, github]
+  components:
+    home:
+      text: Home
+      href: index.html
+    news:
+      text: News
+      href: news/index.html
+
+home:
+  title: Two-Mixture Quantile G-Computation for R
+  description: >
+    Estimate the joint effects of two exposure mixtures and their interaction
+    using quantile g-computation and marginal structural models.
+  links:
+    - text: Workflow article
+      href: articles/qgcompmulti-workflow.html
+    - text: Function reference
+      href: reference/index.html
+    - text: Source code
+      href: https://github.com/cmowrer13/qgcomp.multi
+    - text: Report an issue
+      href: https://github.com/cmowrer13/qgcomp.multi/issues
+  sidebar:
+    structure: [links, citation, authors, toc]
+
+footer:
+  structure:
+    left: [developed_by, source]
+    right: built_with
+  components:
+    source: Source on [GitHub](https://github.com/cmowrer13/qgcomp.multi).
