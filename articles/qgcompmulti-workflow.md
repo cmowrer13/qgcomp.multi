@@ -1105,5 +1105,7 @@ For workflows that go beyond the single-dataset path used here, see:
 
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md)
+- [Clustered Data and Repeated
+  Measures](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-clustered-data.md)
 - [Diagnostics and Sensitivity
   Checks](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-diagnostics-sensitivity.md)

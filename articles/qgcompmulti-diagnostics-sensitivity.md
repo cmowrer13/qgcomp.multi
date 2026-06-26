@@ -202,3 +202,5 @@ not move much under reasonable sensitivity changes.
   g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md)
+- [Clustered Data and Repeated
+  Measures](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-clustered-data.md)

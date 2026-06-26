@@ -256,5 +256,7 @@ repeated fitting and Rubin pooling directly.
 
 - [Applied Workflow for Two-Mixture Quantile
   g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
+- [Clustered Data and Repeated
+  Measures](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-clustered-data.md)
 - [Diagnostics and Sensitivity
   Checks](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-diagnostics-sensitivity.md)
