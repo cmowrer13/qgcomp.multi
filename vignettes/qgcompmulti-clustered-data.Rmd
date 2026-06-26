@@ -1,0 +1,165 @@
+---
+title: "Clustered Data and Repeated Measures"
+description: >
+  Use the id argument to obtain cluster-level bootstrap inference for
+  clustered data or repeated measures in qgcomp.multi workflows.
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Clustered Data and Repeated Measures}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "100%"
+)
+```
+
+# Introduction
+
+This article is a short companion to the main workflow vignette. It focuses on
+one practical feature that matters whenever rows are not the right resampling
+unit for inference:
+
+- clustered sampling, where observations are grouped within higher-level units
+- repeated measures, where multiple rows belong to the same individual
+
+In these settings, `qgcomp.multi` can still be used through the usual fitting
+interface. The key change is to supply the cluster or subject identifier
+through the `id` argument.
+
+When `id` is supplied, the package performs bootstrap resampling at the cluster
+level rather than at the individual row level. This changes the uncertainty
+calculation to account for within-cluster dependence.
+
+
+# A small clustered example
+
+The example below creates a small clustered dataset with 50 clusters and 3
+observations per cluster. The same setup also works as a simple repeated-
+measures template if each cluster ID corresponds to one participant observed
+multiple times.
+
+```{r}
+library(qgcomp.multi)
+
+n_clusters <- 50
+cluster_size <- 3
+n_total <- n_clusters * cluster_size
+
+dat <- sim_mixture_data(
+  n = n_total,
+  pA = 3,
+  pB = 3,
+  rho_within_A = 0.3,
+  rho_within_B = 0.3,
+  rho_between = 0.2,
+  psi1 = 0.5,
+  psi2 = 0.3,
+  psi12 = 0.2,
+  return_quantized = FALSE,
+  seed = 123
+)
+
+dat$cluster_id <- rep(seq_len(n_clusters), each = cluster_size)
+
+head(dat[c("cluster_id", "Y", "X1", "W1", "C")])
+```
+
+# Fit the model with cluster-level resampling
+
+Supply the cluster identifier through `id`.
+
+```{r}
+fit_clustered <- qgcomp.glm.multi(
+  f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+  data = dat,
+  mix1 = c("X1", "X2", "X3"),
+  mix2 = c("W1", "W2", "W3"),
+  interaction = TRUE,
+  q = 4,
+  B = 5,
+  id = "cluster_id",
+  MCsize = nrow(dat),
+  seed = 13
+)
+```
+
+This is still the ordinary quantized two-mixture workflow. The difference is
+that bootstrap uncertainty is now based on resampling the 50 clusters instead
+of resampling the 150 rows one by one.
+
+# Confirm that the fit recognized the clustering
+
+The printed summary reports clustering metadata directly:
+
+```{r}
+summary(fit_clustered)
+```
+
+You can also inspect the stored fit metadata programmatically:
+
+```{r}
+fit_clustered$data_info[c("has_clusters", "cluster_var", "n_clusters", "n_used")]
+```
+
+For repeated-measures data, this is the same idea: set `id` to the participant
+identifier so that all rows from the same participant move together during the
+bootstrap resampling step.
+
+# What the id argument changes
+
+Supplying `id` changes the resampling unit used for bootstrap inference.
+
+That is the right adjustment when:
+
+- observations are clustered within a higher-level unit
+- repeated measurements are recorded on the same individual
+- rows within a cluster should not be treated as independently resampled units
+
+In practical terms, this lets you keep the same `qgcomp.glm.multi()` fitting
+interface while asking the bootstrap to respect the structure of the data.
+
+# What the id argument does not change
+
+The `id` argument is about inference, not about changing the outcome model into
+a mixed-effects or subject-specific model.
+
+It does not:
+
+- automatically add random effects
+- change the formula interface
+- solve every longitudinal modeling question on its own
+
+Instead, it tells `qgcomp.multi` what the correct resampling unit is when the
+rows are clustered or repeated within a subject.
+
+# Brief notes on other workflows
+
+The same clustered-resampling idea also works in other package workflows.
+
+- If you fit an original-scale model with `q = NULL`, you can still supply
+  `id` in the same way.
+- If you use `qgcomp.glm.multi.mi()` with clustered completed datasets, the
+  wrapper also supports clustered bootstrap resampling.
+
+For multiply imputed clustered workflows, the completed datasets must share the
+same cluster IDs in the same order.
+
+# Practical takeaways
+
+The main question is whether the bootstrap should resample rows or resample
+clusters. In `qgcomp.multi`, supplying `id` tells the package to use the
+clustered resampling path while keeping the rest of the two-mixture workflow
+the same.
+
+# Related Articles
+
+- [Applied Workflow for Two-Mixture Quantile g-Computation](qgcompmulti-workflow.html)
+- [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
+- [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

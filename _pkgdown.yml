@@ -58,12 +58,14 @@ articles:
   - title: Applied workflows
     desc: >
       Start with the main workflow article, then use the shorter companion
-      articles for multiple imputation, optional bootstrap-level parallelism,
-      diagnostics, adequacy, and sensitivity checks.
+      articles for multiple imputation, clustered or repeated-measures data,
+      optional bootstrap-level parallelism, diagnostics, adequacy, and
+      sensitivity checks.
     navbar: ~
     contents:
       - qgcompmulti-workflow
       - qgcompmulti-mi-parallel
+      - qgcompmulti-clustered-data
       - qgcompmulti-diagnostics-sensitivity
 
 reference:

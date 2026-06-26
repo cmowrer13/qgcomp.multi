@@ -723,4 +723,5 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 For workflows that go beyond the single-dataset path used here, see:
 
 - [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
+- [Clustered Data and Repeated Measures](qgcompmulti-clustered-data.html)
 - [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

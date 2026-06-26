@@ -207,4 +207,5 @@ pooling directly.
 # Related Articles
 
 - [Applied Workflow for Two-Mixture Quantile g-Computation](qgcompmulti-workflow.html)
+- [Clustered Data and Repeated Measures](qgcompmulti-clustered-data.html)
 - [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

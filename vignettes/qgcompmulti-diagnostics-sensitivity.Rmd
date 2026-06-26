@@ -181,3 +181,4 @@ reasonable sensitivity changes.
 
 - [Applied Workflow for Two-Mixture Quantile g-Computation](qgcompmulti-workflow.html)
 - [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
+- [Clustered Data and Repeated Measures](qgcompmulti-clustered-data.html)
