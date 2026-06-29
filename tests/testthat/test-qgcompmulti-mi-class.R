@@ -165,6 +165,19 @@ test_that("qgcompmulti_pool_mi_fits rejects incompatible per-imputation fits", {
   )
 })
 
+test_that("qgcompmulti_pool_mi_fits rejects non-Wald per-imputation interval defaults", {
+  fits <- list(
+    fit_test_model(B = 5, seed = 610, default_interval_method = "percentile"),
+    fit_test_model(B = 5, seed = 620, default_interval_method = "percentile"),
+    fit_test_model(B = 5, seed = 630, default_interval_method = "percentile")
+  )
+
+  expect_error(
+    qgcompmulti_pool_mi_fits(fits),
+    "support only Wald interval methods"
+  )
+})
+
 test_that("qgcompmulti_mi validation enforces keep_fits and fit_seeds contracts", {
   fits <- fit_test_model_list()
   pooled <- qgcompmulti_pool_mi_fits(

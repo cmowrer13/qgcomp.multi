@@ -14,6 +14,23 @@ qgcompmulti_mi_extract_vcov <- function(fit) {
 
 #' @keywords internal
 #' @noRd
+qgcompmulti_mi_validate_wald_interval_method <- function(method) {
+  if (!identical(method, "wald")) {
+    stop(
+      paste(
+        "Pooled multiple-imputation fits support only Wald interval methods in Version 0.5.0.",
+        "Per-imputation fits must use `analysis$default_interval_method = \"wald\"`."
+      ),
+      call. = FALSE
+    )
+  }
+
+    qgcompmulti_validate_interval_method(method = method, context = "mi")
+    invisible(method)
+  }
+
+#' @keywords internal
+#' @noRd
 qgcompmulti_mi_validate_fit_list <- function(fits) {
   if (!is.list(fits) || length(fits) == 0L) {
     stop("`fits` must be a non-empty list of `qgcompmulti` objects.", call. = FALSE)
@@ -36,6 +53,7 @@ qgcompmulti_mi_validate_fit_list <- function(fits) {
   for (i in seq_along(fits)) {
     fit <- fits[[i]]
     validate_qgcompmulti(fit)
+    qgcompmulti_mi_validate_wald_interval_method(fit$analysis$default_interval_method)
 
     if (!identical(
       qgcompmulti_deparse_one_line(fit$formula),

@@ -292,6 +292,76 @@ test_that("qgcomp.glm.multi.mi preserves explicit estimand_scale under parallel 
   expect_equal(serial_fit$results$df, parallel_fit$results$df)
 })
 
+test_that("qgcomp.glm.multi.mi uses planned default estimand scales for MI fits", {
+  binomial_completed <- lapply(c(432, 433, 434), make_binomial_test_data)
+  binomial_fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = binomial_completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    family = binomial(link = "logit"),
+    q = 4,
+    B = 5,
+    seed = 903,
+    keep_fits = TRUE
+  )
+
+  expect_identical(binomial_fit$analysis$estimand_scale, "odds_ratio")
+  expect_true(binomial_fit$analysis$estimand_scale_defaulted)
+  expect_identical(binomial_fit$analysis$msm_fitting_scale, "logit")
+  expect_true(all(vapply(
+    binomial_fit$fits$imputation_fits,
+    function(x) identical(x$analysis$estimand_scale, "odds_ratio") &&
+      identical(x$analysis$msm_fitting_scale, "logit"),
+    logical(1)
+  )))
+
+  poisson_completed <- lapply(c(654, 655, 656), make_poisson_test_data)
+  poisson_fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = poisson_completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    family = poisson(link = "log"),
+    q = 4,
+    B = 5,
+    seed = 904,
+    keep_fits = TRUE
+  )
+
+  expect_identical(poisson_fit$analysis$estimand_scale, "rate_ratio")
+  expect_true(poisson_fit$analysis$estimand_scale_defaulted)
+  expect_identical(poisson_fit$analysis$msm_fitting_scale, "log")
+  expect_true(all(vapply(
+    poisson_fit$fits$imputation_fits,
+    function(x) identical(x$analysis$estimand_scale, "rate_ratio") &&
+      identical(x$analysis$msm_fitting_scale, "log"),
+    logical(1)
+  )))
+})
+
+test_that("qgcomp.glm.multi.mi rejects unsupported estimand scales before fitting", {
+  completed <- lapply(c(432, 433, 434), make_binomial_test_data)
+
+  expect_error(
+    qgcomp.glm.multi.mi(
+      f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+      data = completed,
+      mix1 = c("X1", "X2", "X3"),
+      mix2 = c("W1", "W2", "W3"),
+      interaction = TRUE,
+      family = binomial(link = "probit"),
+      estimand_scale = "odds_ratio",
+      q = 4,
+      B = 5,
+      seed = 905
+    ),
+    "not supported"
+  )
+})
+
 test_that("qgcomp.glm.multi.mi supports mids input with keep_fits and bootstrap-level parallelism when mice is installed", {
   skip_if_not_installed("mice")
 
