@@ -25,9 +25,9 @@ test_that("fitted object stores expected result, fit, and label components", {
   expect_true(is.data.frame(fit$prediction$counterfactual_surface))
   expect_true(is.data.frame(fit$prediction$msm_surface))
   expect_true(is.data.frame(fit$prediction$surface_comparison))
-  expect_null(fit$prediction$counterfactual_surface_target)
-  expect_null(fit$prediction$msm_surface_target)
-  expect_null(fit$prediction$surface_comparison_target)
+  expect_true(is.data.frame(fit$prediction$counterfactual_surface_target))
+  expect_true(is.data.frame(fit$prediction$msm_surface_target))
+  expect_true(is.data.frame(fit$prediction$surface_comparison_target))
   expect_true(is.matrix(fit$bootstrap$coef_draws))
   expect_equal(fit$bootstrap$B_requested, 10)
   expect_equal(fit$bootstrap$B_success, 10)
@@ -60,6 +60,18 @@ test_that("stored fit-time grids and surfaces align on a common grid", {
     EXPECTED_SURFACE_COMPARISON_COLUMNS
   )
   expect_identical(
+    names(fit$prediction$counterfactual_surface_target),
+    EXPECTED_COUNTERFACTUAL_TARGET_COLUMNS
+  )
+  expect_identical(
+    names(fit$prediction$msm_surface_target),
+    EXPECTED_MSM_TARGET_COLUMNS
+  )
+  expect_identical(
+    names(fit$prediction$surface_comparison_target),
+    EXPECTED_SURFACE_COMPARISON_TARGET_COLUMNS
+  )
+  expect_identical(
     fit$prediction$intervention_grid$grid_id,
     fit$prediction$msm_grid$grid_id
   )
@@ -70,5 +82,13 @@ test_that("stored fit-time grids and surfaces align on a common grid", {
   expect_identical(
     fit$prediction$counterfactual_surface$grid_id,
     fit$prediction$surface_comparison$grid_id
+  )
+  expect_identical(
+    fit$prediction$counterfactual_surface_target$grid_id,
+    fit$prediction$msm_surface_target$grid_id
+  )
+  expect_identical(
+    fit$prediction$counterfactual_surface_target$grid_id,
+    fit$prediction$surface_comparison_target$grid_id
   )
 })

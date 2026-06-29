@@ -29,6 +29,14 @@ test_that("qgcomp.glm.multi is reproducible when seed is supplied", {
   expect_equal(fit1$results$coefficients, fit2$results$coefficients)
   expect_equal(fit1$results$vcov, fit2$results$vcov)
   expect_equal(fit1$bootstrap$coef_draws, fit2$bootstrap$coef_draws)
+  expect_equal(
+    fit1$prediction$counterfactual_surface_target,
+    fit2$prediction$counterfactual_surface_target
+  )
+  expect_equal(
+    fit1$prediction$msm_surface_target,
+    fit2$prediction$msm_surface_target
+  )
 })
 test_that("qgcompmulti_msm_fit is reproducible when seed is supplied", {
   dat <- make_test_data(seed = 123)
@@ -56,4 +64,34 @@ test_that("qgcompmulti_msm_fit is reproducible when seed is supplied", {
   expect_equal(engine2$n_used, 40)
   expect_equal(engine1$coefficients, engine2$coefficients)
   expect_equal(stats::coef(engine1$msm_fit), stats::coef(engine2$msm_fit))
+})
+
+test_that("ratio-scale ordinary fits are reproducible when seed is supplied", {
+  dat <- make_binomial_test_data(seed = 456)
+  fit1 <- qgcomp.glm.multi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    family = binomial(link = "logit"),
+    q = 4,
+    B = 10,
+    MCsize = 40,
+    seed = 909
+  )
+  fit2 <- qgcomp.glm.multi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    family = binomial(link = "logit"),
+    q = 4,
+    B = 10,
+    MCsize = 40,
+    seed = 909
+  )
+  expect_equal(fit1$results$coefficients, fit2$results$coefficients)
+  expect_equal(fit1$results$vcov, fit2$results$vcov)
+  expect_equal(fit1$bootstrap$coef_draws, fit2$bootstrap$coef_draws)
+  expect_equal(fit1$prediction$msm_surface_target, fit2$prediction$msm_surface_target)
 })

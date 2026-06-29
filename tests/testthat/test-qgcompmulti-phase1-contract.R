@@ -78,11 +78,11 @@ test_that("interval helpers expose the planned method contract", {
   )
 })
 
-test_that("stored prediction contract accepts placeholder target-scale surfaces", {
+test_that("stored prediction contract validates retained target-scale surfaces", {
   fit <- fit_test_model(interaction = TRUE, q = 4)
-  expect_null(fit$prediction$counterfactual_surface_target)
-  expect_null(fit$prediction$msm_surface_target)
-  expect_null(fit$prediction$surface_comparison_target)
+  expect_true(is.data.frame(fit$prediction$counterfactual_surface_target))
+  expect_true(is.data.frame(fit$prediction$msm_surface_target))
+  expect_true(is.data.frame(fit$prediction$surface_comparison_target))
 
   bad <- fit
   bad$prediction$counterfactual_surface_target <- data.frame(grid_id = 1L)
@@ -116,4 +116,23 @@ test_that("region helpers require at least two named coefficients", {
   )
 
   expect_s3_class(region, "qgcompmulti_region")
+})
+
+test_that("transformed MSM surface helpers reject boundary values for ratio scales", {
+  expect_error(
+    qgcompmulti_transform_msm_surface(
+      values = c(0, 0.25, 0.75),
+      msm_fitting_scale = "logit",
+      direction = "to_fitting"
+    ),
+    "strictly between 0 and 1"
+  )
+  expect_error(
+    qgcompmulti_transform_msm_surface(
+      values = c(0, 0.5, 1.25),
+      msm_fitting_scale = "log",
+      direction = "to_fitting"
+    ),
+    "strictly positive"
+  )
 })

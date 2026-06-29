@@ -8,9 +8,14 @@ test_that("quantized fits store intervention and MSM grids on the same scale", {
     fit$prediction$intervention_grid$psi2,
     fit$prediction$msm_grid$psi2
   )
-  expect_null(fit$prediction$counterfactual_surface_target)
-  expect_null(fit$prediction$msm_surface_target)
-  expect_null(fit$prediction$surface_comparison_target)
+  expect_equal(
+    fit$prediction$counterfactual_surface_target$exact_target,
+    fit$prediction$counterfactual_surface$exact_mean
+  )
+  expect_equal(
+    fit$prediction$msm_surface_target$msm_target,
+    fit$prediction$msm_surface$msm_mean
+  )
 })
 test_that("original-scale centered fits retain both intervention and MSM grids", {
   fit <- fit_test_model(interaction = TRUE, q = NULL, centering = "median")
@@ -29,6 +34,14 @@ test_that("original-scale centered fits retain both intervention and MSM grids",
   expect_equal(
     fit$prediction$surface_comparison$msm_mean,
     fit$prediction$msm_surface$msm_mean
+  )
+  expect_equal(
+    fit$prediction$surface_comparison_target$exact_target,
+    fit$prediction$counterfactual_surface_target$exact_target
+  )
+  expect_equal(
+    fit$prediction$surface_comparison_target$msm_target,
+    fit$prediction$msm_surface_target$msm_target
   )
 })
 test_that("bootstrap metadata remains coherent after fit-time surface retention", {

@@ -41,6 +41,11 @@
 #' interaction.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
+#' @param estimand_scale Optional character string naming the fitted MSM
+#' estimand scale. Supported values depend on `family` and its link:
+#' `"mean_difference"` for Gaussian; `"risk_difference"` or `"odds_ratio"` for
+#' binomial-logit; and `"mean_difference"` or `"rate_ratio"` for Poisson-log.
+#' If `NULL`, the Version `0.5.0` defaults are used.
 #' @param q Integer greater than or equal to 2 giving the number of quantiles
 #' used to discretize the exposure variables, or `NULL` to skip quantization and
 #' fit the outcome model on the original exposure scale. When `q = NULL`, the
@@ -84,6 +89,8 @@
 #' `qgcomp.glm.multi()` choose a temporary local worker count automatically.
 #' If a non-sequential `future` plan is already active, supplying an explicit
 #' `workers` value is treated as an unsupported combination and errors clearly.
+#' @param default_interval_method Character string giving the stored default
+#' coefficient interval method for the fitted object.
 #'
 #' @return An object of class `"qgcompmulti"` representing the fitted
 #' two-mixture quantile g-computation model. Major components include:
@@ -143,15 +150,18 @@
 #' The outcome model is fit using `glm()`, so this function can be used with
 #' Gaussian, binomial, Poisson, and other generalized linear models supported by
 #' the supplied formula and family specification. Predicted potential outcomes
-#' are computed on the response scale and the MSM is fit using an identity link,
-#' regardless of the outcome-model link function.
+#' are always computed on the response scale. The MSM is then fit either on that
+#' response scale or on a transformed marginal mean surface, depending on the
+#' requested `estimand_scale`.
 #'
-#' Interpretation therefore depends on the outcome type:
+#' Interpretation therefore depends on the outcome type and the chosen
+#' `estimand_scale`:
 #' \itemize{
 #'   \item For continuous outcomes, parameters represent mean differences.
-#'   \item For binary outcomes, parameters represent differences in predicted
-#'   probabilities, that is, risk differences.
-#'   \item For count outcomes, parameters represent differences in expected counts.
+#'   \item For binomial outcomes, parameters can represent either risk
+#'   differences or odds ratios.
+#'   \item For Poisson outcomes, parameters can represent either differences in
+#'   expected counts or rate ratios.
 #' }
 #'
 #' If `progress = TRUE`, the bootstrap loop prints a compact single-line status
@@ -295,9 +305,11 @@ qgcomp.glm.multi <- function(f,
                              mix2,
                              interaction = TRUE,
                              family = gaussian(),
+                             estimand_scale = NULL,
                              q = 4,
                              centering = "none",
                              B = 200,
+                             default_interval_method= "wald",
                              id = NULL,
                              MCsize = nrow(data),
                              seed = NULL,
@@ -313,15 +325,23 @@ qgcomp.glm.multi <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand_scale,
     q = q,
     centering = centering,
     id = id,
     MCsize = MCsize,
     B = B,
+    default_interval_method = default_interval_method,
     seed = seed,
     progress = progress,
     parallel = parallel,
     workers = workers
+  )
+
+  estimand <- qgcompmulti_resolve_estimand_spec(
+    family = family,
+    estimand_scale = estimand_scale,
+    mode = "planned"
   )
 
   progress_enabled <- qgcompmulti_parallel_progress_flag(
@@ -337,6 +357,7 @@ qgcomp.glm.multi <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand$estimand_scale,
     q = q,
     centering = centering,
     id = id,
@@ -357,6 +378,7 @@ qgcomp.glm.multi <- function(f,
         mix2 = mix2,
         interaction = interaction,
         family = family,
+        estimand_scale = estimand$estimand_scale,
         q = q,
         centering = centering,
         id = id,
@@ -398,6 +420,10 @@ qgcomp.glm.multi <- function(f,
   analysis <- build_qgcompmulti_analysis(
     interaction = interaction,
     family = family,
+    estimand_scale = estimand$estimand_scale,
+    estimand_scale_defaulted = estimand$estimand_scale_defaulted,
+    msm_fitting_scale = estimand$msm_fitting_scale,
+    default_interval_method = default_interval_method,
     B = B,
     id = id,
     MCsize = MCsize,
@@ -409,7 +435,10 @@ qgcomp.glm.multi <- function(f,
     msm_grid = full_fit$msm_grid,
     counterfactual_surface = full_fit$counterfactual_surface,
     msm_surface = full_fit$msm_surface,
-    surface_comparison = full_fit$surface_comparison
+    surface_comparison = full_fit$surface_comparison,
+    counterfactual_surface_target = full_fit$counterfactual_surface_target,
+    msm_surface_target = full_fit$msm_surface_target,
+    surface_comparison_target = full_fit$surface_comparison_target
   )
   bootstrap <- build_qgcompmulti_bootstrap(
     coef_draws = psi_hat,

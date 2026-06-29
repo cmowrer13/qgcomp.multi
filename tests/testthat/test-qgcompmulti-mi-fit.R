@@ -230,6 +230,68 @@ test_that("qgcomp.glm.multi.mi supports clustered parallel completed-list workfl
   expect_equal(fit$data_info$n_clusters, length(unique(completed[[1]]$cluster_id)))
 })
 
+test_that("qgcomp.glm.multi.mi forwards explicit estimand_scale into completed-data fits", {
+  completed <- replicate(3, make_binomial_test_data(seed = 432), simplify = FALSE)
+  fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    family = binomial(link = "logit"),
+    estimand_scale = "risk_difference",
+    q = 4,
+    B = 5,
+    seed = 901,
+    keep_fits = TRUE
+  )
+  expect_identical(fit$analysis$estimand_scale, "risk_difference")
+  expect_identical(fit$analysis$msm_fitting_scale, "identity")
+  expect_length(fit$fits$imputation_fits, 3)
+  expect_true(all(vapply(
+    fit$fits$imputation_fits,
+    function(x) identical(x$analysis$estimand_scale, "risk_difference"),
+    logical(1)
+  )))
+})
+test_that("qgcomp.glm.multi.mi preserves explicit estimand_scale under parallel ordinary fits", {
+  completed <- replicate(3, make_poisson_test_data(seed = 654), simplify = FALSE)
+  serial_fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    family = poisson(link = "log"),
+    estimand_scale = "rate_ratio",
+    q = 4,
+    B = 5,
+    seed = 902,
+    keep_fits = FALSE,
+    parallel = FALSE
+  )
+  parallel_fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    family = poisson(link = "log"),
+    estimand_scale = "rate_ratio",
+    q = 4,
+    B = 5,
+    seed = 902,
+    keep_fits = FALSE,
+    parallel = TRUE,
+    workers = 2
+  )
+  expect_identical(parallel_fit$analysis$estimand_scale, "rate_ratio")
+  expect_identical(parallel_fit$analysis$msm_fitting_scale, "log")
+  expect_equal(serial_fit$results$coefficients, parallel_fit$results$coefficients)
+  expect_equal(serial_fit$results$vcov, parallel_fit$results$vcov)
+  expect_equal(serial_fit$results$df, parallel_fit$results$df)
+})
+
 test_that("qgcomp.glm.multi.mi supports mids input with keep_fits and bootstrap-level parallelism when mice is installed", {
   skip_if_not_installed("mice")
 

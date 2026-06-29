@@ -418,21 +418,25 @@ build_qgcompmulti_mixtures <- function(mix1, mix2, q, centering) {
 }
 #' @keywords internal
 #' @noRd
-build_qgcompmulti_analysis <- function(interaction, family, B, id, MCsize, seed) {
-  estimand <- qgcompmulti_resolve_estimand_spec(
-    family = family,
-    mode = "current"
-  )
-
+build_qgcompmulti_analysis <- function(interaction,
+                                       family,
+                                       estimand_scale,
+                                       estimand_scale_defaulted,
+                                       msm_fitting_scale,
+                                       default_interval_method,
+                                       B,
+                                       id,
+                                       MCsize,
+                                       seed) {
   list(
     interaction = interaction,
     family = family,
     family_name = family$family,
     link = family$link,
-    estimand_scale = estimand$estimand_scale,
-    estimand_scale_defaulted = estimand$estimand_scale_defaulted,
-    msm_fitting_scale = estimand$msm_fitting_scale,
-    default_interval_method = "wald",
+    estimand_scale = estimand_scale,
+    estimand_scale_defaulted = estimand_scale_defaulted,
+    msm_fitting_scale = msm_fitting_scale,
+    default_interval_method = default_interval_method,
     B = B,
     id = id,
     MCsize = MCsize,

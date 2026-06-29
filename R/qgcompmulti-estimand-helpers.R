@@ -224,6 +224,45 @@ qgcompmulti_transform_msm_surface <- function(values,
     stop("`values` must be numeric.", call. = FALSE)
   }
 
+  if (identical(direction, "to_fitting")) {
+    if (identical(msm_fitting_scale, "logit")) {
+      if (any(!is.finite(values))) {
+        stop(
+          "Odds-ratio MSM fitting requires finite response-scale counterfactual means.",
+          call. = FALSE
+        )
+      }
+      if (any(values <= 0 | values >= 1)) {
+        stop(
+          paste(
+            "Odds-ratio MSM fitting requires all response-scale counterfactual means",
+            "to lie strictly between 0 and 1.",
+            "The fitted outcome model and intervention grid produced at least one boundary risk."
+          ),
+          call. = FALSE
+        )
+      }
+    }
+    if (identical(msm_fitting_scale, "log")) {
+      if (any(!is.finite(values))) {
+        stop(
+          "Rate-ratio MSM fitting requires finite response-scale counterfactual means.",
+          call. = FALSE
+        )
+      }
+      if (any(values <= 0)) {
+        stop(
+          paste(
+            "Rate-ratio MSM fitting requires all response-scale counterfactual means",
+            "to be strictly positive.",
+            "The fitted outcome model and intervention grid produced at least one zero or negative mean."
+          ),
+          call. = FALSE
+        )
+      }
+    }
+  }
+
   transform_fun <- switch(
     paste(msm_fitting_scale, direction, sep = "::"),
     "identity::to_fitting" = identity,

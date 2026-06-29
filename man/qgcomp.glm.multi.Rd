@@ -11,9 +11,11 @@ qgcomp.glm.multi(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   B = 200,
+  default_interval_method = "wald",
   id = NULL,
   MCsize = nrow(data),
   seed = NULL,
@@ -49,6 +51,12 @@ interaction.}
 \item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
 \code{poisson()}) specifying the outcome model.}
 
+\item{estimand_scale}{Optional character string naming the fitted MSM
+estimand scale. Supported values depend on \code{family} and its link:
+\code{"mean_difference"} for Gaussian; \code{"risk_difference"} or \code{"odds_ratio"} for
+binomial-logit; and \code{"mean_difference"} or \code{"rate_ratio"} for Poisson-log.
+If \code{NULL}, the Version \verb{0.5.0} defaults are used.}
+
 \item{q}{Integer greater than or equal to 2 giving the number of quantiles
 used to discretize the exposure variables, or \code{NULL} to skip quantization and
 fit the outcome model on the original exposure scale. When \code{q = NULL}, the
@@ -65,6 +73,9 @@ the outcome regression. This argument is ignored when \code{q} is numeric.}
 
 \item{B}{Integer greater than or equal to 2 giving the number of bootstrap
 replications used for standard error estimation.}
+
+\item{default_interval_method}{Character string giving the stored default
+coefficient interval method for the fitted object.}
 
 \item{id}{Optional character string giving the name of a cluster identifier
 variable. If supplied, bootstrap resampling is performed at the cluster
@@ -182,15 +193,18 @@ simply adding an interaction at the final summary step.
 The outcome model is fit using \code{glm()}, so this function can be used with
 Gaussian, binomial, Poisson, and other generalized linear models supported by
 the supplied formula and family specification. Predicted potential outcomes
-are computed on the response scale and the MSM is fit using an identity link,
-regardless of the outcome-model link function.
+are always computed on the response scale. The MSM is then fit either on that
+response scale or on a transformed marginal mean surface, depending on the
+requested \code{estimand_scale}.
 
-Interpretation therefore depends on the outcome type:
+Interpretation therefore depends on the outcome type and the chosen
+\code{estimand_scale}:
 \itemize{
 \item For continuous outcomes, parameters represent mean differences.
-\item For binary outcomes, parameters represent differences in predicted
-probabilities, that is, risk differences.
-\item For count outcomes, parameters represent differences in expected counts.
+\item For binomial outcomes, parameters can represent either risk
+differences or odds ratios.
+\item For Poisson outcomes, parameters can represent either differences in
+expected counts or rate ratios.
 }
 
 If \code{progress = TRUE}, the bootstrap loop prints a compact single-line status

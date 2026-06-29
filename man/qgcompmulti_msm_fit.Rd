@@ -11,6 +11,7 @@ qgcompmulti_msm_fit(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   id = NULL,
@@ -42,6 +43,10 @@ interaction.}
 
 \item{family}{A GLM family object (e.g., \code{gaussian()}, \code{binomial()},
 \code{poisson()}) specifying the outcome model.}
+
+\item{estimand_scale}{Optional character string naming the fitted MSM
+estimand scale. Supported values depend on \code{family} and its link. If \code{NULL},
+the Version \verb{0.5.0} defaults are used.}
 
 \item{q}{Integer greater than or equal to 2 giving the number of quantiles
 used to discretize the exposure variables, or \code{NULL} to skip quantization and
@@ -88,6 +93,12 @@ surface implied by the fitted outcome model.}
 fit-time grid.}
 \item{\code{surface_comparison}}{A direct exact-versus-MSM comparison object on
 the common fit-time grid.}
+\item{\code{counterfactual_surface_target}}{The transformed fit-time MSM target
+surface used in the MSM fit.}
+\item{\code{msm_surface_target}}{The fitted MSM target-scale surface evaluated
+on the common fit-time grid.}
+\item{\code{surface_comparison_target}}{A direct exact-versus-MSM comparison
+object on the target scale.}
 }
 }
 \description{
@@ -111,9 +122,9 @@ and computes predicted outcomes for each observation (or for a Monte Carlo
 subsample if \code{MCsize < nrow(data)}). These predicted outcomes are stacked
 into a pseudo-dataset and used to fit a marginal structural model that
 summarizes the dose-response surface. Note that predicted potential
-outcomes are computed on the response scale and the marginal
-structural model is fit using an identity link, regardless of the outcome
-model.
+outcomes are computed on the response scale. The marginal structural model
+is then fit either on that response-scale surface or on a transformed target
+surface implied by \code{estimand_scale}.
 
 When \code{q} is an integer, the intervention grid is \verb{0, 1, ..., q - 1} for each
 mixture, corresponding to simultaneous quantile increases in all components

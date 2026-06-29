@@ -12,7 +12,10 @@ test_that("qgcompmulti_msm_fit returns the expected component structure", {
       "msm_grid",
       "counterfactual_surface",
       "msm_surface",
-      "surface_comparison"
+      "surface_comparison",
+      "counterfactual_surface_target",
+      "msm_surface_target",
+      "surface_comparison_target"
     )
   )
   expect_s3_class(engine$outcome_fit, "glm")
@@ -58,11 +61,52 @@ test_that("qgcompmulti_msm_fit retains aligned fit-time grids and surfaces", {
     names(engine$surface_comparison),
     EXPECTED_SURFACE_COMPARISON_COLUMNS
   )
+  expect_identical(
+    names(engine$counterfactual_surface_target),
+    EXPECTED_COUNTERFACTUAL_TARGET_COLUMNS
+  )
+  expect_identical(
+    names(engine$msm_surface_target),
+    EXPECTED_MSM_TARGET_COLUMNS
+  )
+  expect_identical(
+    names(engine$surface_comparison_target),
+    EXPECTED_SURFACE_COMPARISON_TARGET_COLUMNS
+  )
   expect_equal(nrow(engine$intervention_grid), nrow(engine$msm_grid))
   expect_equal(nrow(engine$counterfactual_surface), nrow(engine$msm_surface))
   expect_equal(nrow(engine$counterfactual_surface), nrow(engine$surface_comparison))
+  expect_equal(
+    nrow(engine$counterfactual_surface_target),
+    nrow(engine$msm_surface_target)
+  )
+  expect_equal(
+    nrow(engine$counterfactual_surface_target),
+    nrow(engine$surface_comparison_target)
+  )
   expect_identical(
     engine$counterfactual_surface$grid_id,
     engine$surface_comparison$grid_id
   )
+})
+
+test_that("qgcompmulti_msm_fit stores target-scale surfaces for ratio estimands", {
+  binomial_engine <- fit_engine_result(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit")
+  )
+  poisson_engine <- fit_engine_result(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log")
+  )
+  expect_false(identical(
+    binomial_engine$counterfactual_surface$exact_mean,
+    binomial_engine$counterfactual_surface_target$exact_target
+  ))
+  expect_false(identical(
+    poisson_engine$counterfactual_surface$exact_mean,
+    poisson_engine$counterfactual_surface_target$exact_target
+  ))
 })

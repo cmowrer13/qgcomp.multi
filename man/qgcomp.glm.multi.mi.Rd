@@ -11,6 +11,7 @@ qgcomp.glm.multi.mi(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   B = 200,
@@ -39,6 +40,11 @@ second exposure mixture.}
 each per-imputation fit and in the pooled MSM.}
 
 \item{family}{A GLM family object for the per-imputation outcome model.}
+
+\item{estimand_scale}{Optional character string naming the fitted MSM
+estimand scale. Supported values depend on \code{family} and its link and are
+forwarded into each underlying \code{\link[=qgcomp.glm.multi]{qgcomp.glm.multi()}} fit. If \code{NULL}, the
+ordinary-fit family default is used within each completed-data fit.}
 
 \item{q}{Integer greater than or equal to \code{2} giving the number of quantiles
 used to discretize the exposure variables, or \code{NULL} to fit on the original

@@ -249,6 +249,70 @@ make_test_data <- function(seed = 123, n = 120) {
   get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
 }
 
+make_binomial_test_data <- function(seed = 123, n = 120) {
+  key <- sprintf("binomial_data_%s_%s", seed, n)
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- make_test_data(seed = seed, n = n)
+    mix_a <- rowMeans(dat[, c("X1", "X2", "X3"), drop = FALSE])
+    mix_b <- rowMeans(dat[, c("W1", "W2", "W3"), drop = FALSE])
+    lp <- -0.75 + 0.45 * mix_a + 0.35 * mix_b + 0.18 * mix_a * mix_b + 0.20 * dat$C
+    prob <- plogis(lp)
+    old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit(
+      {
+        if (is.null(old_seed)) {
+          if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+            rm(".Random.seed", envir = .GlobalEnv)
+          }
+        } else {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        }
+      },
+      add = TRUE
+    )
+    set.seed(seed + 1000L)
+    dat$Y <- stats::rbinom(n = nrow(dat), size = 1L, prob = prob)
+    assign(key, dat, envir = .qgcompmulti_test_cache)
+  }
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
+make_poisson_test_data <- function(seed = 123, n = 120) {
+  key <- sprintf("poisson_data_%s_%s", seed, n)
+  if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
+    dat <- make_test_data(seed = seed, n = n)
+    mix_a <- rowMeans(dat[, c("X1", "X2", "X3"), drop = FALSE])
+    mix_b <- rowMeans(dat[, c("W1", "W2", "W3"), drop = FALSE])
+    lp <- 0.15 + 0.22 * mix_a + 0.16 * mix_b + 0.10 * mix_a * mix_b + 0.08 * dat$C
+    mu <- exp(lp)
+    old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    } else {
+      NULL
+    }
+    on.exit(
+      {
+        if (is.null(old_seed)) {
+          if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+            rm(".Random.seed", envir = .GlobalEnv)
+          }
+        } else {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        }
+      },
+      add = TRUE
+    )
+    set.seed(seed + 2000L)
+    dat$Y <- stats::rpois(n = nrow(dat), lambda = mu)
+    assign(key, dat, envir = .qgcompmulti_test_cache)
+  }
+  get(key, envir = .qgcompmulti_test_cache, inherits = FALSE)
+}
+
 make_clustered_test_data <- function(seed = 123, n = 120, cluster_size = 10) {
   stopifnot(n %% cluster_size == 0L)
   key <- sprintf("clustered_data_%s_%s_%s", seed, n, cluster_size)
@@ -296,8 +360,15 @@ fit_test_model <- function(interaction = TRUE,
                            mcsize = NULL,
                            clustered = FALSE,
                            B = 10,
-                           seed = 123) {
-  dat <- if (clustered) {
+                           seed = 123,
+                           family = gaussian(),
+                           estimand_scale = NULL,
+                           default_interval_method = "wald") {
+  dat <- if (identical(family$family, "binomial")) {
+    make_binomial_test_data(seed = seed)
+  } else if (identical(family$family, "poisson")) {
+    make_poisson_test_data(seed = seed)
+  } else if (clustered) {
     make_clustered_test_data(seed = seed)
   } else {
     make_test_data(seed = seed)
@@ -315,6 +386,10 @@ fit_test_model <- function(interaction = TRUE,
     clustered,
     B,
     seed,
+    family$family,
+    family$link,
+    if (is.null(estimand_scale)) "default" else estimand_scale,
+    default_interval_method,
     sep = "_"
   )
   if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
@@ -324,9 +399,12 @@ fit_test_model <- function(interaction = TRUE,
       mix1 = c("X1", "X2", "X3"),
       mix2 = c("W1", "W2", "W3"),
       interaction = interaction,
+      family = family,
+      estimand_scale = estimand_scale,
       q = q,
       centering = centering,
       B = B,
+      default_interval_method = default_interval_method,
       id = if (clustered) "cluster_id" else NULL,
       MCsize = mcsize
     )
@@ -465,8 +543,14 @@ fit_engine_result <- function(interaction = TRUE,
                               centering = "none",
                               mcsize = NULL,
                               clustered = FALSE,
-                              seed = 123) {
-  dat <- if (clustered) {
+                              seed = 123,
+                              family = gaussian(),
+                              estimand_scale = NULL) {
+  dat <- if (identical(family$family, "binomial")) {
+    make_binomial_test_data(seed = seed)
+  } else if (identical(family$family, "poisson")) {
+    make_poisson_test_data(seed = seed)
+  } else if (clustered) {
     make_clustered_test_data(seed = seed)
   } else {
     make_test_data(seed = seed)
@@ -483,6 +567,9 @@ fit_engine_result <- function(interaction = TRUE,
     mcsize,
     clustered,
     seed,
+    family$family,
+    family$link,
+    if (is.null(estimand_scale)) "default" else estimand_scale,
     sep = "_"
   )
   if (!exists(key, envir = .qgcompmulti_test_cache, inherits = FALSE)) {
@@ -492,6 +579,8 @@ fit_engine_result <- function(interaction = TRUE,
       mix1 = c("X1", "X2", "X3"),
       mix2 = c("W1", "W2", "W3"),
       interaction = interaction,
+      family = family,
+      estimand_scale = estimand_scale,
       q = q,
       centering = centering,
       id = if (clustered) "cluster_id" else NULL,

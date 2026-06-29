@@ -48,3 +48,63 @@ test_that("confidence interval validation catches bad inputs", {
   expect_error(confint(fit, level = 0))
   expect_error(confint(fit, level = NA_real_))
 })
+
+test_that("ratio-scale fits keep coefficients on the MSM fitting scale", {
+  fit_binomial <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit")
+  )
+  fit_poisson <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log")
+  )
+  expect_identical(fit_binomial$analysis$estimand_scale, "odds_ratio")
+  expect_identical(fit_binomial$analysis$msm_fitting_scale, "logit")
+  expect_equal(
+    unname(coef(fit_binomial)),
+    unname(stats::coef(fit_binomial$fits$msm_fit)[names(coef(fit_binomial))])
+  )
+  expect_identical(fit_poisson$analysis$estimand_scale, "rate_ratio")
+  expect_identical(fit_poisson$analysis$msm_fitting_scale, "log")
+  expect_equal(
+    unname(coef(fit_poisson)),
+    unname(stats::coef(fit_poisson$fits$msm_fit)[names(coef(fit_poisson))])
+  )
+})
+
+test_that("explicit additive estimands remain available for binomial and Poisson fits", {
+  fit_binomial <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit"),
+    estimand_scale = "risk_difference"
+  )
+  fit_poisson <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log"),
+    estimand_scale = "mean_difference"
+  )
+  expect_identical(fit_binomial$analysis$estimand_scale, "risk_difference")
+  expect_identical(fit_binomial$analysis$msm_fitting_scale, "identity")
+  expect_equal(
+    fit_binomial$prediction$counterfactual_surface$exact_mean,
+    fit_binomial$prediction$counterfactual_surface_target$exact_target
+  )
+  expect_identical(fit_poisson$analysis$estimand_scale, "mean_difference")
+  expect_identical(fit_poisson$analysis$msm_fitting_scale, "identity")
+  expect_equal(
+    fit_poisson$prediction$counterfactual_surface$exact_mean,
+    fit_poisson$prediction$counterfactual_surface_target$exact_target
+  )
+})
+test_that("supported default interval methods are accepted and stored", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    default_interval_method = "percentile_type2"
+  )
+  expect_identical(fit$analysis$default_interval_method, "percentile_type2")
+})

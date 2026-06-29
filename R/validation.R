@@ -33,11 +33,13 @@ validate_qgcomp_multi_inputs <- function(
     mix2,
     interaction,
     family,
+    estimand_scale = NULL,
     q,
     centering,
     id,
     MCsize,
     B = NULL,
+    default_interval_method = "wald",
     seed = NULL,
     progress = FALSE,
     parallel = FALSE,
@@ -96,6 +98,13 @@ validate_qgcomp_multi_inputs <- function(
     stop("`family` must be a valid GLM family object, such as gaussian(), binomial(), or poisson().", call. = FALSE)
   }
 
+  qgcompmulti_validate_estimand_scale(
+    family_name = family$family,
+    link = family$link,
+    estimand_scale = estimand_scale,
+    allow_null = TRUE
+  )
+
   validate_q_argument(q)
 
   if (!is.character(centering) || length(centering) != 1L || is.na(centering)) {
@@ -115,6 +124,11 @@ validate_qgcomp_multi_inputs <- function(
       stop("`B` must be a single integer greater than or equal to 2.", call. = FALSE)
     }
   }
+
+  qgcompmulti_validate_interval_method(
+    method = default_interval_method,
+    context = "single_fit"
+  )
 
   if (!is.null(seed)) {
     if (!is_scalar_whole_number(seed)) {
@@ -168,6 +182,7 @@ validate_qgcomp_multi_mi_inputs <- function(
     mix2,
     interaction,
     family,
+    estimand_scale = NULL,
     q,
     centering,
     id,
@@ -221,6 +236,13 @@ validate_qgcomp_multi_mi_inputs <- function(
   if (!inherits(family, "family")) {
     stop("`family` must be a valid GLM family object, such as gaussian(), binomial(), or poisson().", call. = FALSE)
   }
+
+  qgcompmulti_validate_estimand_scale(
+    family_name = family$family,
+    link = family$link,
+    estimand_scale = estimand_scale,
+    allow_null = TRUE
+  )
 
   validate_q_argument(q)
 

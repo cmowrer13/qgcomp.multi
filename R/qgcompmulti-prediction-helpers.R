@@ -115,10 +115,31 @@ qgcompmulti_counterfactual_surface <- function(outcome_fit,
 }
 #' @keywords internal
 #' @noRd
-qgcompmulti_msm_surface <- function(msm_fit,
-                                    intervention_grid,
-                                    msm_grid) {
-  msm_mean <- as.numeric(
+qgcompmulti_counterfactual_surface_target <- function(counterfactual_surface,
+                                                      msm_fitting_scale) {
+  exact_target <- qgcompmulti_transform_msm_surface(
+    values = counterfactual_surface$exact_mean,
+    msm_fitting_scale = msm_fitting_scale,
+    direction = "to_fitting"
+  )
+
+  data.frame(
+    grid_id = counterfactual_surface$grid_id,
+    intervention_psi1 = counterfactual_surface$intervention_psi1,
+    intervention_psi2 = counterfactual_surface$intervention_psi2,
+    msm_psi1 = counterfactual_surface$msm_psi1,
+    msm_psi2 = counterfactual_surface$msm_psi2,
+    exact_target = exact_target,
+    row.names = NULL,
+    check.names = FALSE
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_msm_surface_target <- function(msm_fit,
+                                           intervention_grid,
+                                           msm_grid) {
+  msm_target <- as.numeric(
     predict(msm_fit, newdata = msm_grid[, c("psi1", "psi2"), drop = FALSE], type = "response")
   )
   data.frame(
@@ -127,6 +148,27 @@ qgcompmulti_msm_surface <- function(msm_fit,
     intervention_psi2 = intervention_grid$psi2,
     msm_psi1 = msm_grid$psi1,
     msm_psi2 = msm_grid$psi2,
+    msm_target = msm_target,
+    row.names = NULL,
+    check.names = FALSE
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_msm_surface <- function(msm_surface_target,
+                                    msm_fitting_scale) {
+  msm_mean <- qgcompmulti_transform_msm_surface(
+    values = msm_surface_target$msm_target,
+    msm_fitting_scale = msm_fitting_scale,
+    direction = "to_response"
+  )
+
+  data.frame(
+    grid_id = msm_surface_target$grid_id,
+    intervention_psi1 = msm_surface_target$intervention_psi1,
+    intervention_psi2 = msm_surface_target$intervention_psi2,
+    msm_psi1 = msm_surface_target$msm_psi1,
+    msm_psi2 = msm_surface_target$msm_psi2,
     msm_mean = msm_mean,
     row.names = NULL,
     check.names = FALSE
@@ -148,6 +190,27 @@ qgcompmulti_surface_comparison <- function(counterfactual_surface,
     exact_mean = counterfactual_surface$exact_mean,
     msm_mean = msm_surface$msm_mean,
     residual = counterfactual_surface$exact_mean - msm_surface$msm_mean,
+    row.names = NULL,
+    check.names = FALSE
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_surface_comparison_target <- function(counterfactual_surface_target,
+                                                  msm_surface_target) {
+  if (!identical(counterfactual_surface_target$grid_id, msm_surface_target$grid_id)) {
+    stop("Fit-time target surfaces must align on `grid_id`.", call. = FALSE)
+  }
+
+  data.frame(
+    grid_id = counterfactual_surface_target$grid_id,
+    intervention_psi1 = counterfactual_surface_target$intervention_psi1,
+    intervention_psi2 = counterfactual_surface_target$intervention_psi2,
+    msm_psi1 = counterfactual_surface_target$msm_psi1,
+    msm_psi2 = counterfactual_surface_target$msm_psi2,
+    exact_target = counterfactual_surface_target$exact_target,
+    msm_target = msm_surface_target$msm_target,
+    residual_target = counterfactual_surface_target$exact_target - msm_surface_target$msm_target,
     row.names = NULL,
     check.names = FALSE
   )

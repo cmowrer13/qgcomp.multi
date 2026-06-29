@@ -82,6 +82,42 @@ test_that("parallel ordinary fits are reproducible within a fixed mode", {
   expect_equal(fit1$bootstrap$coef_draws, fit2$bootstrap$coef_draws)
 })
 
+test_that("parallel ratio-scale ordinary fits match serial fits", {
+  dat <- make_poisson_test_data(seed = 222)
+  serial_fit <- qgcomp.glm.multi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    family = poisson(link = "log"),
+    q = 4,
+    B = 6,
+    MCsize = 40,
+    seed = 404,
+    parallel = FALSE
+  )
+  parallel_fit <- qgcomp.glm.multi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = dat,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    family = poisson(link = "log"),
+    q = 4,
+    B = 6,
+    MCsize = 40,
+    seed = 404,
+    parallel = TRUE,
+    workers = 2
+  )
+  expect_equal(serial_fit$results$coefficients, parallel_fit$results$coefficients)
+  expect_equal(serial_fit$results$vcov, parallel_fit$results$vcov)
+  expect_equal(serial_fit$bootstrap$coef_draws, parallel_fit$bootstrap$coef_draws)
+  expect_equal(
+    serial_fit$prediction$surface_comparison_target,
+    parallel_fit$prediction$surface_comparison_target
+  )
+})
+
 test_that("parallel ordinary fits cover no-interaction and q = NULL branches", {
   dat <- make_test_data(seed = 321)
 

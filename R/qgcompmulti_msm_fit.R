@@ -40,6 +40,9 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' interaction.
 #' @param family A GLM family object (e.g., `gaussian()`, `binomial()`,
 #' `poisson()`) specifying the outcome model.
+#' @param estimand_scale Optional character string naming the fitted MSM
+#' estimand scale. Supported values depend on `family` and its link. If `NULL`,
+#' the Version `0.5.0` defaults are used.
 #' @param q Integer greater than or equal to 2 giving the number of quantiles
 #' used to discretize the exposure variables, or `NULL` to skip quantization and
 #' fit the outcome model on the original exposure scale. When `q = NULL`, the
@@ -80,6 +83,12 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #'   fit-time grid.}
 #'   \item{`surface_comparison`}{A direct exact-versus-MSM comparison object on
 #'   the common fit-time grid.}
+#'   \item{`counterfactual_surface_target`}{The transformed fit-time MSM target
+#'   surface used in the MSM fit.}
+#'   \item{`msm_surface_target`}{The fitted MSM target-scale surface evaluated
+#'   on the common fit-time grid.}
+#'   \item{`surface_comparison_target`}{A direct exact-versus-MSM comparison
+#'   object on the target scale.}
 #' }
 #'
 #' @details
@@ -91,9 +100,9 @@ pooled_mix_quantiles <- function(data, vars, probs = c(0.25, 0.50, 0.75)){
 #' subsample if `MCsize < nrow(data)`). These predicted outcomes are stacked
 #' into a pseudo-dataset and used to fit a marginal structural model that
 #' summarizes the dose-response surface. Note that predicted potential
-#' outcomes are computed on the response scale and the marginal
-#' structural model is fit using an identity link, regardless of the outcome
-#' model.
+#' outcomes are computed on the response scale. The marginal structural model
+#' is then fit either on that response-scale surface or on a transformed target
+#' surface implied by `estimand_scale`.
 #'
 #' When `q` is an integer, the intervention grid is `0, 1, ..., q - 1` for each
 #' mixture, corresponding to simultaneous quantile increases in all components
@@ -145,6 +154,7 @@ qgcompmulti_msm_fit <- function(f,
                                 mix2,
                                 interaction = TRUE,
                                 family = gaussian(),
+                                estimand_scale = NULL,
                                 q = 4,
                                 centering = "none",
                                 id = NULL,
@@ -158,6 +168,7 @@ qgcompmulti_msm_fit <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand_scale,
     q = q,
     centering = centering,
     id = id,
@@ -168,6 +179,11 @@ qgcompmulti_msm_fit <- function(f,
   qgcompmulti_with_seed(
     seed,
     {
+      estimand <- qgcompmulti_resolve_estimand_spec(
+        family = family,
+        estimand_scale = estimand_scale,
+        mode = "planned"
+      )
       response <- deparse(f[[2]])
       rhs_terms <- attr(terms(f), "term.labels")
       rhs <- paste(rhs_terms, collapse = " + ")
@@ -212,8 +228,12 @@ qgcompmulti_msm_fit <- function(f,
         intervention_grid = intervention_grid,
         msm_grid = msm_grid
       )
+      counterfactual_surface_target <- qgcompmulti_counterfactual_surface_target(
+        counterfactual_surface = counterfactual_surface,
+        msm_fitting_scale = estimand$msm_fitting_scale
+      )
       msmdat <- data.frame(
-        Ya   = rep(counterfactual_surface$exact_mean, each = n_used),
+        Ya   = rep(counterfactual_surface_target$exact_target, each = n_used),
         psi1 = rep(msm_grid$psi1, each = n_used),
         psi2 = rep(msm_grid$psi2, each = n_used)
       )
@@ -230,14 +250,22 @@ qgcompmulti_msm_fit <- function(f,
         msm_fit = msmfit,
         interaction = interaction
       )
-      msm_surface <- qgcompmulti_msm_surface(
+      msm_surface_target <- qgcompmulti_msm_surface_target(
         msm_fit = msmfit,
         intervention_grid = intervention_grid,
         msm_grid = msm_grid
       )
+      msm_surface <- qgcompmulti_msm_surface(
+        msm_surface_target = msm_surface_target,
+        msm_fitting_scale = estimand$msm_fitting_scale
+      )
       surface_comparison <- qgcompmulti_surface_comparison(
         counterfactual_surface = counterfactual_surface,
         msm_surface = msm_surface
+      )
+      surface_comparison_target <- qgcompmulti_surface_comparison_target(
+        counterfactual_surface_target = counterfactual_surface_target,
+        msm_surface_target = msm_surface_target
       )
       list(
         outcome_fit = outcome_fit,
@@ -248,7 +276,10 @@ qgcompmulti_msm_fit <- function(f,
         msm_grid = msm_grid,
         counterfactual_surface = counterfactual_surface,
         msm_surface = msm_surface,
-        surface_comparison = surface_comparison
+        surface_comparison = surface_comparison,
+        counterfactual_surface_target = counterfactual_surface_target,
+        msm_surface_target = msm_surface_target,
+        surface_comparison_target = surface_comparison_target
       )
     }
   )

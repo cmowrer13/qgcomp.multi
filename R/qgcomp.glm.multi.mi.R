@@ -15,6 +15,10 @@
 #' @param interaction Logical; if `TRUE`, include the mixture interaction in
 #'   each per-imputation fit and in the pooled MSM.
 #' @param family A GLM family object for the per-imputation outcome model.
+#' @param estimand_scale Optional character string naming the fitted MSM
+#'   estimand scale. Supported values depend on `family` and its link and are
+#'   forwarded into each underlying [qgcomp.glm.multi()] fit. If `NULL`, the
+#'   ordinary-fit family default is used within each completed-data fit.
 #' @param q Integer greater than or equal to `2` giving the number of quantiles
 #'   used to discretize the exposure variables, or `NULL` to fit on the original
 #'   exposure scale.
@@ -191,6 +195,7 @@ qgcomp.glm.multi.mi <- function(f,
                                 mix2,
                                 interaction = TRUE,
                                 family = gaussian(),
+                                estimand_scale = NULL,
                                 q = 4,
                                 centering = "none",
                                 B = 200,
@@ -210,6 +215,7 @@ qgcomp.glm.multi.mi <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand_scale,
     q = q,
     centering = centering,
     id = id,
@@ -237,6 +243,7 @@ qgcomp.glm.multi.mi <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand_scale,
     q = q,
     centering = centering,
     id = id,
@@ -255,6 +262,7 @@ qgcomp.glm.multi.mi <- function(f,
     mix2 = mix2,
     interaction = interaction,
     family = family,
+    estimand_scale = estimand_scale,
     q = q,
     centering = centering,
     B = B,
