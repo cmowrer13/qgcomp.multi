@@ -27,6 +27,10 @@ test_that("qgcompmulti_pool_mi_fits returns a qgcompmulti_mi object with expecte
   expect_false(pooled$mi_info$keep_fits)
   expect_equal(pooled$mi_info$seed, 9001L)
   expect_equal(pooled$mi_info$fit_seeds, c(1101L, 1202L, 1303L))
+  expect_identical(pooled$analysis$estimand_scale, "mean_difference")
+  expect_true(pooled$analysis$estimand_scale_defaulted)
+  expect_identical(pooled$analysis$msm_fitting_scale, "identity")
+  expect_identical(pooled$analysis$default_interval_method, "wald")
 })
 
 test_that("Rubin pooling helper returns expected pooled variance components", {

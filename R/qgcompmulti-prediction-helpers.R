@@ -158,13 +158,19 @@ build_qgcompmulti_prediction <- function(intervention_grid = NULL,
                                          msm_grid = NULL,
                                          counterfactual_surface = NULL,
                                          msm_surface = NULL,
-                                         surface_comparison = NULL) {
+                                         surface_comparison = NULL,
+                                         counterfactual_surface_target = NULL,
+                                         msm_surface_target = NULL,
+                                         surface_comparison_target = NULL) {
   list(
     intervention_grid = intervention_grid,
     msm_grid = msm_grid,
     counterfactual_surface = counterfactual_surface,
     msm_surface = msm_surface,
-    surface_comparison = surface_comparison
+    surface_comparison = surface_comparison,
+    counterfactual_surface_target = counterfactual_surface_target,
+    msm_surface_target = msm_surface_target,
+    surface_comparison_target = surface_comparison_target
   )
 }
 #' @keywords internal
@@ -198,6 +204,32 @@ qgcompmulti_validate_prediction <- function(prediction) {
       "exact_mean",
       "msm_mean",
       "residual"
+    ),
+    counterfactual_surface_target = c(
+      "grid_id",
+      "intervention_psi1",
+      "intervention_psi2",
+      "msm_psi1",
+      "msm_psi2",
+      "exact_target"
+    ),
+    msm_surface_target = c(
+      "grid_id",
+      "intervention_psi1",
+      "intervention_psi2",
+      "msm_psi1",
+      "msm_psi2",
+      "msm_target"
+    ),
+    surface_comparison_target = c(
+      "grid_id",
+      "intervention_psi1",
+      "intervention_psi2",
+      "msm_psi1",
+      "msm_psi2",
+      "exact_target",
+      "msm_target",
+      "residual_target"
     )
   )
   for (field in names(field_types)) {
@@ -236,6 +268,22 @@ qgcompmulti_validate_prediction <- function(prediction) {
       !is.null(prediction$counterfactual_surface) &&
       nrow(prediction$surface_comparison) != nrow(prediction$counterfactual_surface)) {
     stop("`prediction$surface_comparison` must align with the stored fit-time surfaces.", call. = FALSE)
+  }
+  if (!is.null(prediction$counterfactual_surface_target) &&
+      !is.null(prediction$msm_surface_target) &&
+      nrow(prediction$counterfactual_surface_target) != nrow(prediction$msm_surface_target)) {
+    stop(
+      "`prediction$counterfactual_surface_target` and `prediction$msm_surface_target` must have the same number of rows.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(prediction$surface_comparison_target) &&
+      !is.null(prediction$counterfactual_surface_target) &&
+      nrow(prediction$surface_comparison_target) != nrow(prediction$counterfactual_surface_target)) {
+    stop(
+      "`prediction$surface_comparison_target` must align with the stored target-scale surfaces.",
+      call. = FALSE
+    )
   }
   invisible(prediction)
 }

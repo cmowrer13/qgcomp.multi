@@ -47,6 +47,10 @@ qgcompmulti_mi_component_fields <- function() {
       "family",
       "family_name",
       "link",
+      "estimand_scale",
+      "estimand_scale_defaulted",
+      "msm_fitting_scale",
+      "default_interval_method",
       "B",
       "id",
       "MCsize"
@@ -149,6 +153,12 @@ validate_qgcompmulti_mi <- function(object) {
       required_fields = component_fields[[component_name]]
     )
   }
+
+  qgcompmulti_validate_analysis(
+    object$analysis,
+    allow_seed = FALSE,
+    interval_context = "mi"
+  )
 
   qgcompmulti_validate_labels(object$labels)
   qgcompmulti_validate_mi_info(object$mi_info)

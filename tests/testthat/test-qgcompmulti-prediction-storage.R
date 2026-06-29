@@ -8,6 +8,9 @@ test_that("quantized fits store intervention and MSM grids on the same scale", {
     fit$prediction$intervention_grid$psi2,
     fit$prediction$msm_grid$psi2
   )
+  expect_null(fit$prediction$counterfactual_surface_target)
+  expect_null(fit$prediction$msm_surface_target)
+  expect_null(fit$prediction$surface_comparison_target)
 })
 test_that("original-scale centered fits retain both intervention and MSM grids", {
   fit <- fit_test_model(interaction = TRUE, q = NULL, centering = "median")

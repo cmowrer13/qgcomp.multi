@@ -69,6 +69,12 @@ validate_qgcompmulti <- function(object) {
     )
   }
 
+  qgcompmulti_validate_analysis(
+    object$analysis,
+    allow_seed = TRUE,
+    interval_context = "single_fit"
+  )
+
   qgcompmulti_validate_labels(object$labels)
   qgcompmulti_validate_results(object$results, object$labels)
   qgcompmulti_validate_prediction(object$prediction)

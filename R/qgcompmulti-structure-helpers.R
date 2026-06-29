@@ -41,6 +41,10 @@ qgcompmulti_component_fields <- function() {
       "family",
       "family_name",
       "link",
+      "estimand_scale",
+      "estimand_scale_defaulted",
+      "msm_fitting_scale",
+      "default_interval_method",
       "B",
       "id",
       "MCsize",
@@ -55,7 +59,10 @@ qgcompmulti_component_fields <- function() {
       "msm_grid",
       "counterfactual_surface",
       "msm_surface",
-      "surface_comparison"
+      "surface_comparison",
+      "counterfactual_surface_target",
+      "msm_surface_target",
+      "surface_comparison_target"
     ),
     bootstrap = c(
       "coef_draws",
@@ -412,11 +419,20 @@ build_qgcompmulti_mixtures <- function(mix1, mix2, q, centering) {
 #' @keywords internal
 #' @noRd
 build_qgcompmulti_analysis <- function(interaction, family, B, id, MCsize, seed) {
+  estimand <- qgcompmulti_resolve_estimand_spec(
+    family = family,
+    mode = "current"
+  )
+
   list(
     interaction = interaction,
     family = family,
     family_name = family$family,
     link = family$link,
+    estimand_scale = estimand$estimand_scale,
+    estimand_scale_defaulted = estimand$estimand_scale_defaulted,
+    msm_fitting_scale = estimand$msm_fitting_scale,
+    default_interval_method = "wald",
     B = B,
     id = id,
     MCsize = MCsize,
@@ -563,6 +579,96 @@ qgcompmulti_validate_labels <- function(labels) {
   }
   invisible(labels)
 }
+
+qgcompmulti_validate_analysis <- function(analysis,
+                                          allow_seed = TRUE,
+                                          interval_context = c("single_fit", "mi")) {
+  interval_context <- match.arg(interval_context)
+
+  if (!is.logical(analysis$interaction) ||
+      length(analysis$interaction) != 1L ||
+      is.na(analysis$interaction)) {
+    stop("`analysis$interaction` must be either `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
+  if (!inherits(analysis$family, "family")) {
+    stop("`analysis$family` must be a GLM family object.", call. = FALSE)
+  }
+
+  if (!is.character(analysis$family_name) ||
+      length(analysis$family_name) != 1L ||
+      is.na(analysis$family_name)) {
+    stop("`analysis$family_name` must be a single character string.", call. = FALSE)
+  }
+
+  if (!is.character(analysis$link) ||
+      length(analysis$link) != 1L ||
+      is.na(analysis$link)) {
+    stop("`analysis$link` must be a single character string.", call. = FALSE)
+  }
+
+  if (!identical(analysis$family_name, analysis$family$family)) {
+    stop("`analysis$family_name` must agree with `analysis$family$family`.", call. = FALSE)
+  }
+
+  if (!identical(analysis$link, analysis$family$link)) {
+    stop("`analysis$link` must agree with `analysis$family$link`.", call. = FALSE)
+  }
+
+  qgcompmulti_validate_estimand_scale(
+    family_name = analysis$family_name,
+    link = analysis$link,
+    estimand_scale = analysis$estimand_scale
+  )
+
+  if (!is.logical(analysis$estimand_scale_defaulted) ||
+      length(analysis$estimand_scale_defaulted) != 1L ||
+      is.na(analysis$estimand_scale_defaulted)) {
+    stop(
+      "`analysis$estimand_scale_defaulted` must be either `TRUE` or `FALSE`.",
+      call. = FALSE
+    )
+  }
+
+  expected_fitting_scale <- qgcompmulti_msm_fitting_scale(analysis$estimand_scale)
+  if (!identical(analysis$msm_fitting_scale, expected_fitting_scale)) {
+    stop(
+      sprintf(
+        "`analysis$msm_fitting_scale` must be \"%s\" for `estimand_scale = \"%s\"`.",
+        expected_fitting_scale,
+        analysis$estimand_scale
+      ),
+      call. = FALSE
+    )
+  }
+
+  qgcompmulti_validate_interval_method(
+    method = analysis$default_interval_method,
+    context = interval_context
+  )
+
+  if (!is_scalar_whole_number(analysis$B) || analysis$B < 2L) {
+    stop("`analysis$B` must be a single integer greater than or equal to 2.", call. = FALSE)
+  }
+
+  if (!is.null(analysis$id) &&
+      (!is.character(analysis$id) || length(analysis$id) != 1L || is.na(analysis$id))) {
+    stop("`analysis$id` must be `NULL` or a single character string.", call. = FALSE)
+  }
+
+  if (!is_scalar_whole_number(analysis$MCsize) || analysis$MCsize < 1L) {
+    stop("`analysis$MCsize` must be a single integer greater than or equal to 1.", call. = FALSE)
+  }
+
+  if (isTRUE(allow_seed) &&
+      !is.null(analysis$seed) &&
+      !is_scalar_whole_number(analysis$seed)) {
+    stop("`analysis$seed` must be `NULL` or a single integer.", call. = FALSE)
+  }
+
+  invisible(analysis)
+}
+
 #' @keywords internal
 #' @noRd
 qgcompmulti_validate_fits <- function(fits) {

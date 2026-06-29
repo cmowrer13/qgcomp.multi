@@ -32,6 +32,10 @@ EXPECTED_COMPONENT_FIELDS <- list(
     "family",
     "family_name",
     "link",
+    "estimand_scale",
+    "estimand_scale_defaulted",
+    "msm_fitting_scale",
+    "default_interval_method",
     "B",
     "id",
     "MCsize",
@@ -46,7 +50,10 @@ EXPECTED_COMPONENT_FIELDS <- list(
     "msm_grid",
     "counterfactual_surface",
     "msm_surface",
-    "surface_comparison"
+    "surface_comparison",
+    "counterfactual_surface_target",
+    "msm_surface_target",
+    "surface_comparison_target"
   ),
   bootstrap = c(
     "coef_draws",
@@ -108,6 +115,10 @@ EXPECTED_MI_COMPONENT_FIELDS <- list(
     "family",
     "family_name",
     "link",
+    "estimand_scale",
+    "estimand_scale_defaulted",
+    "msm_fitting_scale",
+    "default_interval_method",
     "B",
     "id",
     "MCsize"
@@ -177,6 +188,32 @@ EXPECTED_SURFACE_COMPARISON_COLUMNS <- c(
   "exact_mean",
   "msm_mean",
   "residual"
+)
+EXPECTED_COUNTERFACTUAL_TARGET_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "exact_target"
+)
+EXPECTED_MSM_TARGET_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "msm_target"
+)
+EXPECTED_SURFACE_COMPARISON_TARGET_COLUMNS <- c(
+  "grid_id",
+  "intervention_psi1",
+  "intervention_psi2",
+  "msm_psi1",
+  "msm_psi2",
+  "exact_target",
+  "msm_target",
+  "residual_target"
 )
 EXPECTED_INTERNAL_PREDICTION_FIELDS <- c(
   "prediction_type",

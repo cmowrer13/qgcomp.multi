@@ -25,6 +25,9 @@ test_that("fitted object stores expected result, fit, and label components", {
   expect_true(is.data.frame(fit$prediction$counterfactual_surface))
   expect_true(is.data.frame(fit$prediction$msm_surface))
   expect_true(is.data.frame(fit$prediction$surface_comparison))
+  expect_null(fit$prediction$counterfactual_surface_target)
+  expect_null(fit$prediction$msm_surface_target)
+  expect_null(fit$prediction$surface_comparison_target)
   expect_true(is.matrix(fit$bootstrap$coef_draws))
   expect_equal(fit$bootstrap$B_requested, 10)
   expect_equal(fit$bootstrap$B_success, 10)
@@ -34,6 +37,10 @@ test_that("fitted object stores expected result, fit, and label components", {
   expect_true(is.character(fit$labels$coefficient_labels))
   expect_true(is.character(fit$labels$mixture_labels))
   expect_identical(names(fit$labels$mixture_labels), c("mix1", "mix2"))
+  expect_identical(fit$analysis$estimand_scale, "mean_difference")
+  expect_true(fit$analysis$estimand_scale_defaulted)
+  expect_identical(fit$analysis$msm_fitting_scale, "identity")
+  expect_identical(fit$analysis$default_interval_method, "wald")
 })
 
 test_that("stored fit-time grids and surfaces align on a common grid", {

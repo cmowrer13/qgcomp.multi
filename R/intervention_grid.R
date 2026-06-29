@@ -29,19 +29,10 @@ qgcompmulti_validate_prediction_type <- function(prediction_type) {
 #' @keywords internal
 #' @noRd
 qgcompmulti_validate_interval_type <- function(interval_type) {
-  if (is.null(interval_type)) {
-    return(invisible(NULL))
-  }
-  if (!is.character(interval_type) ||
-      length(interval_type) != 1L ||
-      is.na(interval_type) ||
-      !interval_type %in% "bootstrap_percentile") {
-    stop(
-      "`interval_type` must be `NULL` or \"bootstrap_percentile\".",
-      call. = FALSE
-    )
-  }
-  invisible(interval_type)
+  qgcompmulti_validate_prediction_interval_type(
+    interval_type = interval_type,
+    allow_null = TRUE
+  )
 }
 #' @keywords internal
 #' @noRd
