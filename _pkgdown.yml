@@ -64,6 +64,7 @@ articles:
     navbar: ~
     contents:
       - qgcompmulti-workflow
+      - qgcompmulti-effect-scales
       - qgcompmulti-mi-parallel
       - qgcompmulti-clustered-data
       - qgcompmulti-diagnostics-sensitivity
@@ -101,6 +102,8 @@ reference:
       - print.qgcompmulti
       - print.qgcompmulti_mi
       - confint.qgcompmulti
+      - confregion.qgcompmulti
+      - plot.qgcompmulti_region
       - tidy.qgcompmulti
       - tidy.qgcompmulti_mi
       - glance.qgcompmulti

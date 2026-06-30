@@ -4,7 +4,7 @@
 \alias{confregion}
 \alias{confregion.qgcompmulti}
 \alias{confregion.qgcompmulti_mi}
-\title{Confidence regions for qgcomp.multi MSM coefficients}
+\title{Confidence regions for qgcompmulti coefficients}
 \usage{
 confregion(object, ...)
 
@@ -39,7 +39,10 @@ covariance matrix of the selected MSM coefficients.}
 Ignored for regions with more than two selected coefficients.}
 }
 \value{
-A method-specific confidence-region object.
+A structured \code{qgcompmulti_region} object containing the selected
+coefficient names, fitting-scale center, restricted bootstrap covariance
+matrix, confidence level, chi-squared cutoff, degrees of freedom, scale
+metadata, and two-dimensional plot data when applicable.
 }
 \description{
 Builds a bootstrap-covariance chi-squared confidence region for selected
@@ -57,8 +60,8 @@ The region is defined as
 
 \deqn{(\theta - \hat\theta)' \hat\Sigma^{-1} (\theta - \hat\theta) \leq \chi^2_{p, level},}
 
-where \code{p} is the number of selected coefficients and \verb{\\hat\\Sigma} is the
-bootstrap covariance matrix restricted to those coefficients.
+where \code{p} is the number of selected coefficients and the covariance matrix is
+the bootstrap covariance matrix restricted to those coefficients.
 
 Pooled multiple-imputation confidence regions are intentionally out of
 scope for Version \verb{0.5.0}.

@@ -49,6 +49,26 @@ test_that("confregion() validates region inputs clearly", {
   expect_error(confregion(fit, method = "wald"), "method")
   expect_error(confregion(fit, npoints = 3), "npoints")
 })
+test_that("region helpers require at least two named coefficients", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  expect_identical(
+    qgcompmulti_resolve_region_parm(c("psi1", "psi2"), names(coef(fit))),
+    c("psi1", "psi2")
+  )
+  expect_error(
+    qgcompmulti_resolve_region_parm("psi1", names(coef(fit))),
+    "at least two"
+  )
+  covariance <- diag(c(0.04, 0.03), nrow = 2L)
+  rownames(covariance) <- c("psi1", "psi2")
+  colnames(covariance) <- c("psi1", "psi2")
+  region <- new_qgcompmulti_region(
+    parm = c("psi1", "psi2"),
+    center = c(psi1 = 0.2, psi2 = 0.1),
+    covariance = covariance
+  )
+  expect_s3_class(region, "qgcompmulti_region")
+})
 test_that("confidence-region objects print scientific scale metadata", {
   fit <- fit_test_model(
     interaction = TRUE,

@@ -49,6 +49,30 @@ test_that("confidence interval validation catches bad inputs", {
   expect_error(confint(fit, level = NA_real_))
 })
 
+test_that("interval helpers expose the final method contract", {
+  expect_identical(
+    qgcompmulti_interval_methods("single_fit"),
+    c("wald", "percentile", "basic")
+  )
+  expect_identical(qgcompmulti_interval_methods("mi"), "wald")
+  expect_identical(
+    qgcompmulti_prediction_interval_type_for_method("percentile"),
+    "bootstrap_percentile"
+  )
+  expect_identical(
+    qgcompmulti_prediction_interval_type_for_method("basic"),
+    "bootstrap_basic"
+  )
+  expect_error(
+    qgcompmulti_validate_interval_method("percentile", context = "mi"),
+    "must be one of"
+  )
+  expect_error(
+    qgcompmulti_validate_prediction_interval_type("not_a_type"),
+    "must be `NULL` or one of"
+  )
+})
+
 test_that("confidence intervals display ratio estimands on the estimand scale", {
   fit <- fit_test_model(
     interaction = TRUE,

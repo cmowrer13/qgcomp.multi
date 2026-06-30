@@ -37,13 +37,16 @@ transformed to the user-facing ratio scale.
 }
 \details{
 Wald confidence intervals are based on the MSM coefficient estimates and the
-stored covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}. Percentile and
-basic bootstrap intervals are based on the stored bootstrap coefficient
-draws. All interval calculations are carried out on the MSM fitting scale.
-When the active estimand is \code{"odds_ratio"} or \code{"rate_ratio"}, the returned
-limits are exponentiated for display. The rows of the returned matrix align
-with \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, but the numeric scale may differ for ratio
-estimands.
+stored bootstrap covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}.
+Percentile intervals use empirical quantiles of the stored bootstrap
+coefficient draws. Basic intervals use the reverse-percentile construction,
+reflecting the bootstrap quantiles around the full-sample estimate.
+
+All interval calculations are carried out on the MSM fitting scale. When the
+active estimand is \code{"odds_ratio"} or \code{"rate_ratio"}, the returned limits are
+exponentiated for display. The rows of the returned matrix align with
+\code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, but the numeric scale may differ for ratio estimands.
+Pooled multiple-imputation objects intentionally remain Wald-only.
 }
 \seealso{
 \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}},

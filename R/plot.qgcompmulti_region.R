@@ -1,4 +1,4 @@
-#' Plot a qgcomp.multi confidence region
+#' Plot a qgcompmulti confidence region
 #'
 #' Draws the two-parameter confidence-region ellipsoid produced by
 #' [confregion()].

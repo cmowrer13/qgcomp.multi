@@ -109,8 +109,16 @@ User-specified MSM grids are restricted to the stored fit-time support. The
 function allows interpolation within that support, but it does not allow
 arbitrary extrapolation beyond the intervention range used to fit the model.
 
-Public interval support is limited to MSM-based predictions. Exact public
-prediction targets do not currently return intervals.
+Public interval support is limited to MSM-based predictions and direct MSM
+contrasts. Those intervals can use \code{method = "percentile"} or
+\code{method = "basic"}. Exact public prediction targets do not currently return
+intervals because they would require a separate uncertainty calculation over
+a user-supplied covariate distribution.
+
+Prediction surfaces and plots are response-scale summaries even when the
+fitted coefficient estimand is an odds ratio or rate ratio. To compare two
+regimes on the fitted ratio scale, use \code{type = "msm_contrast"} with
+\code{contrast_scale = "estimand"}.
 }
 \examples{
 \dontrun{

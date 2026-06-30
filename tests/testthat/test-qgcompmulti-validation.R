@@ -155,7 +155,53 @@ test_that("validation rejects invalid cluster ID inputs", {
     )
   )
 })
-
+test_that("estimand helpers distinguish final defaults from legacy stored defaults", {
+  planned_binomial <- qgcompmulti_resolve_estimand_spec(
+    family = binomial(link = "logit"),
+    mode = "planned"
+  )
+  current_binomial <- qgcompmulti_resolve_estimand_spec(
+    family = binomial(link = "logit"),
+    mode = "current"
+  )
+  planned_poisson <- qgcompmulti_resolve_estimand_spec(
+    family = poisson(link = "log"),
+    mode = "planned"
+  )
+  expect_identical(planned_binomial$estimand_scale, "odds_ratio")
+  expect_identical(planned_binomial$msm_fitting_scale, "logit")
+  expect_true(planned_binomial$estimand_scale_defaulted)
+  expect_identical(current_binomial$estimand_scale, "risk_difference")
+  expect_identical(current_binomial$msm_fitting_scale, "identity")
+  expect_identical(planned_poisson$estimand_scale, "rate_ratio")
+  expect_identical(planned_poisson$msm_fitting_scale, "log")
+})
+test_that("estimand helper validation enforces family and link compatibility", {
+  expect_error(
+    qgcompmulti_validate_estimand_scale(
+      family_name = "gaussian",
+      link = "identity",
+      estimand_scale = "odds_ratio"
+    ),
+    "not supported"
+  )
+  expect_error(
+    qgcompmulti_validate_estimand_scale(
+      family_name = "binomial",
+      link = "probit",
+      estimand_scale = "odds_ratio"
+    ),
+    "not supported"
+  )
+  expect_error(
+    qgcompmulti_validate_estimand_scale(
+      family_name = "poisson",
+      link = "sqrt",
+      estimand_scale = "rate_ratio"
+    ),
+    "not supported"
+  )
+})
 test_that("validation enforces supported estimand scales and interval methods", {
   dat <- make_test_data()
   expect_error(

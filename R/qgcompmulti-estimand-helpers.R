@@ -267,8 +267,8 @@ qgcompmulti_transform_msm_surface <- function(values,
     paste(msm_fitting_scale, direction, sep = "::"),
     "identity::to_fitting" = identity,
     "identity::to_response" = identity,
-    "logit::to_fitting" = qlogis,
-    "logit::to_response" = plogis,
+    "logit::to_fitting" = stats::qlogis,
+    "logit::to_response" = stats::plogis,
     "log::to_fitting" = log,
     "log::to_response" = exp
   )

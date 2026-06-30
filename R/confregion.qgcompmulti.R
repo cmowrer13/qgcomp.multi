@@ -1,4 +1,4 @@
-#' Confidence regions for qgcomp.multi MSM coefficients
+#' Confidence regions for qgcompmulti coefficients
 #'
 #' Builds a bootstrap-covariance chi-squared confidence region for selected
 #' marginal structural model (MSM) coefficients from a fitted
@@ -7,7 +7,10 @@
 #' @param object A fitted object.
 #' @param ... Additional arguments passed to methods.
 #'
-#' @return A method-specific confidence-region object.
+#' @return A structured `qgcompmulti_region` object containing the selected
+#' coefficient names, fitting-scale center, restricted bootstrap covariance
+#' matrix, confidence level, chi-squared cutoff, degrees of freedom, scale
+#' metadata, and two-dimensional plot data when applicable.
 #' @export
 confregion <- function(object, ...) {
   UseMethod("confregion")
@@ -35,8 +38,8 @@ confregion <- function(object, ...) {
 #'
 #' \deqn{(\theta - \hat\theta)' \hat\Sigma^{-1} (\theta - \hat\theta) \leq \chi^2_{p, level},}
 #'
-#' where `p` is the number of selected coefficients and `\hat\Sigma` is the
-#' bootstrap covariance matrix restricted to those coefficients.
+#' where `p` is the number of selected coefficients and the covariance matrix is
+#' the bootstrap covariance matrix restricted to those coefficients.
 #'
 #' Pooled multiple-imputation confidence regions are intentionally out of
 #' scope for Version `0.5.0`.

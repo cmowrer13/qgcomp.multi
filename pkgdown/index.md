@@ -18,11 +18,16 @@ surface.
 - optional interaction between the two mixture intervention variables
 - quantized analyses with `q >= 2`
 - original-scale analyses with `q = NULL`
-- MSM-based prediction, plotting, diagnostics, and adequacy checks
+- additive and ratio-scale MSM summaries through `estimand_scale`
+- Wald, percentile, and basic bootstrap intervals for single-fit coefficient
+  summaries
+- MSM-based prediction, plotting, diagnostics, adequacy checks, and confidence
+  regions
 - sensitivity helpers for Monte Carlo size, bootstrap size, and quantization
 - native multiple-imputation pooling through `qgcomp.glm.multi.mi()`
 - optional bootstrap-level parallel execution
-- broom-style `tidy()` and `glance()` methods for single-fit and pooled MI objects
+- broom-style `tidy()` and `glance()` methods for single-fit and pooled MI
+  objects
 
 ## Installation
 
@@ -58,7 +63,8 @@ confint(fit)
 
 In this setting, the MSM coefficients summarize the expected outcome change
 associated with simultaneous one-quantile shifts in the component exposures of
-each mixture.
+each mixture. For binary and count outcomes, check the reported estimand scale
+before interpreting the coefficient table.
 
 ## Original-scale fitting with `q = NULL`
 
@@ -107,19 +113,23 @@ The package also includes tools for:
 
 - MSM prediction and direct contrasts with `predict()`
 - surface visualization with `plot()`
+- coefficient confidence regions with `confregion()`
 - intervention support, bootstrap, and adequacy diagnostics
 - sensitivity analysis with `mcsize_sensitivity()`, `b_sensitivity()`, and
   `q_sensitivity()`
 - native multiply imputed analysis with `qgcomp.glm.multi.mi()`
 - optional bootstrap-level parallelism for larger workflows
 
-Those features are documented in more detail in the workflow article, function
-reference, and the fuller README on GitHub.
+Those features are documented in more detail in the workflow article, the
+effect-scales article, the function reference, and the fuller README on GitHub.
 
 ## Where to go next
 
 - Read the [workflow article](articles/qgcompmulti-workflow.html) for a fuller
   end-to-end example
+- Read the [effect scales, intervals, and prediction scales
+  article](articles/qgcompmulti-effect-scales.html) for the estimand-scale 
+  and interval behavior
 - Browse the [function reference](reference/index.html) for the complete API
 - Review the [news page](news/index.html) for recent release history
 - View the source repository on

@@ -29,7 +29,9 @@ The package currently supports:
   native MI workflows
 - broom-style `tidy()` and `glance()` methods for single-fit and pooled
   MI objects
-- MSM-based prediction, plotting, diagnostics, and sensitivity helpers
+- MSM-based prediction, plotting, diagnostics, confidence regions, and
+  sensitivity helpers
+- estimand-scale choices for additive and ratio-scale MSM summaries
 
 The package works by fitting an outcome regression, computing predicted
 counterfactual means under joint interventions on the two mixtures, and
@@ -88,7 +90,7 @@ use, the recommended workflow is:
 - optionally supply `seed` when you want bootstrap and Monte Carlo draws
   to be reproducible across repeated fits
 
-Version `0.4.0` also adds:
+The public interface also includes:
 
 - `predict()` for MSM-based prediction, direct contrasts, and exact
   prediction targets
@@ -101,6 +103,7 @@ Version `0.4.0` also adds:
 - optional `parallel` and `workers` controls for bootstrap-level
   parallelism
 - `tidy()` and `glance()` methods for single-fit and pooled MI reporting
+- `confregion()` for bootstrap-covariance chi-squared confidence regions
 
 ## Specifying the Outcome Model
 
@@ -149,14 +152,19 @@ the same pooled mixture-specific value on the analysis scale. In that
 setting, the MSM coefficients are defined with respect to that
 original-scale intervention coding.
 
-In both cases, the MSM is fit to predicted counterfactual means on the
-response scale. That means:
+The fitted scale depends on the outcome family and the requested
+`estimand_scale`. Gaussian fits use mean differences. Binomial-logit
+fits now default to odds ratios, with risk differences available by
+setting `estimand_scale = "risk_difference"`. Poisson-log fits now
+default to rate ratios, with additive expected-count summaries available
+through `estimand_scale = "mean_difference"`.
 
-- for continuous outcomes, MSM coefficients are mean differences
-- for binary outcomes fit with `family = binomial()`, they are risk
-  differences
-- for count outcomes fit with `family = poisson()`, they are differences
-  in expected counts
+For odds-ratio and rate-ratio estimands, the stored MSM coefficients and
+standard errors stay on the log fitting scale. Print, summary,
+`confint()`, and `tidy()` add display-scale quantities where those are
+easier to report. MSM predictions and plots remain on the response scale
+unless a direct MSM contrast explicitly requests
+`contrast_scale = "estimand"`.
 
 The coefficients should be read as summaries of the
 intervention-response surface implied by the fitted outcome model. When
@@ -206,6 +214,9 @@ fit
 #> Model:
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 1000
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -234,7 +245,31 @@ confint(fit)
 #> psi1         0.40495108 0.6874613
 #> psi2         0.22619376 0.5469545
 #> psi1:psi2    0.08441578 0.2558171
+confregion(fit, parm = c("psi1", "psi2"))
+#> qgcomp.multi confidence region
+#>   Method: Bootstrap covariance chi-squared ellipsoid
+#>   Level: 95.0%
+#>   Degrees of freedom: 2
+#>   Chi-squared cutoff: 5.9915
+#>   Estimand scale: Mean difference
+#>   Fitting scale: identity
+#>   Parameters: Mixture 1 main effect, Mixture 2 main effect
+#>   Note: Region geometry is computed on the MSM fitting coefficient scale.
+#> 
+#> Center (fitting scale):
+#>      psi1      psi2 
+#> 0.5462062 0.3865741 
+#> 
+#> Bootstrap covariance (fitting scale):
+#>             psi1        psi2
+#> psi1 0.005194121 0.003188937
+#> psi2 0.003188937 0.006695856
 ```
+
+For binary and count outcomes, read the coefficient table together with
+the active estimand scale. The effect-scales vignette gives the details,
+including why ratio coefficients are fit on a log scale while
+predictions stay on the response scale.
 
 For a fuller report that still keeps the MSM as the primary focus, call:
 
@@ -251,6 +286,9 @@ summary(fit)
 #>   Formula: Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 1000
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -343,8 +381,9 @@ are labeled on the intervention-value scale even though prediction
 inputs live on the centered MSM scale. In that setting, `(0, 0)`
 corresponds to the pooled median intervention for both mixtures.
 
-In Version `0.4.0`, interval support is currently limited to MSM-based
-predictions.
+Interval support is limited to MSM-based predictions and direct MSM
+contrasts. Use `method = "percentile"` or `method = "basic"` for those
+bootstrap intervals.
 
 ## Plotting Workflow
 
@@ -355,7 +394,7 @@ intervention grid:
 plot(fit)
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
 
 You can switch to a contour display:
 
@@ -363,7 +402,7 @@ You can switch to a contour display:
 plot(fit, style = "contour")
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
 
 To visualize uncertainty, use the slice-based interval display:
 
@@ -498,15 +537,16 @@ scientifically sensible for the exposures at hand.
 
 ## Native Multiple Imputation Workflow
 
-Version `0.4.0` adds a native multiple-imputation wrapper:
+The native multiple-imputation wrapper fits and pools completed-data
+analyses:
 
 - `qgcomp.glm.multi.mi()` fits one `qgcomp.glm.multi()` model per
   completed imputation
 - it pools the marginal structural model (MSM) coefficients and
   covariance internally using Rubin’s rules
 - the returned `qgcompmulti_mi` object is built for inference
-- pooled prediction and pooled diagnostics are not yet implemented in
-  `0.4.0`
+- pooled prediction, pooled diagnostics, pooled bootstrap interval
+  methods, and pooled confidence regions are not yet implemented
 
 Use this route when you want `qgcomp.multi` to handle the imputation
 normalization, repeated fitting, and Rubin pooling steps itself.
@@ -598,7 +638,7 @@ fit_mi_mids <- qgcomp.glm.multi.mi(
 
 ## Optional Bootstrap-Level Parallelism
 
-Version `0.4.0` also adds one level of optional parallelism. The
+The package also supports one level of optional parallelism. The
 supported pattern is:
 
 - for ordinary fits, parallelize bootstrap replications within
@@ -685,11 +725,14 @@ The standard fitted-model methods include:
 - `summary()` — fuller model summary with MSM results in the foreground
 - `coef()` — MSM coefficients
 - `vcov()` — covariance matrix for the MSM coefficients
-- `confint()` — Wald confidence intervals for the MSM coefficients
+- `confint()` — Wald, percentile, and basic confidence intervals for
+  single-fit MSM coefficients
+- `confregion()` — fitting-scale confidence regions for selected MSM
+  coefficients
 - `formula()` — original fitted formula
 - `nobs()` — number of observations actually used
 
-Version `0.4.0` public interfaces now also include:
+Other public interfaces include:
 
 - `qgcomp.glm.multi.mi()` — native multiple-imputation fitting and
   pooling

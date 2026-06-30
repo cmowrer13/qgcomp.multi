@@ -140,6 +140,24 @@ test_that("MSM predictions are returned on the response scale for transformed fi
   expect_true(all(poisson_surface$estimates$estimate > 0))
   expect_true(all(poisson_surface$intervals$lower > 0))
 })
+test_that("transformed MSM surface helpers reject boundary values for ratio scales", {
+  expect_error(
+    qgcompmulti_transform_msm_surface(
+      values = c(0, 0.25, 0.75),
+      msm_fitting_scale = "logit",
+      direction = "to_fitting"
+    ),
+    "strictly between 0 and 1"
+  )
+  expect_error(
+    qgcompmulti_transform_msm_surface(
+      values = c(0, 0.5, 1.25),
+      msm_fitting_scale = "log",
+      direction = "to_fitting"
+    ),
+    "strictly positive"
+  )
+})
 test_that("MSM contrasts support response-scale differences and estimand-scale ratios", {
   fit <- fit_test_model(
     interaction = TRUE,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.qgcompmulti_region.R
 \name{plot.qgcompmulti_region}
 \alias{plot.qgcompmulti_region}
-\title{Plot a qgcomp.multi confidence region}
+\title{Plot a qgcompmulti confidence region}
 \usage{
 \method{plot}{qgcompmulti_region}(
   x,

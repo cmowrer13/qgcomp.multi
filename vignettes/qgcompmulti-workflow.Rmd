@@ -41,10 +41,11 @@ The fitted object behaves like an S3 model object, and the package now supports
 prediction, plotting, diagnostics, sensitivity checks, multiple-imputation
 workflows, and optional bootstrap-level parallel execution.
 
-This article keeps the focus on the **single-dataset applied workflow**. Two
-short companion articles cover:
-
+This article keeps the focus on the **single-dataset applied workflow**. Short
+companion articles cover:
+- effect scales, interval choices, and response-scale prediction
 - multiple imputation and optional bootstrap-level parallelism
+- clustered data and repeated measures
 - diagnostics, adequacy, and sensitivity checks as a compact post-fit reference
 
 Two distinctions matter throughout:
@@ -243,6 +244,24 @@ model. If that surface is close to linear in the intervention coding, the MSM
 coefficients are easy to read. If the surface is more curved, the same
 coefficients are still defined, but they are doing more approximation work.
 
+# Effect scales in brief
+
+For this continuous-outcome example, the default estimand scale is a mean
+difference. In Version `0.5.0`, binary and count outcomes have different
+defaults when the link supports them: binomial-logit fits default to odds ratios
+and Poisson-log fits default to rate ratios. Additive alternatives are still
+available through `estimand_scale = "risk_difference"` for binary outcomes and
+`estimand_scale = "mean_difference"` for Poisson outcomes.
+
+For ratio estimands, `coef()` returns log-scale MSM coefficients because that is
+the fitting scale used for standard errors, pooling, and regions. The printed
+and tidy summaries add exponentiated display columns for reporting. Predictions
+and surface plots remain on the response scale. For a direct comparison of two
+regimes on the fitted ratio scale, use `predict(..., type = "msm_contrast",
+contrast_scale = "estimand")`.
+
+See the effect-scales article for worked binary and count examples.
+
 # MSM Predictions And Contrasts
 
 The default prediction target is the fitted MSM surface over the stored
@@ -342,8 +361,9 @@ For quantized analyses, interpolation like this is usually not the main goal.
 It becomes more natural when `q = NULL`, because users may want predictions at
 custom intervention values on the original analysis scale.
 
-In Version `0.4.0`, bootstrap percentile-based interval support is attached to 
-MSM-based predictions, but not to arbitrary exact predictions.
+Bootstrap interval support is attached to MSM-based predictions and direct MSM
+contrasts, with `method = "percentile"` and `method = "basic"` available.
+Arbitrary exact predictions do not return intervals.
 
 # Plot The Fitted MSM Surface
 
@@ -688,6 +708,23 @@ for purely mechanical reasons even when the substantive pattern is basically unc
 This helper is best treated as a robustness check, not a way to rank effect
 sizes across different quantization choices.
 
+# Confidence regions in brief
+
+For single-fit objects, `confregion()` builds a bootstrap-covariance
+chi-squared region for selected MSM coefficients. The region geometry is on the
+MSM fitting coefficient scale. That is the identity scale for additive
+estimands and the log coefficient scale for odds-ratio or rate-ratio estimands.
+
+```{r, eval = FALSE}
+region_q <- confregion(fit_q, parm = c("psi1", "psi2"))
+region_q
+plot(region_q)
+```
+
+Plotting is available for two-parameter regions. Higher-dimensional requests
+return structured objects for inspection, but the package does not try to draw a
+three- or four-dimensional region.
+
 # What An Applied User Should Check In A Real Analysis
 
 In a real environmental epidemiology analysis, the analyst should think through the following:
@@ -720,8 +757,7 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 
 # Related Articles
 
-For workflows that go beyond the single-dataset path used here, see:
-
+- [Effect Scales, Intervals, and Prediction Scales](qgcompmulti-effect-scales.html)
 - [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
 - [Clustered Data and Repeated Measures](qgcompmulti-clustered-data.html)
 - [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

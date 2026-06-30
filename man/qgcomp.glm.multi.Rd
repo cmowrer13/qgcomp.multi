@@ -198,22 +198,30 @@ are always computed on the response scale. The MSM is then fit either on that
 response scale or on a transformed marginal mean surface, depending on the
 requested \code{estimand_scale}.
 
-Interpretation therefore depends on the outcome type and the chosen
+Interpretation depends on the outcome type and the chosen
 \code{estimand_scale}:
 \itemize{
-\item For continuous outcomes, parameters represent mean differences.
-\item For binomial outcomes, parameters can represent either risk
-differences or odds ratios.
-\item For Poisson outcomes, parameters can represent either differences in
-expected counts or rate ratios.
+\item Gaussian fits use \code{"mean_difference"}.
+\item Binomial-logit fits default to \code{"odds_ratio"}; users can request
+\code{"risk_difference"} for additive risk summaries.
+\item Poisson-log fits default to \code{"rate_ratio"}; users can request
+\code{"mean_difference"} for additive expected-count summaries.
 }
+
+For ratio estimands, the MSM is fit on the log scale needed for coherent
+coefficient inference. The stored coefficients, standard errors, and
+covariance matrix remain on that fitting scale. Print, summary, confidence
+interval, and tidy methods add display-scale quantities where those are more
+natural for reporting. Prediction and surface plotting remain response-scale
+operations unless a direct MSM contrast explicitly requests
+\code{contrast_scale = "estimand"}.
 
 If \code{progress = TRUE}, the bootstrap loop prints a compact single-line status
 display in serial mode. The failed-replicate counter is shown only after the
 first failed bootstrap iteration, so clean runs do not carry extra visual
-noise. Parallel execution is intentionally limited to one level in
-Version \verb{0.4.0}, so requesting \code{progress = TRUE} together with
-\code{parallel = TRUE} disables the progress display with an explicit warning.
+noise. Parallel execution is intentionally limited to one level, so
+requesting \code{progress = TRUE} together with \code{parallel = TRUE} disables the
+progress display with an explicit warning.
 
 When \code{parallel = TRUE}, the bootstrap replications are dispatched with
 \code{future.apply}. If no non-sequential \code{future} plan is already active and

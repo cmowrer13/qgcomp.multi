@@ -161,5 +161,6 @@ the same.
 # Related Articles
 
 - [Applied Workflow for Two-Mixture Quantile g-Computation](qgcompmulti-workflow.html)
+- [Effect Scales, Intervals, and Prediction Scales](qgcompmulti-effect-scales.html)
 - [Multiple Imputation and Parallel Workflows](qgcompmulti-mi-parallel.html)
 - [Diagnostics and Sensitivity Checks](qgcompmulti-diagnostics-sensitivity.html)

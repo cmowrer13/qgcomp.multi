@@ -52,3 +52,16 @@ test_that("bootstrap metadata remains coherent after fit-time surface retention"
   )
   expect_equal(nrow(fit$bootstrap$coef_draws), fit$bootstrap$B_success)
 })
+
+test_that("stored prediction contract validates retained target-scale surfaces", {
+  fit <- fit_test_model(interaction = TRUE, q = 4)
+  expect_true(is.data.frame(fit$prediction$counterfactual_surface_target))
+  expect_true(is.data.frame(fit$prediction$msm_surface_target))
+  expect_true(is.data.frame(fit$prediction$surface_comparison_target))
+  bad <- fit
+  bad$prediction$counterfactual_surface_target <- data.frame(grid_id = 1L)
+  expect_error(
+    validate_qgcompmulti(bad),
+    "missing required columns"
+  )
+})

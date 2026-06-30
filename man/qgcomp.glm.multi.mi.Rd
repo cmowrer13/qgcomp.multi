@@ -80,7 +80,7 @@ level and disabled with a single warning.}
 
 \item{parallel}{Logical; if \code{TRUE}, allow each per-imputation fit to use the
 established bootstrap-level parallel engine from \code{qgcomp.glm.multi()}. The
-multiple-imputation loop itself remains serial in Version \verb{0.4.0}.}
+multiple-imputation loop itself remains serial.}
 
 \item{workers}{Optional integer worker count passed through to the
 per-imputation \code{qgcomp.glm.multi()} calls when \code{parallel = TRUE}. Leave
@@ -100,7 +100,7 @@ objects.
 Fits one ordinary \code{qgcomp.glm.multi()} model per completed imputation and
 pools the marginal structural model (MSM) coefficient inference internally
 using Rubin's rules. This is the primary native multiple-imputation workflow
-for \code{qgcomp.multi} in Version \verb{0.4.0}.
+for \code{qgcomp.multi}.
 }
 \details{
 This wrapper is an orchestrator over repeated ordinary fits rather than a
@@ -109,14 +109,14 @@ data-frame list, the function validates that the completed datasets are
 structurally compatible, fits one \code{qgcomp.glm.multi()} model per imputation,
 and pools the resulting MSM coefficient vectors and covariance matrices using
 the internal Rubin-pooling helpers defined for the \code{"qgcompmulti_mi"} class.
-In \verb{0.4.0}, this is the recommended route when you want \code{qgcomp.multi} to
+This is the recommended route when you want \code{qgcomp.multi} to
 handle the completed-data normalization, repeated fitting, and Rubin pooling
 step itself. Users who need to stay inside a broader \code{mice} pipeline can
 still fit \code{qgcomp.glm.multi()} through \code{mice::with()} and then rely on the
 package's \code{tidy()}, \code{glance()}, and \code{df.residual()} compatibility work when
 that better matches the analysis pipeline.
 
-Optional parallel execution in \verb{0.4.0} stays at one level only. The wrapper
+Optional parallel execution stays at one level only. The wrapper
 itself still iterates over imputations serially, but each ordinary
 per-imputation fit may dispatch its bootstrap replications through the same
 \code{future.apply} backend already used for single-dataset fits. Reproducibility
@@ -124,17 +124,20 @@ for these workflows is defined within a fixed backend and execution mode: the
 wrapper treats \code{seed} as a master seed, deterministically expands it into
 independent per-imputation fit seeds, and then each ordinary fit expands its
 own fit seed into full-fit and worker-level bootstrap seeds.
-Clustered workflows are also supported in \verb{0.4.0}: when \code{id} is
+Clustered workflows are also supported: when \code{id} is
 supplied, each completed dataset must share identical cluster IDs in the
 same order, and the ordinary per-imputation fits continue to resample
 clusters rather than rows.
 
-Pooled results in \verb{0.4.0} stay focused on MSM inference and a compact
+Pooled results stay focused on MSM inference and a compact
 summary layer. The pooled object does not yet try to replicate the
 full prediction and diagnostics surface of ordinary single-fit
-\code{qgcompmulti} objects. Use the pooled extractors, \code{summary()}, and the
-pooled \code{tidy()}, and \code{glance()} methods for reporting use \code{keep_fits = TRUE}
-only when you explicitly need the stored per-imputation single-fit objects.
+\code{qgcompmulti} objects. Pooled confidence intervals use Wald intervals on the
+fitting scale; pooled bootstrap interval methods and pooled confidence
+regions are out of scope for this release. Use the pooled extractors,
+\code{summary()}, \code{tidy()}, and \code{glance()} for reporting, and use
+\code{keep_fits = TRUE} only when you explicitly need the stored per-imputation
+single-fit objects.
 
 When \code{data} is a \code{mids} object, the optional \code{mice} package must be
 installed. Inputs supplied as a plain list must already be fully completed:
