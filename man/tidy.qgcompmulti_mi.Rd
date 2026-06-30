@@ -4,7 +4,7 @@
 \alias{tidy.qgcompmulti_mi}
 \title{Tidy coefficient summaries for pooled qgcompmulti multiple-imputation fits}
 \usage{
-\method{tidy}{qgcompmulti_mi}(x, conf.int = FALSE, conf.level = 0.95, ...)
+\method{tidy}{qgcompmulti_mi}(x, conf.int = FALSE, conf.level = 0.95, method = NULL, ...)
 }
 \arguments{
 \item{x}{A fitted \code{qgcompmulti_mi} object.}
@@ -14,24 +14,28 @@
 \item{conf.level}{Confidence level for interval columns when
 \code{conf.int = TRUE}.}
 
+\item{method}{Optional interval method. Pooled multiple-imputation
+coefficient reporting supports only \code{"wald"} in Version 0.5.0.}
+
 \item{...}{Not used.}
 }
 \value{
-A data frame with one row per pooled MSM coefficient and columns
-\code{term}, \code{estimate}, \code{std.error}, \code{statistic}, \code{df}, and \code{p.value}. When
-\code{conf.int = TRUE}, the returned data frame also includes \code{conf.low} and
-\code{conf.high}.
+A data frame with one row per pooled MSM coefficient. Columns
+\code{estimate}, \code{std.error}, \code{statistic}, \code{df}, and \code{p.value} are on the
+fitting scale. Columns \code{display.estimate}, \code{display.conf.low}, and
+\code{display.conf.high} are on the active estimand scale when present.
 }
 \description{
 Returns a broom-style coefficient table for the pooled marginal structural
-model (MSM) coefficients stored in a fitted \code{qgcompmulti_mi} object.
+model (MSM) coefficients stored in a fitted \code{qgcompmulti_mi} object. The core
+\code{estimate} and \code{std.error} columns stay on the Rubin-pooled fitting scale,
+while display columns expose the active estimand scale for reporting.
 }
 \details{
-This method stays coefficient-centric. It reports the pooled MSM coefficients
-and Rubin-style inferential quantities that belong naturally in a reporting
-table, while leaving fit-level metadata to \code{\link[broom:reexports]{broom::glance()}} and leaving
-per-imputation fitted-model inspection to the stored \code{"qgcompmulti"} objects
-when \code{keep_fits = TRUE}.
+Pooled multiple-imputation inference is carried out on the fitting scale.
+For odds-ratio and rate-ratio estimands, the display columns transform only
+the final pooled estimates and interval limits. Rubin pooling, standard
+errors, test statistics, and degrees of freedom remain on the fitting scale.
 }
 \seealso{
 \code{\link[broom:reexports]{broom::glance()}}, \code{\link[=coef.qgcompmulti_mi]{coef.qgcompmulti_mi()}}, \code{\link[=vcov.qgcompmulti_mi]{vcov.qgcompmulti_mi()}},

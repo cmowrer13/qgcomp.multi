@@ -1,34 +1,50 @@
 #' Tidy coefficient summaries for qgcompmulti fits
 #'
 #' Returns a broom-style coefficient table for the marginal structural model
-#' (MSM) coefficients stored in a fitted `qgcompmulti` object. The output is
-#' coefficient-centric and uses the internal machine-readable MSM term names.
+#' (MSM) coefficients stored in a fitted `qgcompmulti` object. The core
+#' `estimate` and `std.error` columns stay on the MSM fitting scale so
+#' downstream tools such as `mice::pool()` can use them coherently. Display
+#' columns expose the active estimand scale for ordinary reporting.
 #'
 #' @param x A fitted `qgcompmulti` object.
 #' @param conf.int Logical; if `TRUE`, add Wald confidence interval columns.
 #' @param conf.level Confidence level for interval columns when `conf.int = TRUE`.
+#' @param method Optional interval method for confidence intervals. `NULL` uses
+#'   the fitted object's stored default interval method. Version 0.5.0 currently
+#'   implements `"wald"` for coefficient reporting.
 #' @param ... Not used.
 #'
-#' @return A data frame with one row per MSM coefficient and columns `term`,
-#'   `estimate`, `std.error`, `statistic`, and `p.value`. When
-#'   `conf.int = TRUE`, the returned data frame also includes `conf.low` and
-#'   `conf.high`.
+#' @return A data frame with one row per MSM coefficient. Columns `estimate`,
+#'   `std.error`, `statistic`, and `p.value` are on the fitting scale. Columns
+#'   `display.estimate`, `display.conf.low`, and `display.conf.high` are on the
+#'   active estimand scale when present.
 #'
 #' @details
-#' This method is intentionally coefficient-centric. It does not add fit-level
-#' metadata columns or presentation-oriented labels because those belong in
-#' [broom::glance()] or the existing print and summary methods.
+#' Keeping `estimate` and `std.error` on the fitting scale preserves machine
+#' pooling behavior for multiple-imputation workflows that call
+#' [mice::pool()]. For odds-ratio and rate-ratio estimands, use
+#' `display.estimate` and the display confidence interval columns for
+#' user-facing ratio summaries.
 #'
 #' @seealso [broom::glance()], [coef.qgcompmulti()], [vcov.qgcompmulti()],
 #'   [confint.qgcompmulti()], [summary.qgcompmulti()], [qgcomp.glm.multi()]
 #' @exportS3Method broom::tidy
-tidy.qgcompmulti <- function(x, conf.int = FALSE, conf.level = 0.95, ...) {
+tidy.qgcompmulti <- function(x, conf.int = FALSE, conf.level = 0.95, method = NULL, ...) {
   validate_qgcompmulti(x)
   if (!is.logical(conf.int) || length(conf.int) != 1L || is.na(conf.int)) {
     stop("`conf.int` must be either `TRUE` or `FALSE`.", call. = FALSE)
   }
   if (isTRUE(conf.int)) {
     qgcompmulti_validate_conf_level(conf.level)
+    method <- qgcompmulti_resolve_interval_method(
+      method = method,
+      default_method = x$analysis$default_interval_method,
+      context = "single_fit"
+    )
+    qgcompmulti_require_wald_interval_method(
+      method = method,
+      object_label = "qgcompmulti tidy coefficient"
+    )
   }
   coefficients <- coef(x)
   vc <- vcov(x)
@@ -36,19 +52,38 @@ tidy.qgcompmulti <- function(x, conf.int = FALSE, conf.level = 0.95, ...) {
   std_error <- setNames(as.numeric(std_error), names(coefficients))
   statistic <- coefficients / std_error
   p_value <- 2 * stats::pnorm(abs(statistic), lower.tail = FALSE)
+  display_estimate <- qgcompmulti_transform_msm_coefficients(
+    coefficients,
+    estimand_scale = x$analysis$estimand_scale,
+    direction = "to_display"
+  )
+
   out <- data.frame(
     term = names(coefficients),
     estimate = unname(coefficients),
+    display.estimate = unname(display_estimate),
     std.error = unname(std_error),
     statistic = unname(statistic),
     p.value = unname(p_value),
+    estimand_scale = x$analysis$estimand_scale,
+    msm_fitting_scale = x$analysis$msm_fitting_scale,
+    estimate_scale = "fitting",
+    display_scale = x$analysis$estimand_scale,
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
+
   if (isTRUE(conf.int)) {
-    ci <- stats::confint(x, level = conf.level)
-    out$conf.low <- unname(ci[, 1])
-    out$conf.high <- unname(ci[, 2])
+    fit_ci <- build_qgcompmulti_confint(
+      coefficients = coefficients,
+      std_error = std_error,
+      level = conf.level
+    )
+    display_ci <- stats::confint(x, level = conf.level, method = method)
+    out$conf.low <- unname(fit_ci[, 1])
+    out$conf.high <- unname(fit_ci[, 2])
+    out$display.conf.low <- unname(display_ci[, 1])
+    out$display.conf.high <- unname(display_ci[, 2])
   }
   out
 }

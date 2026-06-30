@@ -52,6 +52,18 @@ print.summary.qgcompmulti_mi <- function(x, ...) {
   cat("  Formula: ", qgcompmulti_deparse_one_line(x$formula), "\n", sep = "")
   cat("  Outcome: ", fit_overview$outcome, "\n", sep = "")
   cat("  Family: ", fit_overview$family, "\n", sep = "")
+  cat(
+    "  Estimand: ",
+    fit_overview$estimand,
+    if (isTRUE(fit_overview$estimand_scale_defaulted)) " (default)" else "",
+    "
+",
+sep = ""
+  )
+  cat("  MSM fitting scale: ", fit_overview$msm_fitting_scale, "
+", sep = "")
+  cat("  Interval method: wald (pooled multiple imputation)
+", sep = "")
   cat("  Observations used: ", fit_overview$n_used, "\n", sep = "")
   if (!is.null(fit_overview$n_input) && fit_overview$n_input != fit_overview$n_used) {
     cat("  Input observations: ", fit_overview$n_input, "\n", sep = "")

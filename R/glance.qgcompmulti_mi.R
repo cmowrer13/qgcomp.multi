@@ -8,8 +8,9 @@
 #'
 #' @return A one-row data frame containing compact pooled-fit metadata for the
 #'   `qgcompmulti_mi` object, including sample-size information, the number of
-#'   imputations, input-type metadata, mixture coding metadata, Monte Carlo
-#'   size, interaction status, retained-fit status, and clustering metadata.
+#'   imputations, input-type metadata, estimand-scale metadata, mixture coding
+#'   metadata, Monte Carlo size, interaction status, retained-fit status, and
+#'   clustering metadata.
 #'
 #' @details
 #' `glance()` stays compact for pooled MI objects. It summarizes how
@@ -30,6 +31,9 @@ glance.qgcompmulti_mi <- function(x, ...) {
     input_type = x$mi_info$input_type,
     family = x$analysis$family_name,
     link = x$analysis$link,
+    estimand_scale = x$analysis$estimand_scale,
+    msm_fitting_scale = x$analysis$msm_fitting_scale,
+    default_interval_method = x$analysis$default_interval_method,
     quantized = x$data_info$quantized,
     q = if (is.null(x$mixtures$q)) NA_integer_ else as.integer(x$mixtures$q),
     centering = x$mixtures$centering,

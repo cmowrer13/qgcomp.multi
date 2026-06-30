@@ -49,6 +49,33 @@ test_that("confidence interval validation catches bad inputs", {
   expect_error(confint(fit, level = NA_real_))
 })
 
+test_that("confidence intervals display ratio estimands on the estimand scale", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit")
+  )
+  coef_names <- names(coef(fit))
+  fitting_ci <- build_qgcompmulti_confint(
+    coefficients = coef(fit),
+    std_error = setNames(sqrt(diag(vcov(fit))), coef_names),
+    level = 0.95
+  )
+  display_ci <- confint(fit, method = "wald")
+  expect_identical(fit$analysis$estimand_scale, "odds_ratio")
+  expect_equal(display_ci, exp(fitting_ci))
+  expect_true(all(display_ci > 0))
+})
+test_that("single-fit confidence interval method override is explicit while non-Wald reporting is deferred", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    default_interval_method = "percentile_type2"
+  )
+  expect_error(confint(fit), "currently supports only")
+  expect_true(is.matrix(confint(fit, method = "wald")))
+})
+
 test_that("ratio-scale fits keep coefficients on the MSM fitting scale", {
   fit_binomial <- fit_test_model(
     interaction = TRUE,

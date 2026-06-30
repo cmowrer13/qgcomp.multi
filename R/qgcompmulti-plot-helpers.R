@@ -40,7 +40,7 @@ qgcompmulti_mixture_definition <- function(label, vars) {
 }
 #' @keywords internal
 #' @noRd
-qgcompmulti_labeled_coef_table <- function(results, labels) {
+qgcompmulti_labeled_coef_table <- function(results, labels, analysis = NULL) {
   coef_table <- results$coef_table
   if (is.null(coef_table)) {
     return(NULL)
@@ -56,10 +56,74 @@ qgcompmulti_labeled_coef_table <- function(results, labels) {
       call. = FALSE
     )
   }
-  out <- coef_table
+
+  out <- if (is.null(analysis) ||
+             !qgcompmulti_is_ratio_estimand(analysis$estimand_scale)) {
+    coef_table
+  } else {
+    display_estimate <- qgcompmulti_transform_msm_coefficients(
+      coef_table$Estimate,
+      estimand_scale = analysis$estimand_scale,
+      direction = "to_display"
+    )
+    display_name <- qgcompmulti_estimand_label(analysis$estimand_scale)
+    out <- data.frame(
+      display_estimate,
+      Coefficient = coef_table$Estimate,
+      `Std. Error` = coef_table$`Std. Error`,
+      check.names = FALSE
+    )
+    names(out)[1L] <- display_name
+    statistic_col <- grep(" value$", names(coef_table), value = TRUE)
+    if (length(statistic_col) == 1L) {
+      out[[statistic_col]] <- coef_table[[statistic_col]]
+    }
+    if ("df" %in% names(coef_table)) {
+      out$df <- coef_table$df
+    }
+    p_col <- grep("^Pr\\(>", names(coef_table), value = TRUE)
+    if (length(p_col) == 1L) {
+      out[[p_col]] <- coef_table[[p_col]]
+    }
+    row.names(out) <- rownames(coef_table)
+    out
+  }
+
   rownames(out) <- unname(coef_labels)
   out
 }
+
+#' @keywords internal
+#' @noRd
+qgcompmulti_scale_description <- function(analysis) {
+  estimand <- qgcompmulti_estimand_label(analysis$estimand_scale)
+  fitting_scale <- qgcompmulti_msm_fitting_scale_label(analysis$msm_fitting_scale)
+  if (isTRUE(analysis$estimand_scale_defaulted)) {
+    estimand <- paste0(estimand, " (default)")
+  }
+  list(
+    estimand = estimand,
+    fitting_scale = fitting_scale,
+    default_interval_method = analysis$default_interval_method
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_print_scale_info <- function(analysis, mi = FALSE) {
+  scale_info <- qgcompmulti_scale_description(analysis)
+  cat("  Estimand: ", scale_info$estimand, "
+", sep = "")
+  cat("  MSM fitting scale: ", scale_info$fitting_scale, "
+", sep = "")
+  if (isTRUE(mi)) {
+    cat("  Interval method: wald (pooled multiple imputation)
+", sep = "")
+  } else {
+    cat("  Default interval method: ", scale_info$default_interval_method, "
+", sep = "")
+  }
+}
+
 #' @keywords internal
 #' @noRd
 qgcompmulti_outcome_model_info <- function(outcome_fit) {

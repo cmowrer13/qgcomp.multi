@@ -25,9 +25,9 @@ qgcompmulti_mi_validate_wald_interval_method <- function(method) {
     )
   }
 
-    qgcompmulti_validate_interval_method(method = method, context = "mi")
-    invisible(method)
-  }
+  qgcompmulti_validate_interval_method(method = method, context = "mi")
+  invisible(method)
+}
 
 #' @keywords internal
 #' @noRd
@@ -518,6 +518,12 @@ build_qgcompmulti_mi_summary <- function(object) {
     fit_overview = list(
       outcome = object$data_info$outcome,
       family = qgcompmulti_family_label(object$analysis),
+      link = object$analysis$link,
+      estimand = qgcompmulti_estimand_label(object$analysis$estimand_scale),
+      estimand_scale = object$analysis$estimand_scale,
+      estimand_scale_defaulted = object$analysis$estimand_scale_defaulted,
+      msm_fitting_scale = object$analysis$msm_fitting_scale,
+      default_interval_method = object$analysis$default_interval_method,
       n_input = object$data_info$n_input,
       n_used = object$data_info$n_used,
       exposure_mode = qgcompmulti_exposure_mode_label(object$mixtures),
@@ -540,7 +546,11 @@ build_qgcompmulti_mi_summary <- function(object) {
       mix1 = object$mixtures$mix1,
       mix2 = object$mixtures$mix2
     ),
-    msm_table = qgcompmulti_labeled_coef_table(object$results, object$labels),
+    msm_table = qgcompmulti_labeled_coef_table(
+      object$results,
+      object$labels,
+      object$analysis
+    ),
     pooling_table = build_qgcompmulti_mi_pooling_table(object),
     labels = object$labels
   )

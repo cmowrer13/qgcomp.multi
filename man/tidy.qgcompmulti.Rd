@@ -4,7 +4,7 @@
 \alias{tidy.qgcompmulti}
 \title{Tidy coefficient summaries for qgcompmulti fits}
 \usage{
-\method{tidy}{qgcompmulti}(x, conf.int = FALSE, conf.level = 0.95, ...)
+\method{tidy}{qgcompmulti}(x, conf.int = FALSE, conf.level = 0.95, method = NULL, ...)
 }
 \arguments{
 \item{x}{A fitted \code{qgcompmulti} object.}
@@ -13,23 +13,31 @@
 
 \item{conf.level}{Confidence level for interval columns when \code{conf.int = TRUE}.}
 
+\item{method}{Optional interval method for confidence intervals. \code{NULL} uses
+the fitted object's stored default interval method. Version 0.5.0 currently
+implements \code{"wald"} for coefficient reporting.}
+
 \item{...}{Not used.}
 }
 \value{
-A data frame with one row per MSM coefficient and columns \code{term},
-\code{estimate}, \code{std.error}, \code{statistic}, and \code{p.value}. When
-\code{conf.int = TRUE}, the returned data frame also includes \code{conf.low} and
-\code{conf.high}.
+A data frame with one row per MSM coefficient. Columns \code{estimate},
+\code{std.error}, \code{statistic}, and \code{p.value} are on the fitting scale. Columns
+\code{display.estimate}, \code{display.conf.low}, and \code{display.conf.high} are on the
+active estimand scale when present.
 }
 \description{
 Returns a broom-style coefficient table for the marginal structural model
-(MSM) coefficients stored in a fitted \code{qgcompmulti} object. The output is
-coefficient-centric and uses the internal machine-readable MSM term names.
+(MSM) coefficients stored in a fitted \code{qgcompmulti} object. The core
+\code{estimate} and \code{std.error} columns stay on the MSM fitting scale so
+downstream tools such as \code{mice::pool()} can use them coherently. Display
+columns expose the active estimand scale for ordinary reporting.
 }
 \details{
-This method is intentionally coefficient-centric. It does not add fit-level
-metadata columns or presentation-oriented labels because those belong in
-\code{\link[broom:reexports]{broom::glance()}} or the existing print and summary methods.
+Keeping \code{estimate} and \code{std.error} on the fitting scale preserves machine
+pooling behavior for multiple-imputation workflows that call
+\code{\link[mice:pool]{mice::pool()}}. For odds-ratio and rate-ratio estimands, use
+\code{display.estimate} and the display confidence interval columns for
+user-facing ratio summaries.
 }
 \seealso{
 \code{\link[broom:reexports]{broom::glance()}}, \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}},

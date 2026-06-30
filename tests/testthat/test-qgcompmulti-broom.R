@@ -5,16 +5,22 @@ test_that("tidy method returns the expected coefficient-centric columns", {
   expect_true(is.data.frame(td))
   expect_identical(
     names(td),
-    c("term", "estimate", "std.error", "statistic", "p.value")
+    c(
+      "term", "estimate", "display.estimate", "std.error", "statistic",
+      "p.value", "estimand_scale", "msm_fitting_scale", "estimate_scale",
+      "display_scale"
+    )
   )
   expect_identical(td$term, names(coef(fit)))
   expect_equal(td$estimate, unname(coef(fit)))
+  expect_equal(td$display.estimate, unname(coef(fit)))
   expect_equal(td$std.error, unname(sqrt(diag(vcov(fit)))))
   expect_equal(td$statistic, td$estimate / td$std.error)
   expect_equal(
     td$p.value,
     unname(2 * stats::pnorm(abs(td$statistic), lower.tail = FALSE))
   )
+  expect_true(all(td$estimate_scale == "fitting"))
 })
 test_that("tidy method adds confidence interval columns when requested", {
   fit <- fit_test_model(interaction = TRUE, q = 4)
@@ -23,10 +29,17 @@ test_that("tidy method adds confidence interval columns when requested", {
   ci <- confint(fit)
   expect_identical(
     names(td),
-    c("term", "estimate", "std.error", "statistic", "p.value", "conf.low", "conf.high")
+    c(
+      "term", "estimate", "display.estimate", "std.error", "statistic",
+      "p.value", "estimand_scale", "msm_fitting_scale", "estimate_scale",
+      "display_scale", "conf.low", "conf.high", "display.conf.low",
+      "display.conf.high"
+    )
   )
   expect_equal(td$conf.low, unname(ci[, 1]))
   expect_equal(td$conf.high, unname(ci[, 2]))
+  expect_equal(td$display.conf.low, unname(ci[, 1]))
+  expect_equal(td$display.conf.high, unname(ci[, 2]))
   expect_error(tidy_method(fit, conf.int = NA))
   expect_error(tidy_method(fit, conf.int = TRUE, conf.level = 1))
 })
@@ -46,9 +59,10 @@ test_that("glance method returns compact fit metadata for q = NULL fits", {
   expect_identical(
     names(gl),
     c(
-      "n_input", "n_used", "family", "link", "quantized", "q", "centering",
-      "B_requested", "B_success", "B_failed", "MCsize", "interaction",
-      "has_clusters", "cluster_var", "n_clusters"
+      "n_input", "n_used", "family", "link", "estimand_scale",
+      "msm_fitting_scale", "default_interval_method", "quantized", "q",
+      "centering", "B_requested", "B_success", "B_failed", "MCsize",
+      "interaction", "has_clusters", "cluster_var", "n_clusters"
     )
   )
   expect_equal(gl$n_input, fit$data_info$n_input)
@@ -78,4 +92,27 @@ test_that("broom generic dispatch works when broom is installed", {
   glance_method <- getFromNamespace("glance.qgcompmulti", "qgcomp.multi")
   expect_equal(broom::tidy(fit), tidy_method(fit))
   expect_equal(broom::glance(fit), glance_method(fit))
+})
+
+test_that("tidy exposes display-scale ratio columns while preserving fitting-scale pooling columns", {
+  tidy_method <- getFromNamespace("tidy.qgcompmulti", "qgcomp.multi")
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log")
+  )
+  td <- tidy_method(fit, conf.int = TRUE, conf.level = 0.95)
+  fitting_ci <- build_qgcompmulti_confint(
+    coefficients = coef(fit),
+    std_error = setNames(sqrt(diag(vcov(fit))), names(coef(fit))),
+    level = 0.95
+  )
+  expect_equal(td$estimate, unname(coef(fit)))
+  expect_equal(td$display.estimate, unname(exp(coef(fit))))
+  expect_equal(td$conf.low, unname(fitting_ci[, 1]))
+  expect_equal(td$conf.high, unname(fitting_ci[, 2]))
+  expect_equal(td$display.conf.low, unname(exp(fitting_ci[, 1])))
+  expect_equal(td$display.conf.high, unname(exp(fitting_ci[, 2])))
+  expect_true(all(td$estimand_scale == "rate_ratio"))
+  expect_true(all(td$msm_fitting_scale == "log"))
 })

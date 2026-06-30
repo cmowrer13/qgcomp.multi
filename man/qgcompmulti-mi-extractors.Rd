@@ -11,7 +11,7 @@
 
 \method{vcov}{qgcompmulti_mi}(object, ...)
 
-\method{confint}{qgcompmulti_mi}(object, parm = NULL, level = 0.95, ...)
+\method{confint}{qgcompmulti_mi}(object, parm = NULL, level = 0.95, method = NULL, ...)
 }
 \arguments{
 \item{object}{A fitted \code{qgcompmulti_mi} object.}
@@ -24,15 +24,21 @@ a character vector of coefficient names.}
 
 \item{level}{Confidence level for the returned intervals. Must be strictly
 between 0 and 1.}
+
+\item{method}{Optional interval method. Pooled multiple-imputation
+coefficient reporting supports only \code{"wald"} in Version 0.5.0. \code{NULL} uses
+the fitted object's stored default, which is \code{"wald"} for pooled MI fits.}
 }
 \value{
-\code{coef()} returns a named numeric vector of pooled MSM coefficients.
+\code{coef()} returns a named numeric vector of pooled MSM coefficients on the
+fitting scale.
 
 \code{vcov()} returns the pooled covariance matrix aligned with \code{coef(object)}.
 
-\code{confint()} returns pooled Wald-style confidence intervals that use
-term-specific t critical values when finite Rubin degrees of freedom are
-available and normal critical values otherwise.
+\code{confint()} returns pooled Wald-style confidence intervals. The Wald
+calculation uses Rubin-pooled coefficients, standard errors, and
+term-specific degrees of freedom on the fitting scale. For odds-ratio and
+rate-ratio estimands, returned interval limits are exponentiated for display.
 }
 \description{
 Extract the pooled marginal structural model (MSM) coefficient results from a

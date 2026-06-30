@@ -9,16 +9,21 @@
 #'   a character vector of coefficient names.
 #' @param level Confidence level for the returned intervals. Must be strictly
 #'   between 0 and 1.
+#' @param method Optional interval method. Pooled multiple-imputation
+#'   coefficient reporting supports only `"wald"` in Version 0.5.0. `NULL` uses
+#'   the fitted object's stored default, which is `"wald"` for pooled MI fits.
 #' @param ... Not used.
 #'
 #' @return
-#' `coef()` returns a named numeric vector of pooled MSM coefficients.
+#' `coef()` returns a named numeric vector of pooled MSM coefficients on the
+#' fitting scale.
 #'
 #' `vcov()` returns the pooled covariance matrix aligned with `coef(object)`.
 #'
-#' `confint()` returns pooled Wald-style confidence intervals that use
-#' term-specific t critical values when finite Rubin degrees of freedom are
-#' available and normal critical values otherwise.
+#' `confint()` returns pooled Wald-style confidence intervals. The Wald
+#' calculation uses Rubin-pooled coefficients, standard errors, and
+#' term-specific degrees of freedom on the fitting scale. For odds-ratio and
+#' rate-ratio estimands, returned interval limits are exponentiated for display.
 #'
 #' @details
 #' These extractors operate on the pooled multiple-imputation result, not on
@@ -48,9 +53,19 @@ vcov.qgcompmulti_mi <- function(object, ...) {
 
 #' @rdname qgcompmulti-mi-extractors
 #' @export
-confint.qgcompmulti_mi <- function(object, parm = NULL, level = 0.95, ...) {
+confint.qgcompmulti_mi <- function(object, parm = NULL, level = 0.95, method = NULL, ...) {
   validate_qgcompmulti_mi(object)
   qgcompmulti_validate_conf_level(level)
+
+  method <- qgcompmulti_resolve_interval_method(
+    method = method,
+    default_method = object$analysis$default_interval_method,
+    context = "mi"
+  )
+  qgcompmulti_require_wald_interval_method(
+    method = method,
+    object_label = "pooled qgcompmulti multiple-imputation coefficient"
+  )
 
   coefficients <- coef(object)
   coef_names <- qgcompmulti_resolve_parm(
@@ -62,10 +77,17 @@ confint.qgcompmulti_mi <- function(object, parm = NULL, level = 0.95, ...) {
   std_error <- object$results$std_error[coef_names]
   df <- object$results$df[coef_names]
 
-  build_qgcompmulti_mi_confint(
+  ci <- build_qgcompmulti_mi_confint(
     coefficients = coefficients,
     std_error = std_error,
     df = df,
     level = level
   )
+
+  ci[] <- qgcompmulti_transform_msm_coefficients(
+    as.numeric(ci),
+    estimand_scale = object$analysis$estimand_scale,
+    direction = "to_display"
+  )
+  ci
 }

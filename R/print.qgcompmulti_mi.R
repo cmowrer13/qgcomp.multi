@@ -16,7 +16,7 @@
 print.qgcompmulti_mi <- function(x, ...) {
   validate_qgcompmulti_mi(x)
 
-  msm_table <- qgcompmulti_labeled_coef_table(x$results, x$labels)
+  msm_table <- qgcompmulti_labeled_coef_table(x$results, x$labels, x$analysis)
 
   cat("qgcompmulti multiple-imputation fit\n\n")
   qgcompmulti_print_call(x$call)
@@ -24,6 +24,7 @@ print.qgcompmulti_mi <- function(x, ...) {
   cat("\nModel:\n")
   cat("  Outcome: ", x$data_info$outcome, "\n", sep = "")
   cat("  Family: ", qgcompmulti_family_label(x$analysis), "\n", sep = "")
+  qgcompmulti_print_scale_info(x$analysis, mi = TRUE)
   cat("  Observations used: ", x$data_info$n_used, "\n", sep = "")
   cat(
     "  Exposure mode: ",

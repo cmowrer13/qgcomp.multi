@@ -9,8 +9,9 @@
 #'
 #' @return A one-row data frame containing compact fit metadata for the
 #'   `qgcompmulti` object, including sample-size information, outcome-family
-#'   metadata, mixture coding metadata, bootstrap replication counts, Monte
-#'   Carlo size, interaction status, and clustering metadata.
+#'   metadata, estimand-scale metadata, mixture coding metadata, bootstrap
+#'   replication counts, Monte Carlo size, interaction status, and clustering
+#'   metadata.
 #'
 #' @details
 #' For original-scale fits (`q = NULL`), `q` is returned as `NA_integer_` and
@@ -28,6 +29,9 @@ glance.qgcompmulti <- function(x, ...) {
     n_used = nobs(x),
     family = x$analysis$family_name,
     link = x$analysis$link,
+    estimand_scale = x$analysis$estimand_scale,
+    msm_fitting_scale = x$analysis$msm_fitting_scale,
+    default_interval_method = x$analysis$default_interval_method,
     quantized = x$data_info$quantized,
     q = if (is.null(x$mixtures$q)) NA_integer_ else as.integer(x$mixtures$q),
     centering = x$mixtures$centering,

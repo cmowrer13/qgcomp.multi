@@ -2,9 +2,9 @@
 % Please edit documentation in R/confint.qgcompmulti.R
 \name{confint.qgcompmulti}
 \alias{confint.qgcompmulti}
-\title{Wald confidence intervals for qgcompmulti coefficients}
+\title{Confidence intervals for qgcompmulti coefficients}
 \usage{
-\method{confint}{qgcompmulti}(object, parm = NULL, level = 0.95, ...)
+\method{confint}{qgcompmulti}(object, parm = NULL, level = 0.95, method = NULL, ...)
 }
 \arguments{
 \item{object}{A fitted \code{qgcompmulti} object.}
@@ -16,20 +16,31 @@ a character vector of coefficient names.}
 \item{level}{Confidence level for the returned intervals. Must be strictly
 between 0 and 1.}
 
-\item{...}{Not used}
+\item{method}{Optional interval method. \code{NULL} uses the fitted object's
+stored default interval method. Version 0.5.0 currently implements
+\code{"wald"} for coefficient reporting.}
+
+\item{...}{Not used.}
 }
 \value{
 A numeric matrix with one row per selected coefficient and two
-columns giving the lower and upper Wald confidence limits.
+columns giving the lower and upper confidence limits on the display scale
+recorded in \code{object$analysis$estimand_scale}.
 }
 \description{
-Returns Wald confidence intervals for the marginal structural model (MSM)
-coefficients reported by a fitted \code{qgcompmulti} object.
+Returns confidence intervals for the marginal structural model (MSM)
+coefficients reported by a fitted \code{qgcompmulti} object. In Version 0.5.0,
+coefficient intervals are implemented for the Wald method. For ratio
+estimands, intervals are computed on the MSM fitting scale and then
+transformed to the user-facing ratio scale.
 }
 \details{
-Confidence intervals are Wald intervals based on the MSM coefficient
-estimates and the stored covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}.
-The rows of the returned matrix align with \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}.
+Wald confidence intervals are based on the MSM coefficient estimates and the
+stored covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}. The underlying
+Wald calculation is carried out on the MSM fitting scale. When the active
+estimand is \code{"odds_ratio"} or \code{"rate_ratio"}, the returned limits are
+exponentiated for display. The rows of the returned matrix align with
+\code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, but the numeric scale may differ for ratio estimands.
 }
 \seealso{
 \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}},

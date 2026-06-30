@@ -14,8 +14,9 @@
 \value{
 A one-row data frame containing compact pooled-fit metadata for the
 \code{qgcompmulti_mi} object, including sample-size information, the number of
-imputations, input-type metadata, mixture coding metadata, Monte Carlo
-size, interaction status, retained-fit status, and clustering metadata.
+imputations, input-type metadata, estimand-scale metadata, mixture coding
+metadata, Monte Carlo size, interaction status, retained-fit status, and
+clustering metadata.
 }
 \description{
 Returns a one-row metadata summary for a fitted \code{qgcompmulti_mi} object.

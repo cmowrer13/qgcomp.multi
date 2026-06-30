@@ -14,8 +14,9 @@
 \value{
 A one-row data frame containing compact fit metadata for the
 \code{qgcompmulti} object, including sample-size information, outcome-family
-metadata, mixture coding metadata, bootstrap replication counts, Monte
-Carlo size, interaction status, and clustering metadata.
+metadata, estimand-scale metadata, mixture coding metadata, bootstrap
+replication counts, Monte Carlo size, interaction status, and clustering
+metadata.
 }
 \description{
 Returns a one-row metadata summary for a fitted \code{qgcompmulti} object. The

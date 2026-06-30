@@ -34,12 +34,16 @@ test_that("summary and print methods expose the pooled MI public interface", {
   expect_output(print(fit), "Multiple imputation")
   expect_output(print(fit), "Imputed datasets")
   expect_output(print(fit), "MSM coefficients")
+  expect_output(print(fit), "Estimand")
+  expect_output(print(fit), "Interval method: wald")
 
   printed_summary <- withVisible(print(s))
   expect_false(printed_summary$visible)
   expect_identical(printed_summary$value, s)
   expect_output(print(s), "Summary of qgcompmulti multiple-imputation fit")
   expect_output(print(s), "Multiple imputation overview")
+  expect_output(print(s), "Estimand")
+  expect_output(print(s), "Interval method: wald")
   expect_output(print(s), "Pooling diagnostics")
 })
 
@@ -71,6 +75,7 @@ test_that("pooled MI extractor methods agree with stored results", {
   expect_equal(ci_name, ci_pos)
   expect_error(confint(fit, parm = "not_a_parameter"))
   expect_error(confint(fit, level = 1))
+  expect_error(confint(fit, method = "percentile"), "supports only")
 })
 
 test_that("pooled MI tidy and glance methods return the expected metadata", {
@@ -93,17 +98,28 @@ test_that("pooled MI tidy and glance methods return the expected metadata", {
   expect_true(is.data.frame(td))
   expect_identical(
     names(td),
-    c("term", "estimate", "std.error", "statistic", "df", "p.value")
+    c(
+      "term", "estimate", "display.estimate", "std.error", "statistic",
+      "df", "p.value", "estimand_scale", "msm_fitting_scale",
+      "estimate_scale", "display_scale"
+    )
   )
   expect_identical(td$term, names(coef(fit)))
   expect_equal(td$estimate, unname(coef(fit)))
+  expect_equal(td$display.estimate, unname(coef(fit)))
   expect_equal(td$std.error, unname(fit$results$std_error))
   expect_equal(td$df, unname(fit$results$df))
+  expect_true(all(td$estimate_scale == "fitting"))
 
   td_ci <- tidy_method(fit, conf.int = TRUE, conf.level = 0.95)
   expect_identical(
     names(td_ci),
-    c("term", "estimate", "std.error", "statistic", "df", "p.value", "conf.low", "conf.high")
+    c(
+      "term", "estimate", "display.estimate", "std.error", "statistic",
+      "df", "p.value", "estimand_scale", "msm_fitting_scale",
+      "estimate_scale", "display_scale", "conf.low", "conf.high",
+      "display.conf.low", "display.conf.high"
+    )
   )
 
   gl <- glance_method(fit)
@@ -112,9 +128,10 @@ test_that("pooled MI tidy and glance methods return the expected metadata", {
   expect_identical(
     names(gl),
     c(
-      "n_input", "n_used", "m", "input_type", "family", "link", "quantized",
-      "q", "centering", "MCsize", "interaction", "keep_fits", "has_clusters",
-      "cluster_var", "n_clusters"
+      "n_input", "n_used", "m", "input_type", "family", "link",
+      "estimand_scale", "msm_fitting_scale", "default_interval_method",
+      "quantized", "q", "centering", "MCsize", "interaction",
+      "keep_fits", "has_clusters", "cluster_var", "n_clusters"
     )
   )
   expect_equal(gl$m, fit$mi_info$m)
@@ -192,4 +209,35 @@ test_that("with.mids and pool can produce a simple pooled coefficient table", {
     c("(Intercept)", "psi1", "psi2", "psi1:psi2")
   )
   expect_true(all(c("estimate", "std.error", "statistic", "df", "p.value") %in% names(pooled_summary)))
+})
+
+test_that("pooled MI ratio reporting transforms final pooled estimates only", {
+  completed <- lapply(c(432, 433, 434), make_binomial_test_data)
+  fit <- qgcomp.glm.multi.mi(
+    f = Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C,
+    data = completed,
+    mix1 = c("X1", "X2", "X3"),
+    mix2 = c("W1", "W2", "W3"),
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit"),
+    B = 5,
+    seed = 912
+  )
+  tidy_method <- getFromNamespace("tidy.qgcompmulti_mi", "qgcomp.multi")
+  td <- tidy_method(fit, conf.int = TRUE)
+  fitting_ci <- build_qgcompmulti_mi_confint(
+    coefficients = coef(fit),
+    std_error = fit$results$std_error[names(coef(fit))],
+    df = fit$results$df[names(coef(fit))],
+    level = 0.95
+  )
+  expect_identical(fit$analysis$estimand_scale, "odds_ratio")
+  expect_equal(td$estimate, unname(coef(fit)))
+  expect_equal(td$display.estimate, unname(exp(coef(fit))))
+  expect_equal(td$conf.low, unname(fitting_ci[, 1]))
+  expect_equal(td$conf.high, unname(fitting_ci[, 2]))
+  expect_equal(td$display.conf.low, unname(exp(fitting_ci[, 1])))
+  expect_equal(td$display.conf.high, unname(exp(fitting_ci[, 2])))
+  expect_equal(confint(fit), exp(fitting_ci))
 })

@@ -48,6 +48,45 @@ qgcompmulti_validate_interval_method <- function(method,
 
 #' @keywords internal
 #' @noRd
+qgcompmulti_resolve_interval_method <- function(method,
+                                                default_method,
+                                                context = c("single_fit", "mi")) {
+  context <- match.arg(context)
+  if (is.null(method)) {
+    method <- default_method
+  }
+  if (identical(context, "mi") && !identical(method, "wald")) {
+    qgcompmulti_require_wald_interval_method(
+      method = method,
+      object_label = "pooled qgcompmulti multiple-imputation coefficient"
+    )
+  }
+  qgcompmulti_validate_interval_method(
+    method = method,
+    context = context,
+    allow_null = FALSE
+  )
+  method
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_require_wald_interval_method <- function(method,
+                                                     object_label = "qgcompmulti") {
+  if (!identical(method, "wald")) {
+    stop(
+      sprintf(
+        "%s reporting currently supports only `method = \"wald\"`; `method = \"%s\"` is not implemented in this phase.",
+        object_label,
+        method
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(method)
+}
+
+#' @keywords internal
+#' @noRd
 qgcompmulti_prediction_interval_types <- function() {
   qgcompmulti_interval_methods(context = "prediction")
 }
