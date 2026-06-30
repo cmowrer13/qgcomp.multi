@@ -68,6 +68,50 @@ test_that("adequacy diagnostics summarize stored surface comparison", {
     diag$summary_metrics$correlation,
     stats::cor(comparison$exact_mean, comparison$msm_mean)
   )
+  expect_identical(diag$comparison_scale, "response")
+  expect_identical(diag$msm_fitting_scale, "identity")
+})
+test_that("adequacy diagnostics use fitting-scale comparisons for odds-ratio fits", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = binomial(link = "logit")
+  )
+  diag <- adequacy(fit)
+  comparison <- fit$prediction$surface_comparison_target
+  residual <- comparison$residual_target
+  expect_s3_class(diag, "qgcompmulti_adequacy_diagnostic")
+  expect_identical(diag$comparison_scale, "fitting")
+  expect_identical(diag$msm_fitting_scale, "logit")
+  expect_equal(diag$comparison, comparison)
+  expect_equal(diag$response_comparison, fit$prediction$surface_comparison)
+  expect_equal(diag$summary_metrics$mae, mean(abs(residual)))
+  expect_equal(diag$summary_metrics$rmse, sqrt(mean(residual^2)))
+  expect_equal(diag$summary_metrics$max_abs_error, max(abs(residual)))
+  expect_equal(
+    diag$summary_metrics$correlation,
+    stats::cor(comparison$exact_target, comparison$msm_target)
+  )
+})
+test_that("adequacy diagnostics use fitting-scale comparisons for rate-ratio fits", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = poisson(link = "log")
+  )
+  diag <- adequacy(fit)
+  comparison <- fit$prediction$surface_comparison_target
+  residual <- comparison$residual_target
+  expect_identical(diag$comparison_scale, "fitting")
+  expect_identical(diag$msm_fitting_scale, "log")
+  expect_equal(diag$comparison, comparison)
+  expect_equal(diag$summary_metrics$mae, mean(abs(residual)))
+  expect_equal(
+    diag$summary_metrics$correlation,
+    stats::cor(comparison$exact_target, comparison$msm_target)
+  )
 })
 test_that("combined diagnostics return all three diagnostic families", {
   fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
@@ -90,5 +134,17 @@ test_that("diagnostic objects print cleanly", {
   expect_output(print(support(fit)), "intervention support diagnostic")
   expect_output(print(diagnostics(fit, type = "bootstrap")), "bootstrap diagnostic")
   expect_output(print(adequacy(fit)), "MSM adequacy diagnostic")
+  expect_output(print(adequacy(fit)), "Comparison scale: response")
   expect_output(print(diagnostics(fit, type = "all")), "qgcompmulti diagnostics")
 })
+test_that("transformed-scale adequacy diagnostic prints the fitting scale", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = binomial(link = "logit")
+  )
+  expect_output(print(adequacy(fit)), "Comparison scale: fitting")
+  expect_output(print(adequacy(fit)), "MSM fitting scale: logit")
+})
+

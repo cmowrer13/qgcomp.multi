@@ -198,16 +198,55 @@ qgcompmulti_print_msm_table <- function(msm_table) {
 #' @noRd
 qgcompmulti_default_surface_labels <- function(object) {
   validate_qgcompmulti(object)
+  outcome_label <- qgcompmulti_response_outcome_label(object$analysis)
   if (!is.null(object$mixtures$q)) {
     return(list(
       xlab = "Mixture 1 intervention (quantile index)",
-      ylab = "Mixture 2 intervention (quantile index)"
+      ylab = "Mixture 2 intervention (quantile index)",
+      outcome_label = outcome_label
     ))
   }
   list(
     xlab = "Mixture 1 intervention",
-    ylab = "Mixture 2 intervention"
+    ylab = "Mixture 2 intervention",
+    outcome_label = outcome_label
   )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_response_outcome_label <- function(analysis) {
+  if (!is.list(analysis) ||
+      !is.character(analysis$family_name) ||
+      length(analysis$family_name) != 1L ||
+      is.na(analysis$family_name)) {
+    return("Predicted outcome (response scale)")
+  }
+  switch(
+    analysis$family_name,
+    gaussian = "Predicted mean outcome (response scale)",
+    binomial = "Predicted risk (response scale)",
+    poisson = "Predicted expected count (response scale)",
+    "Predicted outcome (response scale)"
+  )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_validate_plot_scale <- function(scale) {
+  if (!is.character(scale) || length(scale) != 1L || is.na(scale)) {
+    stop("`scale` must be a single character string.", call. = FALSE)
+  }
+  if (!identical(scale, "response")) {
+    stop(
+      paste(
+        "`plot.qgcompmulti()` supports only `scale = \"response\"` in version 0.5.0.",
+        "Transformed-scale surface plotting is out of scope;",
+        "use `predict(..., type = \"msm_contrast\", contrast_scale = \"estimand\")`",
+        "for direct ratio-scale regime comparisons."
+      ),
+      call. = FALSE
+    )
+  }
+  scale
 }
 #' @keywords internal
 #' @noRd
@@ -329,6 +368,7 @@ qgcompmulti_plot_heatmap <- function(plot_data,
                                      prediction_result,
                                      xlab,
                                      ylab,
+                                     legend_label,
                                      main,
                                      ...) {
   axis_spec <- qgcompmulti_surface_axis_spec(object, prediction_result, plot_data)
@@ -383,7 +423,7 @@ qgcompmulti_plot_heatmap <- function(plot_data,
     border = NA
   )
   graphics::axis(4, at = pretty(zlim), labels = qgcompmulti_format_axis_values(pretty(zlim)))
-  graphics::mtext("Predicted outcome", side = 4, line = 2.8)
+  graphics::mtext(legend_label, side = 4, line = 2.8)
   graphics::box()
   invisible(plot_data)
 }

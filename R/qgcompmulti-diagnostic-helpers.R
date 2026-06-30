@@ -170,17 +170,31 @@ build_qgcompmulti_bootstrap_diagnostic <- function(object) {
 }
 #' @keywords internal
 #' @noRd
-qgcompmulti_adequacy_metrics <- function(surface_comparison) {
-  residual <- surface_comparison$residual
-  exact_mean <- surface_comparison$exact_mean
-  msm_mean <- surface_comparison$msm_mean
+qgcompmulti_adequacy_metrics <- function(surface_comparison,
+                                         exact_col = "exact_mean",
+                                         msm_col = "msm_mean",
+                                         residual_col = "residual") {
+  required_cols <- c(exact_col, msm_col, residual_col)
+  missing_cols <- setdiff(required_cols, names(surface_comparison))
+  if (length(missing_cols) > 0L) {
+    stop(
+      sprintf(
+        "`surface_comparison` is missing required adequacy columns: %s.",
+        paste(missing_cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  residual <- surface_comparison[[residual_col]]
+  exact <- surface_comparison[[exact_col]]
+  msm <- surface_comparison[[msm_col]]
   list(
     n_grid_points = nrow(surface_comparison),
     mae = mean(abs(residual)),
     rmse = sqrt(mean(residual^2)),
     max_abs_error = max(abs(residual)),
     mean_signed_error = mean(residual),
-    correlation = stats::cor(exact_mean, msm_mean)
+    correlation = stats::cor(exact, msm)
   )
 }
 #' @keywords internal
@@ -195,14 +209,37 @@ qgcompmulti_adequacy_flags <- function(metrics) {
 #' @noRd
 build_qgcompmulti_adequacy_diagnostic <- function(object) {
   validate_qgcompmulti(object)
-  comparison <- object$prediction$surface_comparison
-  metrics <- qgcompmulti_adequacy_metrics(comparison)
+  response_comparison <- object$prediction$surface_comparison
+  target_comparison <- object$prediction$surface_comparison_target
+  use_fitting_scale <- !identical(object$analysis$msm_fitting_scale, "identity")
+  if (isTRUE(use_fitting_scale)) {
+    comparison <- target_comparison
+    metrics <- qgcompmulti_adequacy_metrics(
+      comparison,
+      exact_col = "exact_target",
+      msm_col = "msm_target",
+      residual_col = "residual_target"
+    )
+    comparison_scale <- "fitting"
+    notes <- paste(
+      "Primary adequacy compares the exact fit-time target surface to the fitted MSM target surface",
+      sprintf("on the %s MSM fitting scale.", object$analysis$msm_fitting_scale),
+      "Response-scale comparison values are retained descriptively."
+    )
+  } else {
+    comparison <- response_comparison
+    metrics <- qgcompmulti_adequacy_metrics(comparison)
+    comparison_scale <- "response"
+    notes <- "Adequacy compares the exact fit-time counterfactual surface to the fitted MSM surface on the response scale."
+  }
   flags <- qgcompmulti_adequacy_flags(metrics)
-  notes <- "Adequacy compares the exact fit-time counterfactual surface to the fitted MSM surface on the response scale."
   structure(
     list(
       diagnostic_type = "adequacy",
+      comparison_scale = comparison_scale,
+      msm_fitting_scale = object$analysis$msm_fitting_scale,
       comparison = comparison,
+      response_comparison = response_comparison,
       summary_metrics = metrics,
       flags = flags,
       notes = notes

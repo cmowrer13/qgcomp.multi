@@ -40,6 +40,18 @@ test_that("plot.qgcompmulti() supports contour output", {
     with_plot_device(plot(fit, style = "contour"))
   )
 })
+test_that("plot.qgcompmulti() keeps transformed-scale fits on the response scale", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = binomial(link = "logit")
+  )
+  result <- with_plot_device(plot(fit, scale = "response"))
+  expect_identical(result$estimate_scale, "response")
+  expect_identical(result$estimand_scale, "response")
+  expect_identical(result$fit_estimand_scale, "odds_ratio")
+})
 test_that("plot.qgcompmulti() supports an in-support user MSM grid", {
   fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
   grid <- expand.grid(
@@ -88,6 +100,10 @@ test_that("plot.qgcompmulti() rejects invalid plotting inputs clearly", {
     with_plot_device(plot(fit, grid = non_rectangular_grid)),
     "rectangular prediction grid"
   )
+  expect_error(
+    with_plot_device(plot(fit, scale = "estimand")),
+    "supports only `scale = \"response\"`"
+  )
 })
 test_that("stored q = NULL surface plots use intervention-scale axis labels", {
   fit <- fit_test_model(
@@ -112,5 +128,32 @@ test_that("stored q = NULL surface plots use intervention-scale axis labels", {
       axis_spec$x_labels,
       qgcompmulti_format_axis_values(sort(unique(fit$prediction$msm_grid$psi1)))
     )
+  )
+})
+test_that("default plot labels identify response-scale outcome quantities", {
+  gaussian_fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
+  binomial_fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = binomial(link = "logit")
+  )
+  poisson_fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = poisson(link = "log")
+  )
+  expect_identical(
+    qgcompmulti_default_surface_labels(gaussian_fit)$outcome_label,
+    "Predicted mean outcome (response scale)"
+  )
+  expect_identical(
+    qgcompmulti_default_surface_labels(binomial_fit)$outcome_label,
+    "Predicted risk (response scale)"
+  )
+  expect_identical(
+    qgcompmulti_default_surface_labels(poisson_fit)$outcome_label,
+    "Predicted expected count (response scale)"
   )
 })

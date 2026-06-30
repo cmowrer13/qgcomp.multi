@@ -29,7 +29,8 @@
 #'   replications were requested, retained, or failed, together with any
 #'   lightweight failure metadata stored in the fitted object.
 #'   \item \strong{MSM adequacy diagnostics}, which compare the exact fit-time
-#'   counterfactual surface to the fitted MSM surface on the response scale.
+#'   counterfactual surface to the fitted MSM surface. For transformed-scale
+#'   fits, the primary adequacy comparison is made on the MSM fitting scale.
 #' }
 #'
 #' Support diagnostics should not be read as a full positivity proof. They are
@@ -206,6 +207,8 @@ print.qgcompmulti_bootstrap_diagnostic <- function(x, ...) {
 print.qgcompmulti_adequacy_diagnostic <- function(x, ...) {
   metrics <- x$summary_metrics
   cat("qgcompmulti MSM adequacy diagnostic\n\n")
+  cat("Comparison scale: ", x$comparison_scale, "\n", sep = "")
+  cat("MSM fitting scale: ", x$msm_fitting_scale, "\n", sep = "")
   cat("Grid points: ", metrics$n_grid_points, "\n", sep = "")
   cat("Mean absolute error: ", qgcompmulti_format_metric(metrics$mae), "\n", sep = "")
   cat("RMSE: ", qgcompmulti_format_metric(metrics$rmse), "\n", sep = "")

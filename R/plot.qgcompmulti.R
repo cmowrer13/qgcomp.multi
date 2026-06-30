@@ -13,6 +13,11 @@
 #' @param x A fitted `"qgcompmulti"` object.
 #' @param style Character string specifying the surface display style.
 #' Supported values are `"heatmap"` and `"contour"`.
+#' @param scale Character string specifying the plotted outcome scale. Version
+#' `0.5.0` supports only `"response"` for plotting. Transformed-scale surface
+#' plots are intentionally out of scope; use [predict.qgcompmulti()] with
+#' `type = "msm_contrast"` and `contrast_scale = "estimand"` for direct
+#' ratio-scale regime comparisons.
 #' @param grid Optional user-specified MSM grid with columns `psi1` and `psi2`.
 #' If omitted, the stored fit-time MSM grid is used. User-supplied values are
 #' interpreted on the MSM coding scale.
@@ -95,6 +100,7 @@
 #' @export
 plot.qgcompmulti <- function(x,
                              style = c("heatmap", "contour"),
+                             scale = "response",
                              grid = NULL,
                              interval = FALSE,
                              slice = NULL,
@@ -105,6 +111,7 @@ plot.qgcompmulti <- function(x,
                              ...) {
   validate_qgcompmulti(x)
   style <- match.arg(style)
+  scale <- qgcompmulti_validate_plot_scale(scale)
   if (!is.logical(interval) || length(interval) != 1L || is.na(interval)) {
     stop("`interval` must be either `TRUE` or `FALSE`.", call. = FALSE)
   }
@@ -137,10 +144,10 @@ plot.qgcompmulti <- function(x,
       xlab <- paste0("MSM ", varying_var)
     }
     if (is.null(ylab)) {
-      ylab <- "Predicted outcome"
+      ylab <- default_labels$outcome_label
     }
     if (is.null(main)) {
-      main <- "MSM prediction with bootstrap interval"
+      main <- "MSM prediction with bootstrap interval (response scale)"
     }
     qgcompmulti_plot_interval_slice(
       prediction_result = prediction_result,
@@ -166,7 +173,7 @@ plot.qgcompmulti <- function(x,
     ylab <- default_labels$ylab
   }
   if (is.null(main)) {
-    main <- "Fitted MSM surface"
+    main <- "Fitted MSM surface (response scale)"
   }
   if (identical(style, "heatmap")) {
     qgcompmulti_plot_heatmap(
@@ -175,6 +182,7 @@ plot.qgcompmulti <- function(x,
       prediction_result = prediction_result,
       xlab = xlab,
       ylab = ylab,
+      legend_label = default_labels$outcome_label,
       main = main,
       ...
     )

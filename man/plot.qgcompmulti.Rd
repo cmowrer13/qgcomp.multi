@@ -7,6 +7,7 @@
 \method{plot}{qgcompmulti}(
   x,
   style = c("heatmap", "contour"),
+  scale = "response",
   grid = NULL,
   interval = FALSE,
   slice = NULL,
@@ -22,6 +23,12 @@
 
 \item{style}{Character string specifying the surface display style.
 Supported values are \code{"heatmap"} and \code{"contour"}.}
+
+\item{scale}{Character string specifying the plotted outcome scale. Version
+\verb{0.5.0} supports only \code{"response"} for plotting. Transformed-scale surface
+plots are intentionally out of scope; use \code{\link[=predict.qgcompmulti]{predict.qgcompmulti()}} with
+\code{type = "msm_contrast"} and \code{contrast_scale = "estimand"} for direct
+ratio-scale regime comparisons.}
 
 \item{grid}{Optional user-specified MSM grid with columns \code{psi1} and \code{psi2}.
 If omitted, the stored fit-time MSM grid is used. User-supplied values are
