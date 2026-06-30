@@ -7,11 +7,11 @@
 #' columns expose the active estimand scale for ordinary reporting.
 #'
 #' @param x A fitted `qgcompmulti` object.
-#' @param conf.int Logical; if `TRUE`, add Wald confidence interval columns.
+#' @param conf.int Logical; if `TRUE`, add confidence interval columns.
 #' @param conf.level Confidence level for interval columns when `conf.int = TRUE`.
 #' @param method Optional interval method for confidence intervals. `NULL` uses
-#'   the fitted object's stored default interval method. Version 0.5.0 currently
-#'   implements `"wald"` for coefficient reporting.
+#'   the fitted object's stored default interval method. Supported values are
+#'   `"wald"`, `"percentile"`, and `"basic"`.
 #' @param ... Not used.
 #'
 #' @return A data frame with one row per MSM coefficient. Columns `estimate`,
@@ -40,10 +40,6 @@ tidy.qgcompmulti <- function(x, conf.int = FALSE, conf.level = 0.95, method = NU
       method = method,
       default_method = x$analysis$default_interval_method,
       context = "single_fit"
-    )
-    qgcompmulti_require_wald_interval_method(
-      method = method,
-      object_label = "qgcompmulti tidy coefficient"
     )
   }
   coefficients <- coef(x)
@@ -74,10 +70,12 @@ tidy.qgcompmulti <- function(x, conf.int = FALSE, conf.level = 0.95, method = NU
   )
 
   if (isTRUE(conf.int)) {
-    fit_ci <- build_qgcompmulti_confint(
+    fit_ci <- qgcompmulti_build_single_fit_confint(
       coefficients = coefficients,
       std_error = std_error,
-      level = conf.level
+      coef_draws = x$bootstrap$coef_draws,
+      level = conf.level,
+      method = method
     )
     display_ci <- stats::confint(x, level = conf.level, method = method)
     out$conf.low <- unname(fit_ci[, 1])

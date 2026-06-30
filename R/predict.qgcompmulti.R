@@ -10,7 +10,7 @@
 #' \itemize{
 #'   \item \strong{MSM-based predictions}, which evaluate the fitted marginal
 #'   structural model on the MSM coding scale and support bootstrap percentile
-#'   intervals in Version 0.4.0; and
+#'   and basic bootstrap intervals; and
 #'   \item \strong{exact counterfactual predictions}, which come directly from
 #'   the fitted outcome model under specified interventions.
 #' }
@@ -33,9 +33,14 @@
 #' computed by differencing the MSM linear predictor and exponentiating.
 #' @param data Optional data frame used for exact arbitrary prediction or exact
 #' arbitrary contrasts. Exact arbitrary prediction requires explicit `data`.
-#' @param interval Logical; if `TRUE`, returns bootstrap percentile intervals
-#' when supported for the requested prediction type.
+#' @param interval Logical; if `TRUE`, returns bootstrap intervals when
+#' supported for the requested prediction type.
 #' @param level Confidence level used when `interval = TRUE`.
+#' @param method Optional interval method used when `interval = TRUE` for
+#'   MSM-based prediction outputs. Supported values are `"percentile"` and
+#'   `"basic"`. `NULL` uses the fitted object's stored default when it is a
+#'   bootstrap method, and otherwise falls back to `"percentile"` because Wald
+#'   intervals are coefficient-only.
 #' @param ... Unused.
 #'
 #' @return A structured list describing the requested prediction target. The
@@ -72,9 +77,8 @@
 #' function allows interpolation within that support, but it does not allow
 #' arbitrary extrapolation beyond the intervention range used to fit the model.
 #'
-#' Public interval support in Version 0.4.0 is limited to MSM-based
-#' predictions. Exact public prediction targets do not currently return
-#' intervals.
+#' Public interval support is limited to MSM-based predictions. Exact public
+#' prediction targets do not currently return intervals.
 #'
 #' @examples
 #' \dontrun{
@@ -145,6 +149,7 @@ predict.qgcompmulti <- function(object,
                                 data = NULL,
                                 interval = FALSE,
                                 level = 0.95,
+                                method = NULL,
                                 ...) {
   validate_qgcompmulti(object)
   type <- match.arg(type)
@@ -169,28 +174,33 @@ predict.qgcompmulti <- function(object,
     contrast_scale = contrast_scale,
     data = data,
     interval = interval,
-    level = level
+    level = level,
+    method = method
   )
   level_arg <- if (isTRUE(interval)) level else NULL
+  method_arg <- if (isTRUE(interval)) method else NULL
   switch(
     type,
     msm = qgcompmulti_predict_msm_surface(
       object = object,
       grid = grid,
-      level = level_arg
+      level = level_arg,
+      method = method_arg
     ),
     msm_point = qgcompmulti_predict_msm_point(
       object = object,
       psi1 = at[["psi1"]],
       psi2 = at[["psi2"]],
-      level = level_arg
+      level = level_arg,
+      method = method_arg
     ),
     msm_contrast = qgcompmulti_predict_msm_contrast(
       object = object,
       from = from,
       to = to,
       contrast_scale = contrast_scale,
-      level = level_arg
+      level = level_arg,
+      method = method_arg
     ),
     exact = if (is.null(data) && is.null(grid) && is.null(at)) {
       qgcompmulti_exact_fit_surface(object)

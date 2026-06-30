@@ -9,13 +9,13 @@
 \arguments{
 \item{x}{A fitted \code{qgcompmulti} object.}
 
-\item{conf.int}{Logical; if \code{TRUE}, add Wald confidence interval columns.}
+\item{conf.int}{Logical; if \code{TRUE}, add confidence interval columns.}
 
 \item{conf.level}{Confidence level for interval columns when \code{conf.int = TRUE}.}
 
 \item{method}{Optional interval method for confidence intervals. \code{NULL} uses
-the fitted object's stored default interval method. Version 0.5.0 currently
-implements \code{"wald"} for coefficient reporting.}
+the fitted object's stored default interval method. Supported values are
+\code{"wald"}, \code{"percentile"}, and \code{"basic"}.}
 
 \item{...}{Not used.}
 }

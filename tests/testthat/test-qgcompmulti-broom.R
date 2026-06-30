@@ -116,3 +116,19 @@ test_that("tidy exposes display-scale ratio columns while preserving fitting-sca
   expect_true(all(td$estimand_scale == "rate_ratio"))
   expect_true(all(td$msm_fitting_scale == "log"))
 })
+test_that("tidy supports basic bootstrap interval columns for single fits", {
+  tidy_method <- getFromNamespace("tidy.qgcompmulti", "qgcomp.multi")
+  fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
+  td <- tidy_method(fit, conf.int = TRUE, conf.level = 0.90, method = "basic")
+  fitting_ci <- qgcompmulti_build_single_fit_confint(
+    coefficients = coef(fit),
+    std_error = setNames(sqrt(diag(vcov(fit))), names(coef(fit))),
+    coef_draws = fit$bootstrap$coef_draws,
+    level = 0.90,
+    method = "basic"
+  )
+  expect_equal(td$conf.low, unname(fitting_ci[, 1]))
+  expect_equal(td$conf.high, unname(fitting_ci[, 2]))
+  expect_equal(td$display.conf.low, unname(fitting_ci[, 1]))
+  expect_equal(td$display.conf.high, unname(fitting_ci[, 2]))
+})

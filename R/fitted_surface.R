@@ -30,7 +30,8 @@ qgcompmulti_predict_msm_response <- function(object,
 #' @noRd
 qgcompmulti_predict_msm_surface <- function(object,
                                             grid = NULL,
-                                            level = NULL) {
+                                            level = NULL,
+                                            method = NULL) {
   validate_qgcompmulti(object)
   grid_info <- qgcompmulti_build_msm_grid(object, grid = grid)
   grid_df <- grid_info$grid
@@ -45,17 +46,28 @@ qgcompmulti_predict_msm_surface <- function(object,
   interval_type <- NULL
   uncertainty_source <- NULL
   if (!is.null(level)) {
+    method <- qgcompmulti_resolve_prediction_interval_method(
+      method = method,
+      default_method = object$analysis$default_interval_method
+    )
+    target_estimates <- qgcompmulti_predict_msm_target(object = object, grid = grid_df)
     target_draws <- qgcompmulti_bootstrap_msm_fitted_draws(object, grid_df)
-    response_draws <- qgcompmulti_transform_msm_fitted_draws(
+    interval_vals <- qgcompmulti_bootstrap_interval(
       draws = target_draws,
+      estimates = target_estimates,
+      level = level,
+      method = method
+    )
+    interval_vals[] <- qgcompmulti_transform_msm_surface(
+      values = as.matrix(interval_vals),
       msm_fitting_scale = object$analysis$msm_fitting_scale,
       direction = "to_response"
     )
     intervals <- cbind(
       estimates[, c("grid_id", "psi1", "psi2"), drop = FALSE],
-      qgcompmulti_bootstrap_interval(response_draws, level = level)
+      interval_vals
     )
-    interval_type <- "bootstrap_percentile"
+    interval_type <- qgcompmulti_prediction_interval_type_for_method(method)
     uncertainty_source <- "stored_bootstrap_draws"
   }
   build_qgcompmulti_prediction_result(
@@ -77,12 +89,14 @@ qgcompmulti_predict_msm_surface <- function(object,
 qgcompmulti_predict_msm_point <- function(object,
                                           psi1,
                                           psi2,
-                                          level = NULL) {
+                                          level = NULL,
+                                          method = NULL) {
   point <- c(psi1 = psi1, psi2 = psi2)
   qgcompmulti_validate_regime(point, arg = "point")
   point_result <- qgcompmulti_predict_msm_surface(
     object = object,
     level = level,
+    method = method,
     grid = data.frame(psi1 = psi1, psi2 = psi2, row.names = NULL)
   )
   point_result$prediction_type <- "msm_point"
@@ -153,7 +167,8 @@ qgcompmulti_predict_msm_contrast <- function(object,
                                              from,
                                              to,
                                              contrast_scale = c("response", "estimand"),
-                                             level = NULL) {
+                                             level = NULL,
+                                             method = NULL) {
   contrast_scale <- match.arg(contrast_scale)
   qgcompmulti_validate_regime(from, arg = "from")
   qgcompmulti_validate_regime(to, arg = "to")
@@ -177,15 +192,42 @@ qgcompmulti_predict_msm_contrast <- function(object,
   interval_type <- NULL
   uncertainty_source <- NULL
   if (!is.null(level)) {
-    contrast_draws <- qgcompmulti_msm_contrast_draws(
-      object = object,
-      from_grid = from_grid,
-      to_grid = to_grid,
-      contrast_scale = contrast_scale
+    method <- qgcompmulti_resolve_prediction_interval_method(
+      method = method,
+      default_method = object$analysis$default_interval_method
     )
-    interval_vals <- qgcompmulti_bootstrap_interval(contrast_draws, level = level)
+    if (identical(contrast_scale, "estimand")) {
+      from_target <- qgcompmulti_predict_msm_target(object = object, grid = from_grid)
+      to_target <- qgcompmulti_predict_msm_target(object = object, grid = to_grid)
+      from_draws <- qgcompmulti_bootstrap_msm_fitted_draws(object, from_grid)
+      to_draws <- qgcompmulti_bootstrap_msm_fitted_draws(object, to_grid)
+      interval_vals <- qgcompmulti_bootstrap_interval(
+        draws = to_draws - from_draws,
+        estimates = to_target - from_target,
+        level = level,
+        method = method
+      )
+      interval_vals[] <- qgcompmulti_transform_msm_coefficients(
+        values = as.matrix(interval_vals),
+        estimand_scale = object$analysis$estimand_scale,
+        direction = "to_display"
+      )
+    } else {
+      contrast_draws <- qgcompmulti_msm_contrast_draws(
+        object = object,
+        from_grid = from_grid,
+        to_grid = to_grid,
+        contrast_scale = contrast_scale
+      )
+      interval_vals <- qgcompmulti_bootstrap_interval(
+        draws = contrast_draws,
+        estimates = estimate,
+        level = level,
+        method = method
+      )
+    }
     intervals <- cbind(estimates[, c("from_psi1", "from_psi2", "to_psi1", "to_psi2"), drop = FALSE], interval_vals)
-    interval_type <- "bootstrap_percentile"
+    interval_type <- qgcompmulti_prediction_interval_type_for_method(method)
     uncertainty_source <- "stored_bootstrap_draws"
   }
   build_qgcompmulti_prediction_result(

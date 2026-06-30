@@ -344,7 +344,8 @@ validate_predict_qgcompmulti_inputs <- function(type,
                                                 contrast_scale = NULL,
                                                 data = NULL,
                                                 interval = FALSE,
-                                                level = 0.95) {
+                                                level = 0.95,
+                                                method = NULL) {
   allowed_types <- c("msm", "msm_point", "msm_contrast", "exact", "exact_contrast")
   if (!is.character(type) || length(type) != 1L || is.na(type) || !type %in% allowed_types) {
     stop(
@@ -357,6 +358,13 @@ validate_predict_qgcompmulti_inputs <- function(type,
   }
   if (isTRUE(interval)) {
     qgcompmulti_validate_conf_level(level)
+    qgcompmulti_validate_interval_method(
+      method = method,
+      context = "single_fit",
+      allow_null = TRUE
+    )
+  } else if (!is.null(method)) {
+    stop("`method` is only supported when `interval = TRUE`.", call. = FALSE)
   }
   if (!is.null(contrast_scale)) {
     if (!is.character(contrast_scale) ||
@@ -398,7 +406,7 @@ validate_predict_qgcompmulti_inputs <- function(type,
       stop("`type = \"exact\"` does not support `from` or `to`.", call. = FALSE)
     }
     if (isTRUE(interval)) {
-      stop("Intervals are not supported for public exact predictions in Version 0.4.0.", call. = FALSE)
+      stop("Intervals are not supported for public exact predictions.", call. = FALSE)
     }
     if (is.null(data) && (!is.null(grid) || !is.null(at))) {
       stop("Exact arbitrary prediction requires explicit `data` when `grid` or `at` is supplied.", call. = FALSE)
@@ -415,7 +423,7 @@ validate_predict_qgcompmulti_inputs <- function(type,
       stop("`type = \"exact_contrast\"` does not support `grid` or `at`.", call. = FALSE)
     }
     if (isTRUE(interval)) {
-      stop("Intervals are not supported for public exact contrasts in Version 0.4.0.", call. = FALSE)
+      stop("Intervals are not supported for public exact contrasts.", call. = FALSE)
     }
   }
   invisible(NULL)

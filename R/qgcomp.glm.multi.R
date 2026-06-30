@@ -90,7 +90,8 @@
 #' If a non-sequential `future` plan is already active, supplying an explicit
 #' `workers` value is treated as an unsupported combination and errors clearly.
 #' @param default_interval_method Character string giving the stored default
-#' coefficient interval method for the fitted object.
+#' coefficient interval method for the fitted object. Supported values are
+#' `"wald"`, `"percentile"`, and `"basic"`.
 #'
 #' @return An object of class `"qgcompmulti"` representing the fitted
 #' two-mixture quantile g-computation model. Major components include:

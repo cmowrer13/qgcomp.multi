@@ -22,7 +22,7 @@
 #' If omitted, the stored fit-time MSM grid is used. User-supplied values are
 #' interpreted on the MSM coding scale.
 #' @param interval Logical; if `TRUE`, produces a slice-based line display with
-#' bootstrap percentile intervals instead of a 2D surface plot.
+#' bootstrap intervals instead of a 2D surface plot.
 #' @param slice Optional list with elements `var` and `value` describing the
 #' fixed MSM coordinate for interval plotting. For example,
 #' `list(var = "psi2", value = 1)` fixes `psi2` and varies `psi1` over the

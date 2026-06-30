@@ -17,8 +17,9 @@ a character vector of coefficient names.}
 between 0 and 1.}
 
 \item{method}{Optional interval method. \code{NULL} uses the fitted object's
-stored default interval method. Version 0.5.0 currently implements
-\code{"wald"} for coefficient reporting.}
+stored default interval method. Supported values are \code{"wald"},
+\code{"percentile"}, and \code{"basic"}. The basic method is the reverse-percentile
+bootstrap interval.}
 
 \item{...}{Not used.}
 }
@@ -29,18 +30,20 @@ recorded in \code{object$analysis$estimand_scale}.
 }
 \description{
 Returns confidence intervals for the marginal structural model (MSM)
-coefficients reported by a fitted \code{qgcompmulti} object. In Version 0.5.0,
-coefficient intervals are implemented for the Wald method. For ratio
-estimands, intervals are computed on the MSM fitting scale and then
+coefficients reported by a fitted \code{qgcompmulti} object. Wald, percentile,
+and basic bootstrap intervals are supported for single-fit objects. For
+ratio estimands, intervals are computed on the MSM fitting scale and then
 transformed to the user-facing ratio scale.
 }
 \details{
 Wald confidence intervals are based on the MSM coefficient estimates and the
-stored covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}. The underlying
-Wald calculation is carried out on the MSM fitting scale. When the active
-estimand is \code{"odds_ratio"} or \code{"rate_ratio"}, the returned limits are
-exponentiated for display. The rows of the returned matrix align with
-\code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, but the numeric scale may differ for ratio estimands.
+stored covariance matrix returned by \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}}. Percentile and
+basic bootstrap intervals are based on the stored bootstrap coefficient
+draws. All interval calculations are carried out on the MSM fitting scale.
+When the active estimand is \code{"odds_ratio"} or \code{"rate_ratio"}, the returned
+limits are exponentiated for display. The rows of the returned matrix align
+with \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, but the numeric scale may differ for ratio
+estimands.
 }
 \seealso{
 \code{\link[=coef.qgcompmulti]{coef.qgcompmulti()}}, \code{\link[=vcov.qgcompmulti]{vcov.qgcompmulti()}},

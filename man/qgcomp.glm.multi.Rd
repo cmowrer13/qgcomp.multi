@@ -75,7 +75,8 @@ the outcome regression. This argument is ignored when \code{q} is numeric.}
 replications used for standard error estimation.}
 
 \item{default_interval_method}{Character string giving the stored default
-coefficient interval method for the fitted object.}
+coefficient interval method for the fitted object. Supported values are
+\code{"wald"}, \code{"percentile"}, and \code{"basic"}.}
 
 \item{id}{Optional character string giving the name of a cluster identifier
 variable. If supplied, bootstrap resampling is performed at the cluster

@@ -55,7 +55,7 @@ test_that("estimand helper validation enforces family and link compatibility", {
 test_that("interval helpers expose the planned method contract", {
   expect_identical(
     qgcompmulti_interval_methods("single_fit"),
-    c("wald", "percentile", "percentile_type2")
+    c("wald", "percentile", "basic")
   )
   expect_identical(qgcompmulti_interval_methods("mi"), "wald")
   expect_identical(
@@ -63,8 +63,8 @@ test_that("interval helpers expose the planned method contract", {
     "bootstrap_percentile"
   )
   expect_identical(
-    qgcompmulti_prediction_interval_type_for_method("percentile_type2"),
-    "bootstrap_percentile_type2"
+    qgcompmulti_prediction_interval_type_for_method("basic"),
+    "bootstrap_basic"
   )
 
   expect_error(

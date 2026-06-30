@@ -8,9 +8,9 @@ qgcompmulti_interval_methods <- function(context = c("single_fit", "mi", "predic
 
   switch(
     context,
-    single_fit = c("wald", "percentile", "percentile_type2"),
+    single_fit = c("wald", "percentile", "basic"),
     mi = "wald",
-    prediction = c("bootstrap_percentile", "bootstrap_percentile_type2")
+    prediction = c("bootstrap_percentile", "bootstrap_basic")
   )
 }
 
@@ -87,6 +87,35 @@ qgcompmulti_require_wald_interval_method <- function(method,
 
 #' @keywords internal
 #' @noRd
+qgcompmulti_prediction_interval_methods <- function() {
+  setdiff(qgcompmulti_interval_methods(context = "single_fit"), "wald")
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_resolve_prediction_interval_method <- function(method,
+                                                           default_method) {
+  if (is.null(method)) {
+    method <- default_method
+    if (identical(method, "wald")) {
+      method <- "percentile"
+    }
+  }
+  qgcompmulti_validate_interval_method(
+    method = method,
+    context = "single_fit",
+    allow_null = FALSE
+  )
+  if (identical(method, "wald")) {
+    stop(
+      "MSM prediction intervals support `method = \"percentile\"` or `method = \"basic\"`; Wald intervals are currently coefficient-only.",
+      call. = FALSE
+    )
+  }
+  method
+}
+
+#' @keywords internal
+#' @noRd
 qgcompmulti_prediction_interval_types <- function() {
   qgcompmulti_interval_methods(context = "prediction")
 }
@@ -133,6 +162,88 @@ qgcompmulti_prediction_interval_type_for_method <- function(method) {
     method,
     wald = NULL,
     percentile = "bootstrap_percentile",
-    percentile_type2 = "bootstrap_percentile_type2"
+    basic = "bootstrap_basic"
   )
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_bootstrap_interval_limits <- function(draws,
+                                                  estimates,
+                                                  level = 0.95,
+                                                  method = c("percentile", "basic"),
+                                                  margin = c("row", "column")) {
+  method <- match.arg(method)
+  margin <- match.arg(margin)
+  qgcompmulti_validate_conf_level(level)
+  draws <- as.matrix(draws)
+  estimates <- as.numeric(estimates)
+  expected_length <- if (identical(margin, "row")) nrow(draws) else ncol(draws)
+  if (length(estimates) != expected_length) {
+    stop("`estimates` must align with the requested bootstrap interval margin.", call. = FALSE)
+  }
+  alpha <- (1 - level) / 2
+  probs <- c(alpha, 1 - alpha)
+  quantile_fun <- function(x) {
+    stats::quantile(x, probs = probs, na.rm = TRUE, names = FALSE)
+  }
+  quantiles <- if (identical(margin, "row")) {
+    t(apply(draws, 1, quantile_fun))
+  } else {
+    t(apply(draws, 2, quantile_fun))
+  }
+  if (identical(method, "percentile")) {
+    limits <- quantiles
+  } else {
+    limits <- cbind(
+      2 * estimates - quantiles[, 2],
+      2 * estimates - quantiles[, 1]
+    )
+  }
+  colnames(limits) <- c("lower", "upper")
+  limits
+}
+#' @keywords internal
+#' @noRd
+qgcompmulti_build_single_fit_confint <- function(coefficients,
+                                                 std_error,
+                                                 coef_draws = NULL,
+                                                 level = 0.95,
+                                                 method = c("wald", "percentile", "basic")) {
+  method <- match.arg(method)
+  if (identical(method, "wald")) {
+    return(build_qgcompmulti_confint(
+      coefficients = coefficients,
+      std_error = std_error,
+      level = level
+    ))
+  }
+  if (is.null(coef_draws)) {
+    stop("Stored bootstrap coefficient draws are required for bootstrap interval methods.", call. = FALSE)
+  }
+  if (!is.numeric(coefficients) || is.null(names(coefficients))) {
+    stop("`coefficients` must be a named numeric vector.", call. = FALSE)
+  }
+  draws <- as.matrix(coef_draws)
+  missing_coef <- setdiff(names(coefficients), colnames(draws))
+  if (length(missing_coef) > 0L) {
+    stop(
+      sprintf(
+        "Stored bootstrap coefficient draws are missing coefficient(s): %s.",
+        paste(missing_coef, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  draws <- draws[, names(coefficients), drop = FALSE]
+  limits <- qgcompmulti_bootstrap_interval_limits(
+    draws = draws,
+    estimates = coefficients,
+    level = level,
+    method = method,
+    margin = "column"
+  )
+  out <- cbind(limits[, "lower"], limits[, "upper"])
+  rownames(out) <- names(coefficients)
+  colnames(out) <- qgcompmulti_confint_colnames(level)
+  out
 }

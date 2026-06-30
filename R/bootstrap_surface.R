@@ -53,15 +53,21 @@ qgcompmulti_transform_msm_fitted_draws <- function(draws,
 }
 #' @keywords internal
 #' @noRd
-qgcompmulti_bootstrap_interval <- function(draws, level = 0.95) {
-  qgcompmulti_validate_conf_level(level)
-  draws <- as.matrix(draws)
-  alpha <- (1 - level) / 2
-  lower <- apply(draws, 1, stats::quantile, probs = alpha, na.rm = TRUE)
-  upper <- apply(draws, 1, stats::quantile, probs = 1 - alpha, na.rm = TRUE)
+qgcompmulti_bootstrap_interval <- function(draws,
+                                           estimates,
+                                           level = 0.95,
+                                           method = c("percentile", "basic")) {
+  method <- match.arg(method)
+  limits <- qgcompmulti_bootstrap_interval_limits(
+    draws = draws,
+    estimates = estimates,
+    level = level,
+    method = method,
+    margin = "row"
+  )
   data.frame(
-    lower = as.numeric(lower),
-    upper = as.numeric(upper),
+    lower = as.numeric(limits[, "lower"]),
+    upper = as.numeric(limits[, "upper"]),
     row.names = NULL
   )
 }

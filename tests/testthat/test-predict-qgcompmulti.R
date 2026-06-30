@@ -89,6 +89,37 @@ test_that("predict supports MSM contrasts and intervals", {
   expect_true(is.data.frame(result$intervals))
   expect_equal(nrow(result$estimates), 1)
 })
+test_that("predict supports percentile and basic MSM prediction intervals", {
+  fit <- fit_test_model(interaction = TRUE, q = 4, B = 10)
+  surface_percentile <- predict(fit, type = "msm", interval = TRUE, method = "percentile")
+  surface_basic <- predict(fit, type = "msm", interval = TRUE, method = "basic")
+  point_basic <- predict(
+    fit,
+    type = "msm_point",
+    at = c(psi1 = 1, psi2 = 2),
+    interval = TRUE,
+    method = "basic"
+  )
+  contrast_basic <- predict(
+    fit,
+    type = "msm_contrast",
+    from = c(psi1 = 0, psi2 = 0),
+    to = c(psi1 = 2, psi2 = 1),
+    interval = TRUE,
+    method = "basic"
+  )
+  expect_identical(surface_percentile$interval_type, "bootstrap_percentile")
+  expect_identical(surface_basic$interval_type, "bootstrap_basic")
+  expect_identical(point_basic$interval_type, "bootstrap_basic")
+  expect_identical(contrast_basic$interval_type, "bootstrap_basic")
+  expect_true(is.data.frame(surface_basic$intervals))
+  expect_true(is.data.frame(point_basic$intervals))
+  expect_true(is.data.frame(contrast_basic$intervals))
+  expect_error(
+    predict(fit, type = "msm", interval = TRUE, method = "wald"),
+    "coefficient-only"
+  )
+})
 test_that("predict supports no-interaction fits through the public API", {
   fit <- fit_test_model(interaction = FALSE, q = 4, B = 10)
   result <- predict(fit)
@@ -132,7 +163,10 @@ test_that("predict fails clearly on invalid public combinations", {
   expect_error(predict(fit, type = "msm_contrast", from = c(psi1 = 0, psi2 = 0)))
   expect_error(predict(fit, type = "exact", at = c(psi1 = 1, psi2 = 2)))
   expect_error(predict(fit, type = "exact", data = dat, interval = TRUE),
-               "Version 0.4.0"
+               "not supported"
+               )
+  expect_error(predict(fit, type = "msm", method = "percentile"),
+               "only supported"
                )
   expect_error(predict(fit, type = "exact_contrast", from = c(psi1 = 0, psi2 = 0), to = c(psi1 = 1, psi2 = 2)))
   expect_error(predict(fit, type = "msm", at = c(psi1 = 1, psi2 = 2)))
@@ -209,6 +243,43 @@ test_that("predict MSM contrast defaults to response scale and supports estimand
   expect_equal(ratio_contrast$estimates$estimate, exp(to_target - from_target))
   expect_true(all(ratio_contrast$intervals$lower > 0))
   expect_true(all(ratio_contrast$intervals$upper > 0))
+})
+test_that("predict constructs basic ratio contrast intervals on the fitting scale", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    B = 10,
+    family = binomial(link = "logit")
+  )
+  from <- c(psi1 = 0, psi2 = 0)
+  to <- c(psi1 = 2, psi2 = 1)
+  from_grid <- qgcompmulti_build_msm_grid(fit, at = from)$grid
+  to_grid <- qgcompmulti_build_msm_grid(fit, at = to)$grid
+  from_target <- qgcompmulti_predict_msm_target(fit, from_grid)
+  to_target <- qgcompmulti_predict_msm_target(fit, to_grid)
+  from_draws <- qgcompmulti_bootstrap_msm_fitted_draws(fit, from_grid)
+  to_draws <- qgcompmulti_bootstrap_msm_fitted_draws(fit, to_grid)
+  fitting_interval <- qgcompmulti_bootstrap_interval(
+    draws = to_draws - from_draws,
+    estimates = to_target - from_target,
+    level = 0.90,
+    method = "basic"
+  )
+  result <- predict(
+    fit,
+    type = "msm_contrast",
+    from = from,
+    to = to,
+    contrast_scale = "estimand",
+    interval = TRUE,
+    level = 0.90,
+    method = "basic"
+  )
+  expect_identical(result$interval_type, "bootstrap_basic")
+  expect_equal(result$intervals$lower, exp(fitting_interval$lower))
+  expect_equal(result$intervals$upper, exp(fitting_interval$upper))
+  expect_true(all(result$intervals$lower > 0))
+  expect_true(all(result$intervals$upper > 0))
 })
 test_that("predict validates contrast scale usage", {
   fit <- fit_test_model(interaction = TRUE, q = 4)
