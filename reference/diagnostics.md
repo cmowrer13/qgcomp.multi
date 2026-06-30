@@ -51,8 +51,9 @@ The three main diagnostic families are:
   lightweight failure metadata stored in the fitted object.
 
 - **MSM adequacy diagnostics**, which compare the exact fit-time
-  counterfactual surface to the fitted MSM surface on the response
-  scale.
+  counterfactual surface to the fitted MSM surface. For
+  transformed-scale fits, the primary adequacy comparison is made on the
+  MSM fitting scale.
 
 Support diagnostics should not be read as a full positivity proof. They
 are designed to help users see which intervention values define the

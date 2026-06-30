@@ -35,7 +35,7 @@
 
     <a class="navbar-brand me-2" href="index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -88,7 +89,10 @@
 </li>
 <li>original-scale analyses with <code>q = NULL</code>
 </li>
-<li>MSM-based prediction, plotting, diagnostics, and adequacy checks</li>
+<li>additive and ratio-scale MSM summaries through <code>estimand_scale</code>
+</li>
+<li>Wald, percentile, and basic bootstrap intervals for single-fit coefficient summaries</li>
+<li>MSM-based prediction, plotting, diagnostics, adequacy checks, and confidence regions</li>
 <li>sensitivity helpers for Monte Carlo size, bootstrap size, and quantization</li>
 <li>native multiple-imputation pooling through <code><a href="reference/qgcomp.glm.multi.mi.html">qgcomp.glm.multi.mi()</a></code>
 </li>
@@ -124,7 +128,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-<p>In this setting, the MSM coefficients summarize the expected outcome change associated with simultaneous one-quantile shifts in the component exposures of each mixture.</p>
+<p>In this setting, the MSM coefficients summarize the expected outcome change associated with simultaneous one-quantile shifts in the component exposures of each mixture. For binary and count outcomes, check the reported estimand scale before interpreting the coefficient table.</p>
 </div>
 <div class="section level2">
 <h2 id="original-scale-fitting-with-q--null">Original-scale fitting with <code>q = NULL</code>
@@ -173,6 +177,8 @@
 </li>
 <li>surface visualization with <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>
 </li>
+<li>coefficient confidence regions with <code><a href="reference/confregion.html">confregion()</a></code>
+</li>
 <li>intervention support, bootstrap, and adequacy diagnostics</li>
 <li>sensitivity analysis with <code><a href="reference/mcsize_sensitivity.html">mcsize_sensitivity()</a></code>, <code><a href="reference/b_sensitivity.html">b_sensitivity()</a></code>, and <code><a href="reference/q_sensitivity.html">q_sensitivity()</a></code>
 </li>
@@ -180,13 +186,14 @@
 </li>
 <li>optional bootstrap-level parallelism for larger workflows</li>
 </ul>
-<p>Those features are documented in more detail in the workflow article, function reference, and the fuller README on GitHub.</p>
+<p>Those features are documented in more detail in the workflow article, the effect-scales article, the function reference, and the fuller README on GitHub.</p>
 </div>
 <div class="section level2">
 <h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
 <ul>
 <li>Read the <a href="articles/qgcompmulti-workflow.html">workflow article</a> for a fuller end-to-end example</li>
+<li>Read the <a href="articles/qgcompmulti-effect-scales.html">effect scales, intervals, and prediction scales article</a> for the estimand-scale and interval behavior</li>
 <li>Browse the <a href="reference/index.html">function reference</a> for the complete API</li>
 <li>Review the <a href="news/index.html">news page</a> for recent release history</li>
 <li>View the source repository on <a href="https://github.com/cmowrer13/qgcomp.multi" class="external-link">GitHub</a>

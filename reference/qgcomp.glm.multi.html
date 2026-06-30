@@ -19,7 +19,7 @@ Uncertainty is estimated using a nonparametric bootstrap."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,7 @@ Uncertainty is estimated using a nonparametric bootstrap."><meta property="og:im
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="../articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -71,9 +72,11 @@ Uncertainty is estimated using a nonparametric bootstrap.</p>
 <span>  <span class="va">mix2</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  estimand_scale <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  q <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  centering <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  B <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>  default_interval_method <span class="op">=</span> <span class="st">"wald"</span>,</span>
 <span>  id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  MCsize <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -125,6 +128,14 @@ interaction.</p></dd>
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>) specifying the outcome model.</p></dd>
 
 
+<dt id="arg-estimand-scale">estimand_scale<a class="anchor" aria-label="anchor" href="#arg-estimand-scale"></a></dt>
+<dd><p>Optional character string naming the fitted MSM
+estimand scale. Supported values depend on <code>family</code> and its link:
+<code>"mean_difference"</code> for Gaussian; <code>"risk_difference"</code> or <code>"odds_ratio"</code> for
+binomial-logit; and <code>"mean_difference"</code> or <code>"rate_ratio"</code> for Poisson-log.
+If <code>NULL</code>, the Version <code>0.5.0</code> defaults are used.</p></dd>
+
+
 <dt id="arg-q">q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
 <dd><p>Integer greater than or equal to 2 giving the number of quantiles
 used to discretize the exposure variables, or <code>NULL</code> to skip quantization and
@@ -146,6 +157,12 @@ the outcome regression. This argument is ignored when <code>q</code> is numeric.
 <dt id="arg-b">B<a class="anchor" aria-label="anchor" href="#arg-b"></a></dt>
 <dd><p>Integer greater than or equal to 2 giving the number of bootstrap
 replications used for standard error estimation.</p></dd>
+
+
+<dt id="arg-default-interval-method">default_interval_method<a class="anchor" aria-label="anchor" href="#arg-default-interval-method"></a></dt>
+<dd><p>Character string giving the stored default
+coefficient interval method for the fitted object. Supported values are
+<code>"wald"</code>, <code>"percentile"</code>, and <code>"basic"</code>.</p></dd>
 
 
 <dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
@@ -276,18 +293,28 @@ simply adding an interaction at the final summary step.</p>
 <p>The outcome model is fit using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>, so this function can be used with
 Gaussian, binomial, Poisson, and other generalized linear models supported by
 the supplied formula and family specification. Predicted potential outcomes
-are computed on the response scale and the MSM is fit using an identity link,
-regardless of the outcome-model link function.</p>
-<p>Interpretation therefore depends on the outcome type:</p><ul><li><p>For continuous outcomes, parameters represent mean differences.</p></li>
-<li><p>For binary outcomes, parameters represent differences in predicted
-probabilities, that is, risk differences.</p></li>
-<li><p>For count outcomes, parameters represent differences in expected counts.</p></li>
-</ul><p>If <code>progress = TRUE</code>, the bootstrap loop prints a compact single-line status
+are always computed on the response scale. The MSM is then fit either on that
+response scale or on a transformed marginal mean surface, depending on the
+requested <code>estimand_scale</code>.</p>
+<p>Interpretation depends on the outcome type and the chosen
+<code>estimand_scale</code>:</p><ul><li><p>Gaussian fits use <code>"mean_difference"</code>.</p></li>
+<li><p>Binomial-logit fits default to <code>"odds_ratio"</code>; users can request
+<code>"risk_difference"</code> for additive risk summaries.</p></li>
+<li><p>Poisson-log fits default to <code>"rate_ratio"</code>; users can request
+<code>"mean_difference"</code> for additive expected-count summaries.</p></li>
+</ul><p>For ratio estimands, the MSM is fit on the log scale needed for coherent
+coefficient inference. The stored coefficients, standard errors, and
+covariance matrix remain on that fitting scale. Print, summary, confidence
+interval, and tidy methods add display-scale quantities where those are more
+natural for reporting. Prediction and surface plotting remain response-scale
+operations unless a direct MSM contrast explicitly requests
+<code>contrast_scale = "estimand"</code>.</p>
+<p>If <code>progress = TRUE</code>, the bootstrap loop prints a compact single-line status
 display in serial mode. The failed-replicate counter is shown only after the
 first failed bootstrap iteration, so clean runs do not carry extra visual
-noise. Parallel execution is intentionally limited to one level in
-Version <code>0.4.0</code>, so requesting <code>progress = TRUE</code> together with
-<code>parallel = TRUE</code> disables the progress display with an explicit warning.</p>
+noise. Parallel execution is intentionally limited to one level, so
+requesting <code>progress = TRUE</code> together with <code>parallel = TRUE</code> disables the
+progress display with an explicit warning.</p>
 <p>When <code>parallel = TRUE</code>, the bootstrap replications are dispatched with
 <code>future.apply</code>. If no non-sequential <code>future</code> plan is already active and
 <code>workers</code> is left <code>NULL</code>, the function uses a temporary local
@@ -342,6 +369,9 @@ intervention grid, but it should not be read as a full positivity proof.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Model:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Outcome: Y</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Family: gaussian (identity)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Estimand: Mean difference (default)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MSM fitting scale: identity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Default interval method: wald</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Observations used: 500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Exposure mode: Quantized exposures (q = 4)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   MSM interaction: included</span>
@@ -372,6 +402,9 @@ intervention grid, but it should not be read as a full positivity proof.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Formula: Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Outcome: Y</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Family: gaussian (identity)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Estimand: Mean difference (default)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MSM fitting scale: identity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Default interval method: wald</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Observations used: 500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Exposure mode: Quantized exposures (q = 4)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   MSM interaction: included</span>
@@ -493,6 +526,9 @@ intervention grid, but it should not be read as a full positivity proof.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Model:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Outcome: Y</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Family: gaussian (identity)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Estimand: Mean difference (default)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MSM fitting scale: identity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Default interval method: wald</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Observations used: 500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Exposure mode: Original-scale exposures (centering = "median")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   MSM interaction: included</span>
@@ -523,6 +559,9 @@ intervention grid, but it should not be read as a full positivity proof.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Formula: Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Outcome: Y</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Family: gaussian (identity)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Estimand: Mean difference (default)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   MSM fitting scale: identity</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Default interval method: wald</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Observations used: 500</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Exposure mode: Original-scale exposures (centering = "median")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   MSM interaction: included</span>

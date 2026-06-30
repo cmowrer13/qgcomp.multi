@@ -2,13 +2,15 @@
 
 Returns a broom-style coefficient table for the pooled marginal
 structural model (MSM) coefficients stored in a fitted `qgcompmulti_mi`
-object.
+object. The core `estimate` and `std.error` columns stay on the
+Rubin-pooled fitting scale, while display columns expose the active
+estimand scale for reporting.
 
 ## Usage
 
 ``` r
 # S3 method for class 'qgcompmulti_mi'
-tidy(x, conf.int = FALSE, conf.level = 0.95, ...)
+tidy(x, conf.int = FALSE, conf.level = 0.95, method = NULL, ...)
 ```
 
 ## Arguments
@@ -25,25 +27,29 @@ tidy(x, conf.int = FALSE, conf.level = 0.95, ...)
 
   Confidence level for interval columns when `conf.int = TRUE`.
 
+- method:
+
+  Optional interval method. Pooled multiple-imputation coefficient
+  reporting supports only `"wald"` in Version 0.5.0.
+
 - ...:
 
   Not used.
 
 ## Value
 
-A data frame with one row per pooled MSM coefficient and columns `term`,
-`estimate`, `std.error`, `statistic`, `df`, and `p.value`. When
-`conf.int = TRUE`, the returned data frame also includes `conf.low` and
-`conf.high`.
+A data frame with one row per pooled MSM coefficient. Columns
+`estimate`, `std.error`, `statistic`, `df`, and `p.value` are on the
+fitting scale. Columns `display.estimate`, `display.conf.low`, and
+`display.conf.high` are on the active estimand scale when present.
 
 ## Details
 
-This method stays coefficient-centric. It reports the pooled MSM
-coefficients and Rubin-style inferential quantities that belong
-naturally in a reporting table, while leaving fit-level metadata to
-[`broom::glance()`](https://broom.tidymodels.org/reference/reexports.html)
-and leaving per-imputation fitted-model inspection to the stored
-`"qgcompmulti"` objects when `keep_fits = TRUE`.
+Pooled multiple-imputation inference is carried out on the fitting
+scale. For odds-ratio and rate-ratio estimands, the display columns
+transform only the final pooled estimates and interval limits. Rubin
+pooling, standard errors, test statistics, and degrees of freedom remain
+on the fitting scale.
 
 ## See also
 

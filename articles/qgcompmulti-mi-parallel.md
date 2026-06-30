@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Version `0.4.0` adds two workflow-oriented capabilities that often
+The package includes two workflow-oriented capabilities that often
 matter together in practice:
 
 - native multiple-imputation fitting through
@@ -27,9 +27,9 @@ when you want `qgcomp.multi` to:
 - pool the MSM coefficients and covariance internally using Rubin’s
   rules
 
-In Version `0.4.0`, the pooled object is focused on inference and
-summary. It does not try to reproduce the full prediction and
-diagnostics surface of a single-fit `qgcompmulti` object.
+The pooled object is focused on inference and summary. It does not try
+to reproduce the full prediction and diagnostics surface of a single-fit
+`qgcompmulti` object.
 
 ## A small completed-data example
 
@@ -94,6 +94,9 @@ summary(fit_mi)
 #>   Formula: Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Interval method: wald (pooled multiple imputation)
 #>   Observations used: 120
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -195,7 +198,7 @@ fit_mi_mids <- qgcomp.glm.multi.mi(
 
 ## Optional bootstrap-level parallelism
 
-Version `0.4.0` supports one level of optional parallelism.
+The package supports one level of optional parallelism.
 
 For ordinary fits, bootstrap replications can be dispatched in parallel
 inside
@@ -240,13 +243,14 @@ fit_mi_parallel <- qgcomp.glm.multi.mi(
 
 Several practical limits are worth stating plainly:
 
-- the MI loop itself is still serial in Version `0.4.0`
+- the MI loop itself is still serial
 - reproducibility is defined within a fixed backend and execution mode,
   not as exact equality between serial and parallel runs
 - `progress = TRUE` is supported only in serial mode and is disabled
   with a clear warning when `parallel = TRUE`
-- pooled prediction and pooled diagnostics are not yet the main target
-  of the pooled MI object
+- pooled prediction, pooled diagnostics, pooled bootstrap interval
+  methods, and pooled confidence regions are not yet the main target of
+  the pooled MI object
 
 In practice, the native MI wrapper is best used when pooled MSM
 inference is the main goal and you want the package to manage the
@@ -256,6 +260,8 @@ repeated fitting and Rubin pooling directly.
 
 - [Applied Workflow for Two-Mixture Quantile
   g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md)
 - [Clustered Data and Repeated
   Measures](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-clustered-data.md)
 - [Diagnostics and Sensitivity

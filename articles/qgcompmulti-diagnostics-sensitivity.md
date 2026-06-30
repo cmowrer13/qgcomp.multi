@@ -102,6 +102,8 @@ sparsity.
 adequacy(fit)
 #> qgcompmulti MSM adequacy diagnostic
 #> 
+#> Comparison scale: response
+#> MSM fitting scale: identity
 #> Grid points: 16
 #> Mean absolute error: 0.000
 #> RMSE: 0.000
@@ -200,6 +202,8 @@ not move much under reasonable sensitivity changes.
 
 - [Applied Workflow for Two-Mixture Quantile
   g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md)
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md)
 - [Clustered Data and Repeated

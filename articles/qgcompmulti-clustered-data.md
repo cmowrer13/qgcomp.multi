@@ -101,6 +101,9 @@ summary(fit_clustered)
 #>   Formula: Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 150
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -208,6 +211,8 @@ two-mixture workflow the same.
 
 - [Applied Workflow for Two-Mixture Quantile
   g-Computation](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md)
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md)
 - [Diagnostics and Sensitivity

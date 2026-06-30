@@ -1,5 +1,36 @@
 # Changelog
 
+## qgcomp.multi 0.5.0
+
+### Added
+
+- Added estimand-scale choices for ordinary and multiple-imputation
+  fits, including odds-ratio and rate-ratio summaries for supported
+  family/link combinations.
+- Added percentile and basic bootstrap confidence intervals for
+  single-fit coefficient summaries and MSM-based prediction intervals.
+- Added
+  [`confregion()`](https://cmowrer13.github.io/qgcomp.multi/reference/confregion.md)
+  for single-fit bootstrap-covariance chi-squared confidence regions for
+  selected MSM coefficients.
+- Added an effect-scales vignette explaining fitting scale, display
+  scale, response-scale prediction, interval methods, and current MI
+  limits.
+
+### Changed
+
+- Updated binomial-logit and Poisson-log defaults to use ratio estimands
+  unless the user requests additive alternatives.
+- Clarified reporting so ratio estimands show both the fitting-scale
+  coefficient and the exponentiated ratio where appropriate.
+- Kept prediction and surface plotting on the response scale by default
+  while allowing direct MSM contrasts on the estimand scale.
+
+### Documentation
+
+- Expanded function documentation, README, workflow material, and
+  pkgdown configuration for the v0.5.0 inference features.
+
 ## qgcomp.multi 0.4.0
 
 ### Added

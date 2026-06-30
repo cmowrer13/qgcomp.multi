@@ -19,9 +19,11 @@ qgcomp.glm.multi(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   B = 200,
+  default_interval_method = "wald",
   id = NULL,
   MCsize = nrow(data),
   seed = NULL,
@@ -74,6 +76,14 @@ qgcomp.glm.multi(
   [`poisson()`](https://rdrr.io/r/stats/family.html)) specifying the
   outcome model.
 
+- estimand_scale:
+
+  Optional character string naming the fitted MSM estimand scale.
+  Supported values depend on `family` and its link: `"mean_difference"`
+  for Gaussian; `"risk_difference"` or `"odds_ratio"` for
+  binomial-logit; and `"mean_difference"` or `"rate_ratio"` for
+  Poisson-log. If `NULL`, the Version `0.5.0` defaults are used.
+
 - q:
 
   Integer greater than or equal to 2 giving the number of quantiles used
@@ -98,6 +108,12 @@ qgcomp.glm.multi(
 
   Integer greater than or equal to 2 giving the number of bootstrap
   replications used for standard error estimation.
+
+- default_interval_method:
+
+  Character string giving the stored default coefficient interval method
+  for the fitted object. Supported values are `"wald"`, `"percentile"`,
+  and `"basic"`.
 
 - id:
 
@@ -248,26 +264,35 @@ The outcome model is fit using
 [`glm()`](https://rdrr.io/r/stats/glm.html), so this function can be
 used with Gaussian, binomial, Poisson, and other generalized linear
 models supported by the supplied formula and family specification.
-Predicted potential outcomes are computed on the response scale and the
-MSM is fit using an identity link, regardless of the outcome-model link
-function.
+Predicted potential outcomes are always computed on the response scale.
+The MSM is then fit either on that response scale or on a transformed
+marginal mean surface, depending on the requested `estimand_scale`.
 
-Interpretation therefore depends on the outcome type:
+Interpretation depends on the outcome type and the chosen
+`estimand_scale`:
 
-- For continuous outcomes, parameters represent mean differences.
+- Gaussian fits use `"mean_difference"`.
 
-- For binary outcomes, parameters represent differences in predicted
-  probabilities, that is, risk differences.
+- Binomial-logit fits default to `"odds_ratio"`; users can request
+  `"risk_difference"` for additive risk summaries.
 
-- For count outcomes, parameters represent differences in expected
-  counts.
+- Poisson-log fits default to `"rate_ratio"`; users can request
+  `"mean_difference"` for additive expected-count summaries.
+
+For ratio estimands, the MSM is fit on the log scale needed for coherent
+coefficient inference. The stored coefficients, standard errors, and
+covariance matrix remain on that fitting scale. Print, summary,
+confidence interval, and tidy methods add display-scale quantities where
+those are more natural for reporting. Prediction and surface plotting
+remain response-scale operations unless a direct MSM contrast explicitly
+requests `contrast_scale = "estimand"`.
 
 If `progress = TRUE`, the bootstrap loop prints a compact single-line
 status display in serial mode. The failed-replicate counter is shown
 only after the first failed bootstrap iteration, so clean runs do not
 carry extra visual noise. Parallel execution is intentionally limited to
-one level in Version `0.4.0`, so requesting `progress = TRUE` together
-with `parallel = TRUE` disables the progress display with an explicit
+one level, so requesting `progress = TRUE` together with
+`parallel = TRUE` disables the progress display with an explicit
 warning.
 
 When `parallel = TRUE`, the bootstrap replications are dispatched with
@@ -326,6 +351,9 @@ fit
 #> Model:
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 500
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -356,6 +384,9 @@ summary(fit)
 #>   Formula: Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 500
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -477,6 +508,9 @@ fit_cont
 #> Model:
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 500
 #>   Exposure mode: Original-scale exposures (centering = "median")
 #>   MSM interaction: included
@@ -507,6 +541,9 @@ summary(fit_cont)
 #>   Formula: Y ~ X1 + X2 + X3 + X4 + W1 + W2 + W3 + W4 + C
 #>   Outcome: Y
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 500
 #>   Exposure mode: Original-scale exposures (centering = "median")
 #>   MSM interaction: included

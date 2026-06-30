@@ -13,7 +13,7 @@ coef(object, ...)
 vcov(object, ...)
 
 # S3 method for class 'qgcompmulti_mi'
-confint(object, parm = NULL, level = 0.95, ...)
+confint(object, parm = NULL, level = 0.95, method = NULL, ...)
 ```
 
 ## Arguments
@@ -37,18 +37,25 @@ confint(object, parm = NULL, level = 0.95, ...)
   Confidence level for the returned intervals. Must be strictly between
   0 and 1.
 
+- method:
+
+  Optional interval method. Pooled multiple-imputation coefficient
+  reporting supports only `"wald"` in Version 0.5.0. `NULL` uses the
+  fitted object's stored default, which is `"wald"` for pooled MI fits.
+
 ## Value
 
 [`coef()`](https://rdrr.io/r/stats/coef.html) returns a named numeric
-vector of pooled MSM coefficients.
+vector of pooled MSM coefficients on the fitting scale.
 
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) returns the pooled
 covariance matrix aligned with `coef(object)`.
 
 [`confint()`](https://rdrr.io/r/stats/confint.html) returns pooled
-Wald-style confidence intervals that use term-specific t critical values
-when finite Rubin degrees of freedom are available and normal critical
-values otherwise.
+Wald-style confidence intervals. The Wald calculation uses Rubin-pooled
+coefficients, standard errors, and term-specific degrees of freedom on
+the fitting scale. For odds-ratio and rate-ratio estimands, returned
+interval limits are exponentiated for display.
 
 ## Details
 

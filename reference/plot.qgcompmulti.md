@@ -14,6 +14,7 @@ display for MSM predictions.
 plot(
   x,
   style = c("heatmap", "contour"),
+  scale = "response",
   grid = NULL,
   interval = FALSE,
   slice = NULL,
@@ -36,6 +37,15 @@ plot(
   Character string specifying the surface display style. Supported
   values are `"heatmap"` and `"contour"`.
 
+- scale:
+
+  Character string specifying the plotted outcome scale. Version `0.5.0`
+  supports only `"response"` for plotting. Transformed-scale surface
+  plots are intentionally out of scope; use
+  [`predict.qgcompmulti()`](https://cmowrer13.github.io/qgcomp.multi/reference/predict.qgcompmulti.md)
+  with `type = "msm_contrast"` and `contrast_scale = "estimand"` for
+  direct ratio-scale regime comparisons.
+
 - grid:
 
   Optional user-specified MSM grid with columns `psi1` and `psi2`. If
@@ -45,7 +55,7 @@ plot(
 - interval:
 
   Logical; if `TRUE`, produces a slice-based line display with bootstrap
-  percentile intervals instead of a 2D surface plot.
+  intervals instead of a 2D surface plot.
 
 - slice:
 

@@ -19,7 +19,11 @@ intervention-response surface.
 - optional interaction between the two mixture intervention variables
 - quantized analyses with `q >= 2`
 - original-scale analyses with `q = NULL`
-- MSM-based prediction, plotting, diagnostics, and adequacy checks
+- additive and ratio-scale MSM summaries through `estimand_scale`
+- Wald, percentile, and basic bootstrap intervals for single-fit
+  coefficient summaries
+- MSM-based prediction, plotting, diagnostics, adequacy checks, and
+  confidence regions
 - sensitivity helpers for Monte Carlo size, bootstrap size, and
   quantization
 - native multiple-imputation pooling through
@@ -64,7 +68,8 @@ confint(fit)
 
 In this setting, the MSM coefficients summarize the expected outcome
 change associated with simultaneous one-quantile shifts in the component
-exposures of each mixture.
+exposures of each mixture. For binary and count outcomes, check the
+reported estimand scale before interpreting the coefficient table.
 
 ## Original-scale fitting with `q = NULL`
 
@@ -120,6 +125,8 @@ The package also includes tools for:
   [`predict()`](https://rdrr.io/r/stats/predict.html)
 - surface visualization with
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html)
+- coefficient confidence regions with
+  [`confregion()`](https://cmowrer13.github.io/qgcomp.multi/reference/confregion.md)
 - intervention support, bootstrap, and adequacy diagnostics
 - sensitivity analysis with
   [`mcsize_sensitivity()`](https://cmowrer13.github.io/qgcomp.multi/reference/mcsize_sensitivity.md),
@@ -131,13 +138,17 @@ The package also includes tools for:
 - optional bootstrap-level parallelism for larger workflows
 
 Those features are documented in more detail in the workflow article,
-function reference, and the fuller README on GitHub.
+the effect-scales article, the function reference, and the fuller README
+on GitHub.
 
 ## Where to go next
 
 - Read the [workflow
   article](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.md)
   for a fuller end-to-end example
+- Read the [effect scales, intervals, and prediction scales
+  article](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md)
+  for the estimand-scale and interval behavior
 - Browse the [function
   reference](https://cmowrer13.github.io/qgcomp.multi/reference/index.md)
   for the complete API
@@ -208,7 +219,11 @@ Exposure Mixtures. Environmental Health Perspectives.
 - [`print(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti_mi.md)
   : Print a pooled qgcompmulti multiple-imputation fit
 - [`confint(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/confint.qgcompmulti.md)
-  : Wald confidence intervals for qgcompmulti coefficients
+  : Confidence intervals for qgcompmulti coefficients
+- [`confregion()`](https://cmowrer13.github.io/qgcomp.multi/reference/confregion.md)
+  : Confidence regions for qgcompmulti coefficients
+- [`plot(`*`<qgcompmulti_region>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/plot.qgcompmulti_region.md)
+  : Plot a qgcompmulti confidence region
 - [`tidy(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti.md)
   : Tidy coefficient summaries for qgcompmulti fits
 - [`tidy(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti_mi.md)
@@ -255,6 +270,13 @@ sensitivity checks.
   Start here for an end-to-end single-dataset workflow using
   qgcomp.multi, including fitting, interpretation, prediction, plotting,
   diagnostics, and original-scale analyses with q = NULL.
+
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md):
+
+  Understand how qgcomp.multi reports additive and ratio-scale MSM
+  summaries, how bootstrap intervals are displayed, and why predictions
+  stay on the response scale.
 
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md):

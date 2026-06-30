@@ -22,11 +22,11 @@ checks, multiple-imputation workflows, and optional bootstrap-level
 parallel execution.
 
 This article keeps the focus on the **single-dataset applied workflow**.
-Two short companion articles cover:
-
-- multiple imputation and optional bootstrap-level parallelism
-- diagnostics, adequacy, and sensitivity checks as a compact post-fit
-  reference
+Short companion articles cover: - effect scales, interval choices, and
+response-scale prediction - multiple imputation and optional
+bootstrap-level parallelism - clustered data and repeated measures -
+diagnostics, adequacy, and sensitivity checks as a compact post-fit
+reference
 
 Two distinctions matter throughout:
 
@@ -200,6 +200,9 @@ fit_q
 #> Model:
 #>   Outcome: inflammation_score
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 600
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -237,6 +240,9 @@ summary(fit_q)
 #>   Formula: inflammation_score ~ mep_ng_ml + mibp_ng_ml + mehpp_ng_ml + bpa_ng_ml + bp3_ng_ml + ppb_ng_ml + age_years + bmi_kg_m2 + smoker
 #>   Outcome: inflammation_score
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 600
 #>   Exposure mode: Quantized exposures (q = 4)
 #>   MSM interaction: included
@@ -340,6 +346,26 @@ intervention coding, the MSM coefficients are easy to read. If the
 surface is more curved, the same coefficients are still defined, but
 they are doing more approximation work.
 
+## Effect scales in brief
+
+For this continuous-outcome example, the default estimand scale is a
+mean difference. In Version `0.5.0`, binary and count outcomes have
+different defaults when the link supports them: binomial-logit fits
+default to odds ratios and Poisson-log fits default to rate ratios.
+Additive alternatives are still available through
+`estimand_scale = "risk_difference"` for binary outcomes and
+`estimand_scale = "mean_difference"` for Poisson outcomes.
+
+For ratio estimands, [`coef()`](https://rdrr.io/r/stats/coef.html)
+returns log-scale MSM coefficients because that is the fitting scale
+used for standard errors, pooling, and regions. The printed and tidy
+summaries add exponentiated display columns for reporting. Predictions
+and surface plots remain on the response scale. For a direct comparison
+of two regimes on the fitted ratio scale, use
+`predict(..., type = "msm_contrast", contrast_scale = "estimand")`.
+
+See the effect-scales article for worked binary and count examples.
+
 ## MSM Predictions And Contrasts
 
 The default prediction target is the fitted MSM surface over the stored
@@ -379,6 +405,18 @@ predict(
 #> 
 #> $estimand_scale
 #> [1] "response"
+#> 
+#> $estimate_scale
+#> [1] "response"
+#> 
+#> $fit_estimand_scale
+#> [1] "mean_difference"
+#> 
+#> $msm_fitting_scale
+#> [1] "identity"
+#> 
+#> $contrast_scale
+#> NULL
 #> 
 #> $estimates
 #>   grid_id psi1 psi2 estimate
@@ -422,6 +460,18 @@ predict(
 #> [1] "msm"
 #> 
 #> $estimand_scale
+#> [1] "response"
+#> 
+#> $estimate_scale
+#> [1] "response"
+#> 
+#> $fit_estimand_scale
+#> [1] "mean_difference"
+#> 
+#> $msm_fitting_scale
+#> [1] "identity"
+#> 
+#> $contrast_scale
 #> [1] "response"
 #> 
 #> $estimates
@@ -528,9 +578,10 @@ goal. It becomes more natural when `q = NULL`, because users may want
 predictions at custom intervention values on the original analysis
 scale.
 
-In Version `0.4.0`, bootstrap percentile-based interval support is
-attached to MSM-based predictions, but not to arbitrary exact
-predictions.
+Bootstrap interval support is attached to MSM-based predictions and
+direct MSM contrasts, with `method = "percentile"` and
+`method = "basic"` available. Arbitrary exact predictions do not return
+intervals.
 
 ## Plot The Fitted MSM Surface
 
@@ -629,6 +680,8 @@ covariates.
 adequacy(fit_q)
 #> qgcompmulti MSM adequacy diagnostic
 #> 
+#> Comparison scale: response
+#> MSM fitting scale: identity
 #> Grid points: 16
 #> Mean absolute error: 0.000
 #> RMSE: 0.000
@@ -687,6 +740,8 @@ fit_q_nl <- qgcomp.glm.multi(
 adequacy(fit_q_nl)
 #> qgcompmulti MSM adequacy diagnostic
 #> 
+#> Comparison scale: response
+#> MSM fitting scale: identity
 #> Grid points: 16
 #> Mean absolute error: 0.089
 #> RMSE: 0.089
@@ -808,6 +863,9 @@ summary(fit_cont)
 #>   Formula: inflammation_score ~ ln_mep + ln_mibp + ln_mehpp + ln_bpa + ln_bp3 + ln_ppb + age_years + bmi_kg_m2 + smoker
 #>   Outcome: inflammation_score
 #>   Family: gaussian (identity)
+#>   Estimand: Mean difference (default)
+#>   MSM fitting scale: identity
+#>   Default interval method: wald
 #>   Observations used: 600
 #>   Exposure mode: Original-scale exposures (centering = "median")
 #>   MSM interaction: included
@@ -905,6 +963,18 @@ predict(
 #> 
 #> $estimand_scale
 #> [1] "response"
+#> 
+#> $estimate_scale
+#> [1] "response"
+#> 
+#> $fit_estimand_scale
+#> [1] "mean_difference"
+#> 
+#> $msm_fitting_scale
+#> [1] "identity"
+#> 
+#> $contrast_scale
+#> NULL
 #> 
 #> $estimates
 #>   grid_id psi1 psi2 estimate
@@ -1063,6 +1133,26 @@ pattern is basically unchanged.
 This helper is best treated as a robustness check, not a way to rank
 effect sizes across different quantization choices.
 
+## Confidence regions in brief
+
+For single-fit objects,
+[`confregion()`](https://cmowrer13.github.io/qgcomp.multi/reference/confregion.md)
+builds a bootstrap-covariance chi-squared region for selected MSM
+coefficients. The region geometry is on the MSM fitting coefficient
+scale. That is the identity scale for additive estimands and the log
+coefficient scale for odds-ratio or rate-ratio estimands.
+
+``` r
+
+region_q <- confregion(fit_q, parm = c("psi1", "psi2"))
+region_q
+plot(region_q)
+```
+
+Plotting is available for two-parameter regions. Higher-dimensional
+requests return structured objects for inspection, but the package does
+not try to draw a three- or four-dimensional region.
+
 ## What An Applied User Should Check In A Real Analysis
 
 In a real environmental epidemiology analysis, the analyst should think
@@ -1101,8 +1191,8 @@ This workflow suggests a workable way to use `qgcomp.multi`:
 
 ## Related Articles
 
-For workflows that go beyond the single-dataset path used here, see:
-
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md)
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md)
 - [Clustered Data and Repeated

@@ -5,6 +5,7 @@
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/index.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-clustered-data.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-diagnostics-sensitivity.html</loc></url>
+<url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-workflow.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/authors.html</loc></url>
@@ -13,6 +14,7 @@
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/adequacy.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/b_sensitivity.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/confint.qgcompmulti.html</loc></url>
+<url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/confregion.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/diagnostics.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/fitted_surface.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/glance.qgcompmulti.html</loc></url>
@@ -21,6 +23,7 @@
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/intervention_grid.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/mcsize_sensitivity.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/plot.qgcompmulti.html</loc></url>
+<url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/plot.qgcompmulti_region.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/predict.qgcompmulti.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti.html</loc></url>
 <url><loc>https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti_mi.html</loc></url>

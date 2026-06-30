@@ -9,7 +9,7 @@ fitted qgcompmulti_mi object using standard R generics."><meta property="og:imag
 
     <a class="navbar-brand me-2" href="../index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,6 +22,7 @@ fitted qgcompmulti_mi object using standard R generics."><meta property="og:imag
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="../articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -56,7 +57,7 @@ fitted <code>qgcompmulti_mi</code> object using standard R generics.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'qgcompmulti_mi'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">object</span>, parm <span class="op">=</span> <span class="cn">NULL</span>, level <span class="op">=</span> <span class="fl">0.95</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">object</span>, parm <span class="op">=</span> <span class="cn">NULL</span>, level <span class="op">=</span> <span class="fl">0.95</span>, method <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -81,14 +82,22 @@ a character vector of coefficient names.</p></dd>
 <dd><p>Confidence level for the returned intervals. Must be strictly
 between 0 and 1.</p></dd>
 
+
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Optional interval method. Pooled multiple-imputation
+coefficient reporting supports only <code>"wald"</code> in Version 0.5.0. <code>NULL</code> uses
+the fitted object's stored default, which is <code>"wald"</code> for pooled MI fits.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> returns a named numeric vector of pooled MSM coefficients.</p>
+    <p><code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> returns a named numeric vector of pooled MSM coefficients on the
+fitting scale.</p>
 <p><code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> returns the pooled covariance matrix aligned with <code>coef(object)</code>.</p>
-<p><code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> returns pooled Wald-style confidence intervals that use
-term-specific t critical values when finite Rubin degrees of freedom are
-available and normal critical values otherwise.</p>
+<p><code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> returns pooled Wald-style confidence intervals. The Wald
+calculation uses Rubin-pooled coefficients, standard errors, and
+term-specific degrees of freedom on the fitting scale. For odds-ratio and
+rate-ratio estimands, returned interval limits are exponentiated for display.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

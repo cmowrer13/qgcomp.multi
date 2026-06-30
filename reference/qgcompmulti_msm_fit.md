@@ -15,6 +15,7 @@ qgcompmulti_msm_fit(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   id = NULL,
@@ -63,6 +64,12 @@ qgcompmulti_msm_fit(
   [`binomial()`](https://rdrr.io/r/stats/family.html),
   [`poisson()`](https://rdrr.io/r/stats/family.html)) specifying the
   outcome model.
+
+- estimand_scale:
+
+  Optional character string naming the fitted MSM estimand scale.
+  Supported values depend on `family` and its link. If `NULL`, the
+  Version `0.5.0` defaults are used.
 
 - q:
 
@@ -146,6 +153,19 @@ A list with components:
   A direct exact-versus-MSM comparison object on the common fit-time
   grid.
 
+- `counterfactual_surface_target`:
+
+  The transformed fit-time MSM target surface used in the MSM fit.
+
+- `msm_surface_target`:
+
+  The fitted MSM target-scale surface evaluated on the common fit-time
+  grid.
+
+- `surface_comparison_target`:
+
+  A direct exact-versus-MSM comparison object on the target scale.
+
 ## Details
 
 This is a lower-level fitting helper used internally by
@@ -165,8 +185,9 @@ predicted outcomes for each observation (or for a Monte Carlo subsample
 if `MCsize < nrow(data)`). These predicted outcomes are stacked into a
 pseudo-dataset and used to fit a marginal structural model that
 summarizes the dose-response surface. Note that predicted potential
-outcomes are computed on the response scale and the marginal structural
-model is fit using an identity link, regardless of the outcome model.
+outcomes are computed on the response scale. The marginal structural
+model is then fit either on that response-scale surface or on a
+transformed target surface implied by `estimand_scale`.
 
 When `q` is an integer, the intervention grid is `0, 1, ..., q - 1` for
 each mixture, corresponding to simultaneous quantile increases in all
@@ -361,5 +382,79 @@ qgcompmulti_msm_fit(
 #> 14 4.716815 1.953993e-14
 #> 15 5.841284 1.865175e-14
 #> 16 6.965752 1.865175e-14
+#> 
+#> $counterfactual_surface_target
+#>    grid_id intervention_psi1 intervention_psi2 msm_psi1 msm_psi2 exact_target
+#> 1        1                 0                 0        0        0     1.675727
+#> 2        2                 1                 0        1        0     2.446042
+#> 3        3                 2                 0        2        0     3.216356
+#> 4        4                 3                 0        3        0     3.986671
+#> 5        5                 0                 1        0        1     2.314601
+#> 6        6                 1                 1        1        1     3.202966
+#> 7        7                 2                 1        2        1     4.091332
+#> 8        8                 3                 1        3        1     4.979698
+#> 9        9                 0                 2        0        2     2.953474
+#> 10      10                 1                 2        1        2     3.959891
+#> 11      11                 2                 2        2        2     4.966308
+#> 12      12                 3                 2        3        2     5.972725
+#> 13      13                 0                 3        0        3     3.592347
+#> 14      14                 1                 3        1        3     4.716815
+#> 15      15                 2                 3        2        3     5.841284
+#> 16      16                 3                 3        3        3     6.965752
+#> 
+#> $msm_surface_target
+#>    grid_id intervention_psi1 intervention_psi2 msm_psi1 msm_psi2 msm_target
+#> 1        1                 0                 0        0        0   1.675727
+#> 2        2                 1                 0        1        0   2.446042
+#> 3        3                 2                 0        2        0   3.216356
+#> 4        4                 3                 0        3        0   3.986671
+#> 5        5                 0                 1        0        1   2.314601
+#> 6        6                 1                 1        1        1   3.202966
+#> 7        7                 2                 1        2        1   4.091332
+#> 8        8                 3                 1        3        1   4.979698
+#> 9        9                 0                 2        0        2   2.953474
+#> 10      10                 1                 2        1        2   3.959891
+#> 11      11                 2                 2        2        2   4.966308
+#> 12      12                 3                 2        3        2   5.972725
+#> 13      13                 0                 3        0        3   3.592347
+#> 14      14                 1                 3        1        3   4.716815
+#> 15      15                 2                 3        2        3   5.841284
+#> 16      16                 3                 3        3        3   6.965752
+#> 
+#> $surface_comparison_target
+#>    grid_id intervention_psi1 intervention_psi2 msm_psi1 msm_psi2 exact_target
+#> 1        1                 0                 0        0        0     1.675727
+#> 2        2                 1                 0        1        0     2.446042
+#> 3        3                 2                 0        2        0     3.216356
+#> 4        4                 3                 0        3        0     3.986671
+#> 5        5                 0                 1        0        1     2.314601
+#> 6        6                 1                 1        1        1     3.202966
+#> 7        7                 2                 1        2        1     4.091332
+#> 8        8                 3                 1        3        1     4.979698
+#> 9        9                 0                 2        0        2     2.953474
+#> 10      10                 1                 2        1        2     3.959891
+#> 11      11                 2                 2        2        2     4.966308
+#> 12      12                 3                 2        3        2     5.972725
+#> 13      13                 0                 3        0        3     3.592347
+#> 14      14                 1                 3        1        3     4.716815
+#> 15      15                 2                 3        2        3     5.841284
+#> 16      16                 3                 3        3        3     6.965752
+#>    msm_target residual_target
+#> 1    1.675727    2.109424e-14
+#> 2    2.446042    2.087219e-14
+#> 3    3.216356    1.998401e-14
+#> 4    3.986671    2.042810e-14
+#> 5    2.314601    2.087219e-14
+#> 6    3.202966    2.087219e-14
+#> 7    4.091332    1.953993e-14
+#> 8    4.979698    1.953993e-14
+#> 9    2.953474    2.042810e-14
+#> 10   3.959891    2.042810e-14
+#> 11   4.966308    1.953993e-14
+#> 12   5.972725    2.042810e-14
+#> 13   3.592347    1.998401e-14
+#> 14   4.716815    1.953993e-14
+#> 15   5.841284    1.865175e-14
+#> 16   6.965752    1.865175e-14
 #> 
 ```

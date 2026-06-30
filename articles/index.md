@@ -14,6 +14,13 @@ sensitivity checks.
   qgcomp.multi, including fitting, interpretation, prediction, plotting,
   diagnostics, and original-scale analyses with q = NULL.
 
+- [Effect Scales, Intervals, and Prediction
+  Scales](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-effect-scales.md):
+
+  Understand how qgcomp.multi reports additive and ratio-scale MSM
+  summaries, how bootstrap intervals are displayed, and why predictions
+  stay on the response scale.
+
 - [Multiple Imputation and Parallel
   Workflows](https://cmowrer13.github.io/qgcomp.multi/articles/qgcompmulti-mi-parallel.md):
 

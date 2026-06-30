@@ -24,9 +24,9 @@ glance(x, ...)
 
 A one-row data frame containing compact pooled-fit metadata for the
 `qgcompmulti_mi` object, including sample-size information, the number
-of imputations, input-type metadata, mixture coding metadata, Monte
-Carlo size, interaction status, retained-fit status, and clustering
-metadata.
+of imputations, input-type metadata, estimand-scale metadata, mixture
+coding metadata, Monte Carlo size, interaction status, retained-fit
+status, and clustering metadata.
 
 ## Details
 

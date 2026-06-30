@@ -3,13 +3,15 @@
 correlated exposures and their interaction. Exposures are generated from
 a multivariate normal distribution with user-specified within-mixture and
 between-mixture correlations, then discretized into quantiles. The outcome
-is generated from a model where the effects correspond to simultaneous
-one-quantile increases in each mixture."><meta property="og:description" content="Generates a dataset for simulation studies involving two mixtures of
+is generated from family- and estimand-scale-specific models where the
+parameters correspond to simultaneous one-quantile increases in each
+mixture."><meta property="og:description" content="Generates a dataset for simulation studies involving two mixtures of
 correlated exposures and their interaction. Exposures are generated from
 a multivariate normal distribution with user-specified within-mixture and
 between-mixture correlations, then discretized into quantiles. The outcome
-is generated from a model where the effects correspond to simultaneous
-one-quantile increases in each mixture."><meta property="og:image" content="https://cmowrer13.github.io/qgcomp.multi/reference/figures/social-card.png"><meta property="og:image:alt" content="Hexagon logo for qgcomp.multi with two-mixture interaction motif in deep teal."></head><body>
+is generated from family- and estimand-scale-specific models where the
+parameters correspond to simultaneous one-quantile increases in each
+mixture."><meta property="og:image" content="https://cmowrer13.github.io/qgcomp.multi/reference/figures/social-card.png"><meta property="og:image:alt" content="Hexagon logo for qgcomp.multi with two-mixture interaction motif in deep teal."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +19,7 @@ one-quantile increases in each mixture."><meta property="og:image" content="http
 
     <a class="navbar-brand me-2" href="../index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +32,7 @@ one-quantile increases in each mixture."><meta property="og:image" content="http
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="../articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -55,8 +58,9 @@ one-quantile increases in each mixture."><meta property="og:image" content="http
 correlated exposures and their interaction. Exposures are generated from
 a multivariate normal distribution with user-specified within-mixture and
 between-mixture correlations, then discretized into quantiles. The outcome
-is generated from a model where the effects correspond to simultaneous
-one-quantile increases in each mixture.</p>
+is generated from family- and estimand-scale-specific models where the
+parameters correspond to simultaneous one-quantile increases in each
+mixture.</p>
     </div>
 
     <div class="section level2">
@@ -74,7 +78,13 @@ one-quantile increases in each mixture.</p>
 <span>  sigma_eps <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  q <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  return_quantized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  estimand_scale <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  baseline_mean <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  baseline_risk <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  baseline_rate <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  beta_C <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -120,7 +130,8 @@ mixture A when mixture B increases by one quantile.</p></dd>
 
 
 <dt id="arg-sigma-eps">sigma_eps<a class="anchor" aria-label="anchor" href="#arg-sigma-eps"></a></dt>
-<dd><p>Standard deviation of the outcome error term.</p></dd>
+<dd><p>Standard deviation of the outcome error term for Gaussian
+generation.</p></dd>
 
 
 <dt id="arg-q">q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
@@ -135,6 +146,34 @@ otherwise returns the original continuous exposures.</p></dd>
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional random seed for reproducibility.</p></dd>
 
+
+<dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
+<dd><p>Outcome family. Supported families are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>,
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code>, and <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>.</p></dd>
+
+
+<dt id="arg-estimand-scale">estimand_scale<a class="anchor" aria-label="anchor" href="#arg-estimand-scale"></a></dt>
+<dd><p>Optional outcome-generating estimand scale. Supported
+values mirror the fitting API: <code>"mean_difference"</code>, <code>"risk_difference"</code>,
+<code>"odds_ratio"</code>, and <code>"rate_ratio"</code>. If omitted, defaults follow the <code>0.5.0</code>
+fitting conventions.</p></dd>
+
+
+<dt id="arg-baseline-mean">baseline_mean<a class="anchor" aria-label="anchor" href="#arg-baseline-mean"></a></dt>
+<dd><p>Baseline mean used for Gaussian generation.</p></dd>
+
+
+<dt id="arg-baseline-risk">baseline_risk<a class="anchor" aria-label="anchor" href="#arg-baseline-risk"></a></dt>
+<dd><p>Baseline risk used for binomial generation.</p></dd>
+
+
+<dt id="arg-baseline-rate">baseline_rate<a class="anchor" aria-label="anchor" href="#arg-baseline-rate"></a></dt>
+<dd><p>Baseline rate used for Poisson generation.</p></dd>
+
+
+<dt id="arg-beta-c">beta_C<a class="anchor" aria-label="anchor" href="#arg-beta-c"></a></dt>
+<dd><p>Effect of covariate <code>C</code> in the outcome-generating model.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -143,21 +182,38 @@ exposures (<code>X1...XpA</code> and <code>W1...WpB</code>), and covariate <code
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The data-generating model is:</p>
-<p>Y = psi1 * S_A + psi2 * S_B + psi12 * S_A * S_B + C + error</p>
-<p>where S_A and S_B are the average quantile levels of the exposures in
-mixture A and mixture B, respectively.</p>
+    <p>The exposure summaries are:</p>
+<p>$$S_A = \textrm{rowMeans}(X_q), \qquad S_B = \textrm{rowMeans}(W_q)$$</p>
+<p>where <code>X_q</code> and <code>W_q</code> are the quantized mixture components. The outcome is
+then generated from one of the following models:</p>
+<ul><li><p>Gaussian mean-difference generation:
+$$Y = \mu_0 + \psi_1 S_A + \psi_2 S_B + \psi_{12} S_A S_B + \beta_C C + \epsilon$$</p></li>
+<li><p>Binomial odds-ratio generation:
+$$\textrm{logit}\{P(Y = 1)\} = \textrm{logit}(p_0) + \log(\psi_1) S_A + \log(\psi_2) S_B + \log(\psi_{12}) S_A S_B + \beta_C C$$</p></li>
+<li><p>Binomial risk-difference generation:
+$$P(Y = 1) = p_0 + \psi_1 S_A + \psi_2 S_B + \psi_{12} S_A S_B + \beta_C C$$</p></li>
+<li><p>Poisson rate-ratio generation:
+$$\log\{E(Y)\} = \log(\lambda_0) + \log(\psi_1) S_A + \log(\psi_2) S_B + \log(\psi_{12}) S_A S_B + \beta_C C$$</p></li>
+<li><p>Poisson mean-difference generation:
+$$E(Y) = \lambda_0 + \psi_1 S_A + \psi_2 S_B + \psi_{12} S_A S_B + \beta_C C$$</p></li>
+</ul><p>Ratio-valued inputs are accepted on their natural scale. For example,
+<code>psi1 = 1.5</code> with <code>family = poisson()</code> and <code>estimand_scale = "rate_ratio"</code>
+means that a one-quantile increase in mixture A corresponds to a rate ratio
+of <code>1.5</code> before any interaction modification by mixture B.</p>
 <p>Continuous exposures are generated from a multivariate normal distribution
 with a block correlation structure. Exposures are then discretized into
-quantile categories ranging from 0 to q-1. The outcome is generated using
-the quantized exposures so that the parameters psi1, psi2, and psi12
-correspond directly to the estimands in two-mixture quantile
-g-computation models.</p>
+quantile categories ranging from <code>0</code> to <code>q - 1</code>. The outcome is always
+generated from the quantized mixture summaries so that the requested
+parameters <code>psi1</code>, <code>psi2</code>, and <code>psi12</code> correspond directly to the intended
+one-quantile mixture effects on the chosen generating scale.</p>
+<p>Additive binary-risk and additive Poisson-mean generation are supported, but
+the requested baseline and effect values must imply valid probabilities or
+strictly positive means for all simulated observations.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">sim_mixture_data</span><span class="op">(</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">dat_gaussian</span> <span class="op">&lt;-</span> <span class="fu">sim_mixture_data</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  n <span class="op">=</span> <span class="fl">1000</span>,</span></span>
 <span class="r-in"><span>  pA <span class="op">=</span> <span class="fl">4</span>,</span></span>
 <span class="r-in"><span>  pB <span class="op">=</span> <span class="fl">4</span>,</span></span>
@@ -168,6 +224,38 @@ g-computation models.</p>
 <span class="r-in"><span>  psi2 <span class="op">=</span> <span class="fl">0.3</span>,</span></span>
 <span class="r-in"><span>  psi12 <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
 <span class="r-in"><span>  return_quantized <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">123</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">dat_binomial</span> <span class="op">&lt;-</span> <span class="fu">sim_mixture_data</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  n <span class="op">=</span> <span class="fl">1000</span>,</span></span>
+<span class="r-in"><span>  pA <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>  pB <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>  rho_within_A <span class="op">=</span> <span class="fl">0.4</span>,</span></span>
+<span class="r-in"><span>  rho_within_B <span class="op">=</span> <span class="fl">0.4</span>,</span></span>
+<span class="r-in"><span>  rho_between <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
+<span class="r-in"><span>  psi1 <span class="op">=</span> <span class="fl">1.5</span>,</span></span>
+<span class="r-in"><span>  psi2 <span class="op">=</span> <span class="fl">1.2</span>,</span></span>
+<span class="r-in"><span>  psi12 <span class="op">=</span> <span class="fl">1.1</span>,</span></span>
+<span class="r-in"><span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  baseline_risk <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
+<span class="r-in"><span>  beta_C <span class="op">=</span> <span class="fl">0.25</span>,</span></span>
+<span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">123</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">dat_poisson</span> <span class="op">&lt;-</span> <span class="fu">sim_mixture_data</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  n <span class="op">=</span> <span class="fl">1000</span>,</span></span>
+<span class="r-in"><span>  pA <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>  pB <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>  rho_within_A <span class="op">=</span> <span class="fl">0.4</span>,</span></span>
+<span class="r-in"><span>  rho_within_B <span class="op">=</span> <span class="fl">0.4</span>,</span></span>
+<span class="r-in"><span>  rho_between <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
+<span class="r-in"><span>  psi1 <span class="op">=</span> <span class="fl">1.5</span>,</span></span>
+<span class="r-in"><span>  psi2 <span class="op">=</span> <span class="fl">1.2</span>,</span></span>
+<span class="r-in"><span>  psi12 <span class="op">=</span> <span class="fl">1.1</span>,</span></span>
+<span class="r-in"><span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  baseline_rate <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>  beta_C <span class="op">=</span> <span class="fl">0.15</span>,</span></span>
 <span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">123</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>

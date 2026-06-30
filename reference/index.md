@@ -52,7 +52,11 @@
 - [`print(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/print.qgcompmulti_mi.md)
   : Print a pooled qgcompmulti multiple-imputation fit
 - [`confint(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/confint.qgcompmulti.md)
-  : Wald confidence intervals for qgcompmulti coefficients
+  : Confidence intervals for qgcompmulti coefficients
+- [`confregion()`](https://cmowrer13.github.io/qgcomp.multi/reference/confregion.md)
+  : Confidence regions for qgcompmulti coefficients
+- [`plot(`*`<qgcompmulti_region>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/plot.qgcompmulti_region.md)
+  : Plot a qgcompmulti confidence region
 - [`tidy(`*`<qgcompmulti>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti.md)
   : Tidy coefficient summaries for qgcompmulti fits
 - [`tidy(`*`<qgcompmulti_mi>`*`)`](https://cmowrer13.github.io/qgcomp.multi/reference/tidy.qgcompmulti_mi.md)

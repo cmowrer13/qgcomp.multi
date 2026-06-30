@@ -25,8 +25,9 @@ glance(x, ...)
 
 A one-row data frame containing compact fit metadata for the
 `qgcompmulti` object, including sample-size information, outcome-family
-metadata, mixture coding metadata, bootstrap replication counts, Monte
-Carlo size, interaction status, and clustering metadata.
+metadata, estimand-scale metadata, mixture coding metadata, bootstrap
+replication counts, Monte Carlo size, interaction status, and clustering
+metadata.
 
 ## Details
 

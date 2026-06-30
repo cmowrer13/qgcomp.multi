@@ -18,9 +18,11 @@ predict(
   at = NULL,
   from = NULL,
   to = NULL,
+  contrast_scale = c("response", "estimand"),
   data = NULL,
   interval = FALSE,
   level = 0.95,
+  method = NULL,
   ...
 )
 ```
@@ -53,6 +55,15 @@ predict(
   defining the source and target regimes for a direct contrast on the
   MSM coding scale.
 
+- contrast_scale:
+
+  Character string specifying the output scale for
+  `type = "msm_contrast"`. `"response"` returns the response-scale
+  difference between the `to` and `from` regimes. `"estimand"` returns
+  the contrast on the active fitted estimand scale; for odds-ratio and
+  rate-ratio fits this is computed by differencing the MSM linear
+  predictor and exponentiating.
+
 - data:
 
   Optional data frame used for exact arbitrary prediction or exact
@@ -61,12 +72,20 @@ predict(
 
 - interval:
 
-  Logical; if `TRUE`, returns bootstrap percentile intervals when
-  supported for the requested prediction type.
+  Logical; if `TRUE`, returns bootstrap intervals when supported for the
+  requested prediction type.
 
 - level:
 
   Confidence level used when `interval = TRUE`.
+
+- method:
+
+  Optional interval method used when `interval = TRUE` for MSM-based
+  prediction outputs. Supported values are `"percentile"` and `"basic"`.
+  `NULL` uses the fitted object's stored default when it is a bootstrap
+  method, and otherwise falls back to `"percentile"` because Wald
+  intervals are coefficient-only.
 
 - ...:
 
@@ -85,7 +104,7 @@ In `qgcomp.multi`, it helps to keep two prediction targets separate:
 
 - **MSM-based predictions**, which evaluate the fitted marginal
   structural model on the MSM coding scale and support bootstrap
-  percentile intervals in Version 0.4.0; and
+  percentile and basic bootstrap intervals; and
 
 - **exact counterfactual predictions**, which come directly from the
   fitted outcome model under specified interventions.
@@ -120,9 +139,16 @@ The function allows interpolation within that support, but it does not
 allow arbitrary extrapolation beyond the intervention range used to fit
 the model.
 
-Public interval support in Version 0.4.0 is limited to MSM-based
-predictions. Exact public prediction targets do not currently return
-intervals.
+Public interval support is limited to MSM-based predictions and direct
+MSM contrasts. Those intervals can use `method = "percentile"` or
+`method = "basic"`. Exact public prediction targets do not currently
+return intervals because they would require a separate uncertainty
+calculation over a user-supplied covariate distribution.
+
+Prediction surfaces and plots are response-scale summaries even when the
+fitted coefficient estimand is an odds ratio or rate ratio. To compare
+two regimes on the fitted ratio scale, use `type = "msm_contrast"` with
+`contrast_scale = "estimand"`.
 
 ## Examples
 

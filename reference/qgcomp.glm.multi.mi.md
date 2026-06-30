@@ -4,8 +4,7 @@ Fits one ordinary
 [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
 model per completed imputation and pools the marginal structural model
 (MSM) coefficient inference internally using Rubin's rules. This is the
-primary native multiple-imputation workflow for `qgcomp.multi` in
-Version `0.4.0`.
+primary native multiple-imputation workflow for `qgcomp.multi`.
 
 ## Usage
 
@@ -17,6 +16,7 @@ qgcomp.glm.multi.mi(
   mix2,
   interaction = TRUE,
   family = gaussian(),
+  estimand_scale = NULL,
   q = 4,
   centering = "none",
   B = 200,
@@ -59,6 +59,15 @@ qgcomp.glm.multi.mi(
 - family:
 
   A GLM family object for the per-imputation outcome model.
+
+- estimand_scale:
+
+  Optional character string naming the fitted MSM estimand scale.
+  Supported values depend on `family` and its link and are forwarded
+  into each underlying
+  [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
+  fit. If `NULL`, the ordinary-fit family default is used within each
+  completed-data fit.
 
 - q:
 
@@ -112,7 +121,7 @@ qgcomp.glm.multi.mi(
   Logical; if `TRUE`, allow each per-imputation fit to use the
   established bootstrap-level parallel engine from
   [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md).
-  The multiple-imputation loop itself remains serial in Version `0.4.0`.
+  The multiple-imputation loop itself remains serial.
 
 - workers:
 
@@ -141,10 +150,10 @@ datasets are structurally compatible, fits one
 [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
 model per imputation, and pools the resulting MSM coefficient vectors
 and covariance matrices using the internal Rubin-pooling helpers defined
-for the `"qgcompmulti_mi"` class. In `0.4.0`, this is the recommended
-route when you want `qgcomp.multi` to handle the completed-data
-normalization, repeated fitting, and Rubin pooling step itself. Users
-who need to stay inside a broader `mice` pipeline can still fit
+for the `"qgcompmulti_mi"` class. This is the recommended route when you
+want `qgcomp.multi` to handle the completed-data normalization, repeated
+fitting, and Rubin pooling step itself. Users who need to stay inside a
+broader `mice` pipeline can still fit
 [`qgcomp.glm.multi()`](https://cmowrer13.github.io/qgcomp.multi/reference/qgcomp.glm.multi.md)
 through
 [`mice::with()`](https://amices.org/mice/reference/with.mids.html) and
@@ -152,27 +161,28 @@ then rely on the package's `tidy()`, `glance()`, and
 [`df.residual()`](https://rdrr.io/r/stats/df.residual.html)
 compatibility work when that better matches the analysis pipeline.
 
-Optional parallel execution in `0.4.0` stays at one level only. The
-wrapper itself still iterates over imputations serially, but each
-ordinary per-imputation fit may dispatch its bootstrap replications
-through the same `future.apply` backend already used for single-dataset
-fits. Reproducibility for these workflows is defined within a fixed
-backend and execution mode: the wrapper treats `seed` as a master seed,
+Optional parallel execution stays at one level only. The wrapper itself
+still iterates over imputations serially, but each ordinary
+per-imputation fit may dispatch its bootstrap replications through the
+same `future.apply` backend already used for single-dataset fits.
+Reproducibility for these workflows is defined within a fixed backend
+and execution mode: the wrapper treats `seed` as a master seed,
 deterministically expands it into independent per-imputation fit seeds,
 and then each ordinary fit expands its own fit seed into full-fit and
-worker-level bootstrap seeds. Clustered workflows are also supported in
-`0.4.0`: when `id` is supplied, each completed dataset must share
-identical cluster IDs in the same order, and the ordinary per-imputation
-fits continue to resample clusters rather than rows.
+worker-level bootstrap seeds. Clustered workflows are also supported:
+when `id` is supplied, each completed dataset must share identical
+cluster IDs in the same order, and the ordinary per-imputation fits
+continue to resample clusters rather than rows.
 
-Pooled results in `0.4.0` stay focused on MSM inference and a compact
-summary layer. The pooled object does not yet try to replicate the full
+Pooled results stay focused on MSM inference and a compact summary
+layer. The pooled object does not yet try to replicate the full
 prediction and diagnostics surface of ordinary single-fit `qgcompmulti`
-objects. Use the pooled extractors,
-[`summary()`](https://rdrr.io/r/base/summary.html), and the pooled
-`tidy()`, and `glance()` methods for reporting use `keep_fits = TRUE`
-only when you explicitly need the stored per-imputation single-fit
-objects.
+objects. Pooled confidence intervals use Wald intervals on the fitting
+scale; pooled bootstrap interval methods and pooled confidence regions
+are out of scope for this release. Use the pooled extractors,
+[`summary()`](https://rdrr.io/r/base/summary.html), `tidy()`, and
+`glance()` for reporting, and use `keep_fits = TRUE` only when you
+explicitly need the stored per-imputation single-fit objects.
 
 When `data` is a `mids` object, the optional `mice` package must be
 installed. Inputs supplied as a plain list must already be fully

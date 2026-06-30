@@ -35,7 +35,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="../articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -103,12 +104,11 @@ object, and the package now supports prediction, plotting, diagnostics,
 sensitivity checks, multiple-imputation workflows, and optional
 bootstrap-level parallel execution.</p>
 <p>This article keeps the focus on the <strong>single-dataset applied
-workflow</strong>. Two short companion articles cover:</p>
-<ul>
-<li>multiple imputation and optional bootstrap-level parallelism</li>
-<li>diagnostics, adequacy, and sensitivity checks as a compact post-fit
-reference</li>
-</ul>
+workflow</strong>. Short companion articles cover: - effect scales,
+interval choices, and response-scale prediction - multiple imputation
+and optional bootstrap-level parallelism - clustered data and repeated
+measures - diagnostics, adequacy, and sensitivity checks as a compact
+post-fit reference</p>
 <p>Two distinctions matter throughout:</p>
 <ul>
 <li>the <strong>outcome model</strong>, which is the regression model
@@ -268,6 +268,9 @@ analysis.</p>
 <span><span class="co">#&gt; Model:</span></span>
 <span><span class="co">#&gt;   Outcome: inflammation_score</span></span>
 <span><span class="co">#&gt;   Family: gaussian (identity)</span></span>
+<span><span class="co">#&gt;   Estimand: Mean difference (default)</span></span>
+<span><span class="co">#&gt;   MSM fitting scale: identity</span></span>
+<span><span class="co">#&gt;   Default interval method: wald</span></span>
 <span><span class="co">#&gt;   Observations used: 600</span></span>
 <span><span class="co">#&gt;   Exposure mode: Quantized exposures (q = 4)</span></span>
 <span><span class="co">#&gt;   MSM interaction: included</span></span>
@@ -300,6 +303,9 @@ analysis.</p>
 <span><span class="co">#&gt;   Formula: inflammation_score ~ mep_ng_ml + mibp_ng_ml + mehpp_ng_ml + bpa_ng_ml + bp3_ng_ml + ppb_ng_ml + age_years + bmi_kg_m2 + smoker</span></span>
 <span><span class="co">#&gt;   Outcome: inflammation_score</span></span>
 <span><span class="co">#&gt;   Family: gaussian (identity)</span></span>
+<span><span class="co">#&gt;   Estimand: Mean difference (default)</span></span>
+<span><span class="co">#&gt;   MSM fitting scale: identity</span></span>
+<span><span class="co">#&gt;   Default interval method: wald</span></span>
 <span><span class="co">#&gt;   Observations used: 600</span></span>
 <span><span class="co">#&gt;   Exposure mode: Quantized exposures (q = 4)</span></span>
 <span><span class="co">#&gt;   MSM interaction: included</span></span>
@@ -398,6 +404,27 @@ the surface is more curved, the same coefficients are still defined, but
 they are doing more approximation work.</p>
 </div>
 <div class="section level2">
+<h2 id="effect-scales-in-brief">Effect scales in brief<a class="anchor" aria-label="anchor" href="#effect-scales-in-brief"></a>
+</h2>
+<p>For this continuous-outcome example, the default estimand scale is a
+mean difference. In Version <code>0.5.0</code>, binary and count
+outcomes have different defaults when the link supports them:
+binomial-logit fits default to odds ratios and Poisson-log fits default
+to rate ratios. Additive alternatives are still available through
+<code>estimand_scale = "risk_difference"</code> for binary outcomes and
+<code>estimand_scale = "mean_difference"</code> for Poisson
+outcomes.</p>
+<p>For ratio estimands, <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> returns log-scale MSM
+coefficients because that is the fitting scale used for standard errors,
+pooling, and regions. The printed and tidy summaries add exponentiated
+display columns for reporting. Predictions and surface plots remain on
+the response scale. For a direct comparison of two regimes on the fitted
+ratio scale, use
+<code>predict(..., type = "msm_contrast", contrast_scale = "estimand")</code>.</p>
+<p>See the effect-scales article for worked binary and count
+examples.</p>
+</div>
+<div class="section level2">
 <h2 id="msm-predictions-and-contrasts">MSM Predictions And Contrasts<a class="anchor" aria-label="anchor" href="#msm-predictions-and-contrasts"></a>
 </h2>
 <p>The default prediction target is the fitted MSM surface over the
@@ -431,6 +458,18 @@ stored intervention grid.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimand_scale</span></span>
 <span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $estimate_scale</span></span>
+<span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $fit_estimand_scale</span></span>
+<span><span class="co">#&gt; [1] "mean_difference"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $msm_fitting_scale</span></span>
+<span><span class="co">#&gt; [1] "identity"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $contrast_scale</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimates</span></span>
 <span><span class="co">#&gt;   grid_id psi1 psi2 estimate</span></span>
@@ -470,6 +509,18 @@ stored intervention grid.</p>
 <span><span class="co">#&gt; [1] "msm"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimand_scale</span></span>
+<span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $estimate_scale</span></span>
+<span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $fit_estimand_scale</span></span>
+<span><span class="co">#&gt; [1] "mean_difference"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $msm_fitting_scale</span></span>
+<span><span class="co">#&gt; [1] "identity"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $contrast_scale</span></span>
 <span><span class="co">#&gt; [1] "response"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimates</span></span>
@@ -560,9 +611,10 @@ grid and would require a new exact calculation:</p>
 main goal. It becomes more natural when <code>q = NULL</code>, because
 users may want predictions at custom intervention values on the original
 analysis scale.</p>
-<p>In Version <code>0.4.0</code>, bootstrap percentile-based interval
-support is attached to MSM-based predictions, but not to arbitrary exact
-predictions.</p>
+<p>Bootstrap interval support is attached to MSM-based predictions and
+direct MSM contrasts, with <code>method = "percentile"</code> and
+<code>method = "basic"</code> available. Arbitrary exact predictions do
+not return intervals.</p>
 </div>
 </div>
 <div class="section level2">
@@ -638,6 +690,8 @@ covariates.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/adequacy.html">adequacy</a></span><span class="op">(</span><span class="va">fit_q</span><span class="op">)</span></span>
 <span><span class="co">#&gt; qgcompmulti MSM adequacy diagnostic</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Comparison scale: response</span></span>
+<span><span class="co">#&gt; MSM fitting scale: identity</span></span>
 <span><span class="co">#&gt; Grid points: 16</span></span>
 <span><span class="co">#&gt; Mean absolute error: 0.000</span></span>
 <span><span class="co">#&gt; RMSE: 0.000</span></span>
@@ -690,6 +744,8 @@ nonlinear terms in the outcome model:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/adequacy.html">adequacy</a></span><span class="op">(</span><span class="va">fit_q_nl</span><span class="op">)</span></span>
 <span><span class="co">#&gt; qgcompmulti MSM adequacy diagnostic</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Comparison scale: response</span></span>
+<span><span class="co">#&gt; MSM fitting scale: identity</span></span>
 <span><span class="co">#&gt; Grid points: 16</span></span>
 <span><span class="co">#&gt; Mean absolute error: 0.089</span></span>
 <span><span class="co">#&gt; RMSE: 0.089</span></span>
@@ -799,6 +855,9 @@ biomarkers.</p>
 <span><span class="co">#&gt;   Formula: inflammation_score ~ ln_mep + ln_mibp + ln_mehpp + ln_bpa + ln_bp3 + ln_ppb + age_years + bmi_kg_m2 + smoker</span></span>
 <span><span class="co">#&gt;   Outcome: inflammation_score</span></span>
 <span><span class="co">#&gt;   Family: gaussian (identity)</span></span>
+<span><span class="co">#&gt;   Estimand: Mean difference (default)</span></span>
+<span><span class="co">#&gt;   MSM fitting scale: identity</span></span>
+<span><span class="co">#&gt;   Default interval method: wald</span></span>
 <span><span class="co">#&gt;   Observations used: 600</span></span>
 <span><span class="co">#&gt;   Exposure mode: Original-scale exposures (centering = "median")</span></span>
 <span><span class="co">#&gt;   MSM interaction: included</span></span>
@@ -896,6 +955,18 @@ median intervention for both mixtures.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimand_scale</span></span>
 <span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $estimate_scale</span></span>
+<span><span class="co">#&gt; [1] "response"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $fit_estimand_scale</span></span>
+<span><span class="co">#&gt; [1] "mean_difference"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $msm_fitting_scale</span></span>
+<span><span class="co">#&gt; [1] "identity"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $contrast_scale</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $estimates</span></span>
 <span><span class="co">#&gt;   grid_id psi1 psi2 estimate</span></span>
@@ -1033,6 +1104,22 @@ substantive pattern is basically unchanged.</p>
 effect sizes across different quantization choices.</p>
 </div>
 <div class="section level2">
+<h2 id="confidence-regions-in-brief">Confidence regions in brief<a class="anchor" aria-label="anchor" href="#confidence-regions-in-brief"></a>
+</h2>
+<p>For single-fit objects, <code><a href="../reference/confregion.html">confregion()</a></code> builds a
+bootstrap-covariance chi-squared region for selected MSM coefficients.
+The region geometry is on the MSM fitting coefficient scale. That is the
+identity scale for additive estimands and the log coefficient scale for
+odds-ratio or rate-ratio estimands.</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">region_q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/confregion.html">confregion</a></span><span class="op">(</span><span class="va">fit_q</span>, parm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"psi1"</span>, <span class="st">"psi2"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">region_q</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">region_q</span><span class="op">)</span></span></code></pre></div>
+<p>Plotting is available for two-parameter regions. Higher-dimensional
+requests return structured objects for inspection, but the package does
+not try to draw a three- or four-dimensional region.</p>
+</div>
+<div class="section level2">
 <h2 id="what-an-applied-user-should-check-in-a-real-analysis">What An Applied User Should Check In A Real Analysis<a class="anchor" aria-label="anchor" href="#what-an-applied-user-should-check-in-a-real-analysis"></a>
 </h2>
 <p>In a real environmental epidemiology analysis, the analyst should
@@ -1078,9 +1165,9 @@ centering often makes original-scale summaries easier to read.</li>
 <div class="section level2">
 <h2 id="related-articles">Related Articles<a class="anchor" aria-label="anchor" href="#related-articles"></a>
 </h2>
-<p>For workflows that go beyond the single-dataset path used here,
-see:</p>
 <ul>
+<li><a href="qgcompmulti-effect-scales.html">Effect Scales, Intervals,
+and Prediction Scales</a></li>
 <li><a href="qgcompmulti-mi-parallel.html">Multiple Imputation and
 Parallel Workflows</a></li>
 <li><a href="qgcompmulti-clustered-data.html">Clustered Data and

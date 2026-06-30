@@ -35,7 +35,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">qgcomp.multi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/qgcompmulti-workflow.html">Applied Workflow for Two-Mixture Quantile g-Computation</a></li>
+    <li><a class="dropdown-item" href="../articles/qgcompmulti-effect-scales.html">Effect Scales, Intervals, and Prediction Scales</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-mi-parallel.html">Multiple Imputation and Parallel Workflows</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-clustered-data.html">Clustered Data and Repeated Measures</a></li>
     <li><a class="dropdown-item" href="../articles/qgcompmulti-diagnostics-sensitivity.html">Diagnostics and Sensitivity Checks</a></li>
@@ -86,8 +87,8 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Version <code>0.4.0</code> adds two workflow-oriented capabilities
-that often matter together in practice:</p>
+<p>The package includes two workflow-oriented capabilities that often
+matter together in practice:</p>
 <ul>
 <li>native multiple-imputation fitting through
 <code><a href="../reference/qgcomp.glm.multi.mi.html">qgcomp.glm.multi.mi()</a></code>
@@ -110,10 +111,9 @@ analyses.</p>
 <li>pool the MSM coefficients and covariance internally using Rubin’s
 rules</li>
 </ul>
-<p>In Version <code>0.4.0</code>, the pooled object is focused on
-inference and summary. It does not try to reproduce the full prediction
-and diagnostics surface of a single-fit <code>qgcompmulti</code>
-object.</p>
+<p>The pooled object is focused on inference and summary. It does not
+try to reproduce the full prediction and diagnostics surface of a
+single-fit <code>qgcompmulti</code> object.</p>
 </div>
 <div class="section level2">
 <h2 id="a-small-completed-data-example">A small completed-data example<a class="anchor" aria-label="anchor" href="#a-small-completed-data-example"></a>
@@ -170,6 +170,9 @@ object.</p>
 <span><span class="co">#&gt;   Formula: Y ~ X1 + X2 + X3 + W1 + W2 + W3 + C</span></span>
 <span><span class="co">#&gt;   Outcome: Y</span></span>
 <span><span class="co">#&gt;   Family: gaussian (identity)</span></span>
+<span><span class="co">#&gt;   Estimand: Mean difference (default)</span></span>
+<span><span class="co">#&gt;   MSM fitting scale: identity</span></span>
+<span><span class="co">#&gt;   Interval method: wald (pooled multiple imputation)</span></span>
 <span><span class="co">#&gt;   Observations used: 120</span></span>
 <span><span class="co">#&gt;   Exposure mode: Quantized exposures (q = 4)</span></span>
 <span><span class="co">#&gt;   MSM interaction: included</span></span>
@@ -266,8 +269,7 @@ optional <code>mice</code> package is installed.</p>
 <div class="section level2">
 <h2 id="optional-bootstrap-level-parallelism">Optional bootstrap-level parallelism<a class="anchor" aria-label="anchor" href="#optional-bootstrap-level-parallelism"></a>
 </h2>
-<p>Version <code>0.4.0</code> supports one level of optional
-parallelism.</p>
+<p>The package supports one level of optional parallelism.</p>
 <p>For ordinary fits, bootstrap replications can be dispatched in
 parallel inside <code><a href="../reference/qgcomp.glm.multi.html">qgcomp.glm.multi()</a></code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -305,17 +307,16 @@ parallelized:</p>
 </h2>
 <p>Several practical limits are worth stating plainly:</p>
 <ul>
-<li>the MI loop itself is still serial in Version
-<code>0.4.0</code>
-</li>
+<li>the MI loop itself is still serial</li>
 <li>reproducibility is defined within a fixed backend and execution
 mode, not as exact equality between serial and parallel runs</li>
 <li>
 <code>progress = TRUE</code> is supported only in serial mode and is
 disabled with a clear warning when <code>parallel = TRUE</code>
 </li>
-<li>pooled prediction and pooled diagnostics are not yet the main target
-of the pooled MI object</li>
+<li>pooled prediction, pooled diagnostics, pooled bootstrap interval
+methods, and pooled confidence regions are not yet the main target of
+the pooled MI object</li>
 </ul>
 <p>In practice, the native MI wrapper is best used when pooled MSM
 inference is the main goal and you want the package to manage the
@@ -327,6 +328,8 @@ repeated fitting and Rubin pooling directly.</p>
 <ul>
 <li><a href="qgcompmulti-workflow.html">Applied Workflow for Two-Mixture
 Quantile g-Computation</a></li>
+<li><a href="qgcompmulti-effect-scales.html">Effect Scales, Intervals,
+and Prediction Scales</a></li>
 <li><a href="qgcompmulti-clustered-data.html">Clustered Data and
 Repeated Measures</a></li>
 <li><a href="qgcompmulti-diagnostics-sensitivity.html">Diagnostics and
