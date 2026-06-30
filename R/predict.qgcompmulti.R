@@ -26,6 +26,11 @@
 #' @param from,to Optional named numeric vectors or lists with entries `psi1`
 #' and `psi2` defining the source and target regimes for a direct contrast on
 #' the MSM coding scale.
+#' @param contrast_scale Character string specifying the output scale for
+#' `type = "msm_contrast"`. `"response"` returns the response-scale difference
+#' between the `to` and `from` regimes. `"estimand"` returns the contrast on
+#' the active fitted estimand scale; for odds-ratio and rate-ratio fits this is
+#' computed by differencing the MSM linear predictor and exponentiating.
 #' @param data Optional data frame used for exact arbitrary prediction or exact
 #' arbitrary contrasts. Exact arbitrary prediction requires explicit `data`.
 #' @param interval Logical; if `TRUE`, returns bootstrap percentile intervals
@@ -136,18 +141,32 @@ predict.qgcompmulti <- function(object,
                                 at = NULL,
                                 from = NULL,
                                 to = NULL,
+                                contrast_scale = c("response", "estimand"),
                                 data = NULL,
                                 interval = FALSE,
                                 level = 0.95,
                                 ...) {
   validate_qgcompmulti(object)
   type <- match.arg(type)
+  contrast_scale_supplied <- !missing(contrast_scale)
+  if (identical(type, "msm_contrast")) {
+    contrast_scale <- match.arg(contrast_scale)
+  } else {
+    if (contrast_scale_supplied) {
+      stop(
+        "`contrast_scale` is only supported when `type = \"msm_contrast\"`.",
+        call. = FALSE
+      )
+    }
+    contrast_scale <- NULL
+  }
   validate_predict_qgcompmulti_inputs(
     type = type,
     grid = grid,
     at = at,
     from = from,
     to = to,
+    contrast_scale = contrast_scale,
     data = data,
     interval = interval,
     level = level
@@ -170,6 +189,7 @@ predict.qgcompmulti <- function(object,
       object = object,
       from = from,
       to = to,
+      contrast_scale = contrast_scale,
       level = level_arg
     ),
     exact = if (is.null(data) && is.null(grid) && is.null(at)) {

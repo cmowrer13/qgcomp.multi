@@ -100,3 +100,111 @@ test_that("exact arbitrary contrast helper works on user-supplied data", {
   expect_true(contrast$contrast)
   expect_equal(nrow(contrast$estimates), 1)
 })
+
+test_that("MSM predictions are returned on the response scale for transformed fits", {
+  fit_binomial <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit")
+  )
+  fit_poisson <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log")
+  )
+  binomial_surface <- qgcompmulti_predict_msm_surface(fit_binomial, level = 0.95)
+  binomial_target <- qgcompmulti_predict_msm_target(
+    fit_binomial,
+    fit_binomial$prediction$msm_grid
+  )
+  expect_identical(binomial_surface$estimand_scale, "response")
+  expect_identical(binomial_surface$estimate_scale, "response")
+  expect_identical(binomial_surface$fit_estimand_scale, "odds_ratio")
+  expect_identical(binomial_surface$msm_fitting_scale, "logit")
+  expect_null(binomial_surface$contrast_scale)
+  expect_equal(binomial_surface$estimates$estimate, plogis(binomial_target))
+  expect_true(all(binomial_surface$estimates$estimate > 0))
+  expect_true(all(binomial_surface$estimates$estimate < 1))
+  expect_true(all(binomial_surface$intervals$lower > 0))
+  expect_true(all(binomial_surface$intervals$upper < 1))
+  poisson_surface <- qgcompmulti_predict_msm_surface(fit_poisson, level = 0.95)
+  poisson_target <- qgcompmulti_predict_msm_target(
+    fit_poisson,
+    fit_poisson$prediction$msm_grid
+  )
+  expect_identical(poisson_surface$estimand_scale, "response")
+  expect_identical(poisson_surface$estimate_scale, "response")
+  expect_identical(poisson_surface$fit_estimand_scale, "rate_ratio")
+  expect_identical(poisson_surface$msm_fitting_scale, "log")
+  expect_equal(poisson_surface$estimates$estimate, exp(poisson_target))
+  expect_true(all(poisson_surface$estimates$estimate > 0))
+  expect_true(all(poisson_surface$intervals$lower > 0))
+})
+test_that("MSM contrasts support response-scale differences and estimand-scale ratios", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = binomial(link = "logit")
+  )
+  from <- c(psi1 = 0, psi2 = 0)
+  to <- c(psi1 = 2, psi2 = 1)
+  from_grid <- qgcompmulti_build_msm_grid(fit, at = from)$grid
+  to_grid <- qgcompmulti_build_msm_grid(fit, at = to)$grid
+  from_target <- qgcompmulti_predict_msm_target(fit, from_grid)
+  to_target <- qgcompmulti_predict_msm_target(fit, to_grid)
+  response_contrast <- qgcompmulti_predict_msm_contrast(
+    fit,
+    from = from,
+    to = to,
+    contrast_scale = "response",
+    level = 0.95
+  )
+  estimand_contrast <- qgcompmulti_predict_msm_contrast(
+    fit,
+    from = from,
+    to = to,
+    contrast_scale = "estimand",
+    level = 0.95
+  )
+  expect_equal(
+    response_contrast$estimates$estimate,
+    plogis(to_target) - plogis(from_target)
+  )
+  expect_identical(response_contrast$estimand_scale, "response")
+  expect_identical(response_contrast$estimate_scale, "response")
+  expect_identical(response_contrast$contrast_scale, "response")
+  expect_equal(
+    estimand_contrast$estimates$estimate,
+    exp(to_target - from_target)
+  )
+  expect_identical(estimand_contrast$estimand_scale, "odds_ratio")
+  expect_identical(estimand_contrast$estimate_scale, "estimand")
+  expect_identical(estimand_contrast$contrast_scale, "estimand")
+  expect_true(all(estimand_contrast$intervals$lower > 0))
+  expect_true(all(estimand_contrast$intervals$upper > 0))
+})
+test_that("additive estimand-scale MSM contrasts remain additive differences", {
+  fit <- fit_test_model(
+    interaction = TRUE,
+    q = 4,
+    family = poisson(link = "log"),
+    estimand_scale = "mean_difference"
+  )
+  from <- c(psi1 = 0, psi2 = 0)
+  to <- c(psi1 = 2, psi2 = 1)
+  response_contrast <- qgcompmulti_predict_msm_contrast(
+    fit,
+    from = from,
+    to = to,
+    contrast_scale = "response"
+  )
+  estimand_contrast <- qgcompmulti_predict_msm_contrast(
+    fit,
+    from = from,
+    to = to,
+    contrast_scale = "estimand"
+  )
+  expect_equal(estimand_contrast$estimates$estimate, response_contrast$estimates$estimate)
+  expect_identical(estimand_contrast$estimand_scale, "mean_difference")
+  expect_identical(estimand_contrast$estimate_scale, "estimand")
+})

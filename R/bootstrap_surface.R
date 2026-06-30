@@ -37,6 +37,22 @@ qgcompmulti_bootstrap_msm_fitted_draws <- function(object, grid) {
 }
 #' @keywords internal
 #' @noRd
+qgcompmulti_transform_msm_fitted_draws <- function(draws,
+                                                   msm_fitting_scale,
+                                                   direction = c("to_response", "to_fitting")) {
+  direction <- match.arg(direction)
+  draws <- as.matrix(draws)
+  transformed <- qgcompmulti_transform_msm_surface(
+    values = draws,
+    msm_fitting_scale = msm_fitting_scale,
+    direction = direction
+  )
+  dim(transformed) <- dim(draws)
+  dimnames(transformed) <- dimnames(draws)
+  transformed
+}
+#' @keywords internal
+#' @noRd
 qgcompmulti_bootstrap_interval <- function(draws, level = 0.95) {
   qgcompmulti_validate_conf_level(level)
   draws <- as.matrix(draws)

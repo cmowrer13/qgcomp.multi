@@ -11,6 +11,7 @@
   at = NULL,
   from = NULL,
   to = NULL,
+  contrast_scale = c("response", "estimand"),
   data = NULL,
   interval = FALSE,
   level = 0.95,
@@ -33,6 +34,12 @@ user-specified prediction grid on the MSM coding scale.}
 \item{from, to}{Optional named numeric vectors or lists with entries \code{psi1}
 and \code{psi2} defining the source and target regimes for a direct contrast on
 the MSM coding scale.}
+
+\item{contrast_scale}{Character string specifying the output scale for
+\code{type = "msm_contrast"}. \code{"response"} returns the response-scale difference
+between the \code{to} and \code{from} regimes. \code{"estimand"} returns the contrast on
+the active fitted estimand scale; for odds-ratio and rate-ratio fits this is
+computed by differencing the MSM linear predictor and exponentiating.}
 
 \item{data}{Optional data frame used for exact arbitrary prediction or exact
 arbitrary contrasts. Exact arbitrary prediction requires explicit \code{data}.}

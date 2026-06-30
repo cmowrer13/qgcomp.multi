@@ -341,6 +341,7 @@ validate_predict_qgcompmulti_inputs <- function(type,
                                                 at = NULL,
                                                 from = NULL,
                                                 to = NULL,
+                                                contrast_scale = NULL,
                                                 data = NULL,
                                                 interval = FALSE,
                                                 level = 0.95) {
@@ -356,6 +357,20 @@ validate_predict_qgcompmulti_inputs <- function(type,
   }
   if (isTRUE(interval)) {
     qgcompmulti_validate_conf_level(level)
+  }
+  if (!is.null(contrast_scale)) {
+    if (!is.character(contrast_scale) ||
+        length(contrast_scale) != 1L ||
+        is.na(contrast_scale) ||
+        !contrast_scale %in% c("response", "estimand")) {
+      stop("`contrast_scale` must be one of: response, estimand.", call. = FALSE)
+    }
+    if (!identical(type, "msm_contrast")) {
+      stop(
+        "`contrast_scale` is only supported when `type = \"msm_contrast\"`.",
+        call. = FALSE
+      )
+    }
   }
   if (type == "msm") {
     if (!is.null(at) || !is.null(from) || !is.null(to) || !is.null(data)) {

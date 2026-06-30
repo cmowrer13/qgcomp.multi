@@ -224,6 +224,10 @@ build_qgcompmulti_prediction_result <- function(prediction_type,
                                                 grid_type,
                                                 grid_scale,
                                                 estimand_scale = "response",
+                                                estimate_scale = "response",
+                                                fit_estimand_scale = NULL,
+                                                msm_fitting_scale = NULL,
+                                                contrast_scale = NULL,
                                                 estimates,
                                                 intervals = NULL,
                                                 interval_type = NULL,
@@ -241,6 +245,25 @@ build_qgcompmulti_prediction_result <- function(prediction_type,
   if (!is.character(estimand_scale) || length(estimand_scale) != 1L || is.na(estimand_scale)) {
     stop("`estimand_scale` must be a single character string.", call. = FALSE)
   }
+  if (!is.character(estimate_scale) ||
+      length(estimate_scale) != 1L ||
+      is.na(estimate_scale) ||
+      !estimate_scale %in% c("response", "estimand")) {
+    stop("`estimate_scale` must be one of: response, estimand.", call. = FALSE)
+  }
+  if (!is.null(fit_estimand_scale)) {
+    qgcompmulti_validate_estimand_scale_name(fit_estimand_scale)
+  }
+  if (!is.null(msm_fitting_scale)) {
+    qgcompmulti_msm_fitting_scale_label(msm_fitting_scale)
+  }
+  if (!is.null(contrast_scale) &&
+      (!is.character(contrast_scale) ||
+       length(contrast_scale) != 1L ||
+       is.na(contrast_scale) ||
+       !contrast_scale %in% c("response", "estimand"))) {
+    stop("`contrast_scale` must be `NULL` or one of: response, estimand.", call. = FALSE)
+  }
   if (!is.data.frame(estimates)) {
     stop("`estimates` must be a data frame.", call. = FALSE)
   }
@@ -252,6 +275,10 @@ build_qgcompmulti_prediction_result <- function(prediction_type,
     grid_type = grid_type,
     grid_scale = grid_scale,
     estimand_scale = estimand_scale,
+    estimate_scale = estimate_scale,
+    fit_estimand_scale = fit_estimand_scale,
+    msm_fitting_scale = msm_fitting_scale,
+    contrast_scale = contrast_scale,
     estimates = estimates,
     intervals = intervals,
     interval_type = interval_type,
